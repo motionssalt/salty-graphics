@@ -197,8 +197,9 @@ fun TextSettingsDialog(
             }
 
             // 5. Alignment Segmented Chips (Left, Center, Right, Justify)
-            Text("Alignment", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+            // 5. Alignment Segmented Chips (Left, Center, Right, Justify)
             SegmentedChipsControl(
+                label = "Alignment",
                 options = listOf("Left", "Center", "Right", "Justify"),
                 selectedOption = when (textData.justification) {
                     TextJustification.LEFT -> "Left"
@@ -218,8 +219,8 @@ fun TextSettingsDialog(
             )
 
             // 6. Box Mode Chips: Free, Paragraph, Fixed size, Shrink to fit
-            Text("Box Framing", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             SegmentedChipsControl(
+                label = "Box Framing",
                 options = listOf("Free", "Paragraph", "Fixed", "Shrink fit"),
                 selectedOption = when (textData.boxMode) {
                     TextBoxMode.FREE -> "Free"
@@ -383,25 +384,27 @@ fun TextSettingsDialog(
     // Color Pickers
     if (isColorPickerOpen) {
         ColorPickerDialog(
+            title = "Text Color",
             initialColor = textData.color,
-            onColorSelected = {
+            allowTransparent = false,
+            onApply = {
                 updateData(textData.copy(color = it))
                 isColorPickerOpen = false
             },
-            onDismiss = { isColorPickerOpen = false },
-            allowTransparent = false
+            onDismiss = { isColorPickerOpen = false }
         )
     }
 
     if (isOutlineColorPickerOpen) {
         ColorPickerDialog(
+            title = "Outline Color",
             initialColor = textData.outlineColor,
-            onColorSelected = {
+            allowTransparent = false,
+            onApply = {
                 updateData(textData.copy(outlineColor = it))
                 isOutlineColorPickerOpen = false
             },
-            onDismiss = { isOutlineColorPickerOpen = false },
-            allowTransparent = false
+            onDismiss = { isOutlineColorPickerOpen = false }
         )
     }
 

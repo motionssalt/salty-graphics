@@ -117,7 +117,7 @@ object FontManager {
 
     private fun saveImportedMetadata(context: Context, items: List<FontMetadata>) {
         try {
-            val content = json.encodeToString(items)
+            val content = json.encodeToString<List<FontMetadata>>(items)
             getMetaFile(context).writeText(content)
         } catch (_: Exception) {}
     }
