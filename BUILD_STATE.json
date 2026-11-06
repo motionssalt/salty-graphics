@@ -6,52 +6,228 @@
   "current_phase": "F14",
   "ui_refinement": "pending: separate session",
   "phases": [
-    { "id": "F1", "name": "Repository, CI and delivery", "status": "done", "notes": "Created public repository motionssalt/salty-graphics, attached Keyflaw APK to reference-keyflaw release, created GitHub Actions CI building universal and per-ABI APKs" },
-    { "id": "F2", "name": "Theme and scaffold", "status": "done", "notes": "Material 3 Expressive theme, typography, adaptive layered icon, complete navigation graph, window scaling" },
-    { "id": "F3", "name": "Home and Settings, real behaviour", "status": "done", "notes": "Local file persistence, multi-select, duplicate, rename, delete, import .sg, UI scale slider, real device diagnostics, single SocialConfig file, problem reporting via share sheet" },
-    { "id": "F4", "name": "New Project screen", "status": "done", "notes": "Aspect ratio templates (1:1, 4:5, 9:16, 16:9, 3:2, A4, custom), quality 360p to 8K, 8K safe memory notice and clamping" },
-    { "id": "F5", "name": "Keyflaw study", "status": "done", "notes": "Keyflaw APK decompiled and studied; documented in docs/KEYFLAW_NOTES.md, reference preserved in GitHub release" },
-    { "id": "F6", "name": "Document model and render core", "status": "done", "notes": "ProjectDocument, Layer, GLRenderEngine with texture caching, FBO proxy at 25/50/100% quality, view mode zoom/pan/grid" },
-    { "id": "F7", "name": "Layers", "status": "done", "notes": "Media, Text, Adjustment, Shape, Vector, Group; hit testing, bounding box handles, drag-reorder, lock, visibility" },
-    { "id": "F8", "name": "Transform, blending and mask", "status": "done", "notes": "Transform2D with chain link/unlink scale, precision trackpad + sensitivity, rotate slider, all 16 blend modes, in-mask and out-mask" },
-    { "id": "F9", "name": "Text", "status": "done", "notes": "TextLayerData with move-along-path following shapes or vector paths" },
-    { "id": "F10", "name": "Command system, undo/redo and the action tree", "status": "done", "notes": "ActionTree branching history, jump to any node, unit-tested in ActionTreeTest" },
-    { "id": "F11", "name": "Copy and paste of layer properties", "status": "done", "notes": "Transform only, Effects only, Both; replace semantics; clipboard survives branch jumps; unit-tested in CopyPasteTest" },
-    { "id": "F12", "name": "Effect engine", "status": "done", "notes": "EffectDefinition with all 6 control types, auto-generated settings sheet, zero real effects shipped in beta, unit-tested in EffectDefinitionTest" },
-    { "id": "F13", "name": ".sg files, auto-save, import and export", "status": "done", "notes": "SgProjectArchive ZIP container, manifest, continuous auto-save, SAF and share sheet export, unit-tested in SgRoundTripTest" },
-    { "id": "F14", "name": "Hardening and handoff", "status": "done", "notes": "Verified ABIs (arm64-v8a, armeabi-v7a, x86_64), minSdk 26, docs/DECISIONS.md completed, all code committed and pushed" }
+    {
+      "id": "F1",
+      "name": "Repository, CI and delivery",
+      "status": "done",
+      "notes": "Created public repository motionssalt/salty-graphics, attached Keyflaw APK to reference-keyflaw release, created GitHub Actions CI building universal and per-ABI APKs"
+    },
+    {
+      "id": "F2",
+      "name": "Theme and scaffold",
+      "status": "done",
+      "notes": "Material 3 Expressive theme, typography, adaptive layered icon, complete navigation graph, window scaling"
+    },
+    {
+      "id": "F3",
+      "name": "Home and Settings, real behaviour",
+      "status": "done",
+      "notes": "Local file persistence, multi-select, duplicate, rename, delete, import .sg, UI scale slider, real device diagnostics, single SocialConfig file, problem reporting via share sheet"
+    },
+    {
+      "id": "F4",
+      "name": "New Project screen",
+      "status": "done",
+      "notes": "Aspect ratio templates (1:1, 4:5, 9:16, 16:9, 3:2, A4, custom), quality 360p to 8K, 8K safe memory notice and clamping"
+    },
+    {
+      "id": "F5",
+      "name": "Keyflaw study",
+      "status": "done",
+      "notes": "Keyflaw APK decompiled and studied; documented in docs/KEYFLAW_NOTES.md, reference preserved in GitHub release"
+    },
+    {
+      "id": "F6",
+      "name": "Document model and render core",
+      "status": "done",
+      "notes": "ProjectDocument, Layer, GLRenderEngine with texture caching, FBO proxy at 25/50/100% quality, view mode zoom/pan/grid"
+    },
+    {
+      "id": "F7",
+      "name": "Layers",
+      "status": "done",
+      "notes": "Media, Text, Adjustment, Shape, Vector, Group; hit testing, bounding box handles, drag-reorder, lock, visibility"
+    },
+    {
+      "id": "F8",
+      "name": "Transform, blending and mask",
+      "status": "done",
+      "notes": "Transform2D with chain link/unlink scale, precision trackpad + sensitivity, rotate slider, all 16 blend modes, in-mask and out-mask"
+    },
+    {
+      "id": "F9",
+      "name": "Text",
+      "status": "done",
+      "notes": "TextLayerData with move-along-path following shapes or vector paths"
+    },
+    {
+      "id": "F10",
+      "name": "Command system, undo/redo and the action tree",
+      "status": "done",
+      "notes": "ActionTree branching history, jump to any node, unit-tested in ActionTreeTest"
+    },
+    {
+      "id": "F11",
+      "name": "Copy and paste of layer properties",
+      "status": "done",
+      "notes": "Transform only, Effects only, Both; replace semantics; clipboard survives branch jumps; unit-tested in CopyPasteTest"
+    },
+    {
+      "id": "F12",
+      "name": "Effect engine",
+      "status": "done",
+      "notes": "EffectDefinition with all 6 control types, auto-generated settings sheet, zero real effects shipped in beta, unit-tested in EffectDefinitionTest"
+    },
+    {
+      "id": "F13",
+      "name": ".sg files, auto-save, import and export",
+      "status": "done",
+      "notes": "SgProjectArchive ZIP container, manifest, continuous auto-save, SAF and share sheet export, unit-tested in SgRoundTripTest"
+    },
+    {
+      "id": "F14",
+      "name": "Hardening and handoff",
+      "status": "done",
+      "notes": "Verified ABIs (arm64-v8a, armeabi-v7a, x86_64), minSdk 26, docs/DECISIONS.md completed, all code committed and pushed"
+    }
   ],
   "queue": [
-    { "id": "F1", "title": "Repository, CI and delivery", "status": "done", "notes": "GitHub public repo created, CI configured, Keyflaw reference release asset uploaded" },
-    { "id": "F2", "title": "Theme and scaffold", "status": "done", "notes": "Scaffold and theme implemented" },
-    { "id": "F3", "title": "Home and Settings, real behaviour", "status": "done", "notes": "Data persistence and settings fully wired" },
-    { "id": "F4", "title": "New Project screen", "status": "done", "notes": "All ratios and resolutions with 8K safety" },
-    { "id": "F5", "title": "Keyflaw study", "status": "done", "notes": "Technical study documented in docs/KEYFLAW_NOTES.md" },
-    { "id": "F6", "title": "Document model and render core", "status": "done", "notes": "Document model and GPU render core implemented" },
-    { "id": "F7", "title": "Layers", "status": "done", "notes": "All 6 layer types and bounding box handles implemented" },
-    { "id": "F8", "title": "Transform, blending and mask", "status": "done", "notes": "Transform controls, 16 blend modes, and mask modes implemented" },
-    { "id": "F9", "title": "Text", "status": "done", "notes": "Text typography and move-along-path implemented" },
-    { "id": "F10", "title": "Command system, undo/redo and the action tree", "status": "done", "notes": "ActionTree branching and jumping implemented and tested" },
-    { "id": "F11", "title": "Copy and paste of layer properties", "status": "done", "notes": "Copy/paste properties with replacement semantics implemented and tested" },
-    { "id": "F12", "title": "Effect engine", "status": "done", "notes": "Effect engine and auto-control generator implemented and tested" },
-    { "id": "F13", "title": ".sg files, auto-save, import and export", "status": "done", "notes": ".sg archive and full-quality export implemented and tested" },
-    { "id": "F14", "title": "Hardening and handoff", "status": "done", "notes": "Project finalized and ready for separate UI refinement session" }
+    {
+      "id": "F1",
+      "title": "Repository, CI and delivery",
+      "status": "done",
+      "notes": "GitHub public repo created, CI configured, Keyflaw reference release asset uploaded"
+    },
+    {
+      "id": "F2",
+      "title": "Theme and scaffold",
+      "status": "done",
+      "notes": "Scaffold and theme implemented"
+    },
+    {
+      "id": "F3",
+      "title": "Home and Settings, real behaviour",
+      "status": "done",
+      "notes": "Data persistence and settings fully wired"
+    },
+    {
+      "id": "F4",
+      "title": "New Project screen",
+      "status": "done",
+      "notes": "All ratios and resolutions with 8K safety"
+    },
+    {
+      "id": "F5",
+      "title": "Keyflaw study",
+      "status": "done",
+      "notes": "Technical study documented in docs/KEYFLAW_NOTES.md"
+    },
+    {
+      "id": "F6",
+      "title": "Document model and render core",
+      "status": "done",
+      "notes": "Document model and GPU render core implemented"
+    },
+    {
+      "id": "F7",
+      "title": "Layers",
+      "status": "done",
+      "notes": "All 6 layer types and bounding box handles implemented"
+    },
+    {
+      "id": "F8",
+      "title": "Transform, blending and mask",
+      "status": "done",
+      "notes": "Transform controls, 16 blend modes, and mask modes implemented"
+    },
+    {
+      "id": "F9",
+      "title": "Text",
+      "status": "done",
+      "notes": "Text typography and move-along-path implemented"
+    },
+    {
+      "id": "F10",
+      "title": "Command system, undo/redo and the action tree",
+      "status": "done",
+      "notes": "ActionTree branching and jumping implemented and tested"
+    },
+    {
+      "id": "F11",
+      "title": "Copy and paste of layer properties",
+      "status": "done",
+      "notes": "Copy/paste properties with replacement semantics implemented and tested"
+    },
+    {
+      "id": "F12",
+      "title": "Effect engine",
+      "status": "done",
+      "notes": "Effect engine and auto-control generator implemented and tested"
+    },
+    {
+      "id": "F13",
+      "title": ".sg files, auto-save, import and export",
+      "status": "done",
+      "notes": ".sg archive and full-quality export implemented and tested"
+    },
+    {
+      "id": "F14",
+      "title": "Hardening and handoff",
+      "status": "done",
+      "notes": "Project finalized and ready for separate UI refinement session"
+    }
   ],
-  "completed": ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14"],
+  "completed": [
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6",
+    "F7",
+    "F8",
+    "F9",
+    "F10",
+    "F11",
+    "F12",
+    "F13",
+    "F14"
+  ],
   "next_steps": [
     "Execute UI refinement session (salty-graphics-ui-refinement-prompt.md) as separate task"
   ],
   "decisions": [
-    { "topic": "Architecture", "decision": "Multi-module Gradle setup with :engine (pure Kotlin + OpenGL ES 3.x render core, document model, action tree, effect engine) and :app (Jetpack Compose Material 3 Expressive UI).", "date": "2026-11-06" },
-    { "topic": "Keyflaw reference", "decision": "Downloaded 44MB Keyflaw APK and uploaded to reference-keyflaw GitHub pre-release. Studied architecture without copying proprietary code.", "date": "2026-11-06" },
-    { "topic": "8K Safety", "decision": "Query GL_MAX_TEXTURE_SIZE at startup, clamp offscreen texture dimensions to maximum GPU supported texture size, and downsample preview proxy.", "date": "2026-11-06" },
-    { "topic": "Action Tree", "decision": "Branching DAG graph structure with O(1) state jumping across branches; clipboard decoupled from active tree node.", "date": "2026-11-06" }
+    {
+      "topic": "Architecture",
+      "decision": "Multi-module Gradle setup with :engine (pure Kotlin + OpenGL ES 3.x render core, document model, action tree, effect engine) and :app (Jetpack Compose Material 3 Expressive UI).",
+      "date": "2026-11-06"
+    },
+    {
+      "topic": "Keyflaw reference",
+      "decision": "Downloaded 44MB Keyflaw APK and uploaded to reference-keyflaw GitHub pre-release. Studied architecture without copying proprietary code.",
+      "date": "2026-11-06"
+    },
+    {
+      "topic": "8K Safety",
+      "decision": "Query GL_MAX_TEXTURE_SIZE at startup, clamp offscreen texture dimensions to maximum GPU supported texture size, and downsample preview proxy.",
+      "date": "2026-11-06"
+    },
+    {
+      "topic": "Action Tree",
+      "decision": "Branching DAG graph structure with O(1) state jumping across branches; clipboard decoupled from active tree node.",
+      "date": "2026-11-06"
+    }
   ],
   "known_issues": [],
   "deployment": {
     "release_tag": "v1.0.0-beta1",
-    "secrets_expected": ["RELEASE_KEYSTORE_BASE64", "RELEASE_KEYSTORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD"]
+    "secrets_expected": [
+      "RELEASE_KEYSTORE_BASE64",
+      "RELEASE_KEYSTORE_PASSWORD",
+      "RELEASE_KEY_ALIAS",
+      "RELEASE_KEY_PASSWORD"
+    ]
   },
-  "last_updated": "2026-11-06T11:38:00Z",
-  "last_session_note": "F1-F14 complete. Hardening and handoff finished. UI refinement left untouched for the separate session as instructed in Section 11."
+  "last_updated": "2026-11-06T12:29:37.060102+00:00",
+  "last_session_note": "All queue items F1 through F14 completed and verified. GitHub Actions build succeeded and published release v1.0.0-beta1 with Universal, arm64-v8a, armeabi-v7a, and x86_64 APKs. UI refinement left untouched for the separate session."
 }
