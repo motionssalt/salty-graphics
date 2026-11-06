@@ -18,9 +18,13 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.LooperMode
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@LooperMode(LooperMode.Mode.PAUSED)
 class ThemeChoiceTest {
     @get:Rule val compose = createEmptyComposeRule()
 
@@ -45,6 +49,7 @@ class ThemeChoiceTest {
         try {
             for ((choice, osDark) in listOf(ThemeChoice.DARK to false, ThemeChoice.LIGHT to false,
                 ThemeChoice.SYSTEM to false, ThemeChoice.SYSTEM to true)) {
+                println("Verifying theme $choice with system dark=$osDark")
                 compose.runOnIdle { systemDark = osDark; manager.setTheme(choice) }
                 compose.waitForIdle()
                 assertEquals(choice, SettingsManager(context).theme.value)
