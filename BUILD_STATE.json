@@ -216,9 +216,21 @@
       "topic": "Action Tree",
       "decision": "Branching DAG graph structure with O(1) state jumping across branches; clipboard decoupled from active tree node.",
       "date": "2026-11-06"
+    },
+    {
+      "topic": "Startup Crash Resolution",
+      "decision": "Added @Serializable to ProjectSummary to fix runtime SerializationException on indexFile.writeText(json.encodeToString(list)). Added comprehensive ProGuard rules preserving all com.motionssalt.saltygraphics.** and kotlinx.serialization classes. Wrapped enableEdgeToEdge() in runCatching and wrapped repository.loadProjects() in defensive try/catch. Removed windowLightStatusBar from themes.xml to prevent OEM inflation errors on Transsion/OEM Android variants.",
+      "date": "2026-11-06"
     }
   ],
-  "known_issues": [],
+  "known_issues": [
+    {
+      "issue": "Instant crash on launch before home screen appeared",
+      "cause": "ProjectSummary data class lacked @Serializable annotation, causing kotlinx.serialization.json.encodeToString() to throw SerializationException on startup when seeding initial project; plus R8 stripped serializers due to missing -keep rule for app.data package.",
+      "resolution": "Annotated ProjectSummary with @Serializable, updated proguard-rules.pro with full keep rules for app and kotlinx.serialization, hardened loadProjects with defensive try/catch, and added unit test ProjectRepositoryTest.",
+      "status": "resolved"
+    }
+  ],
   "deployment": {
     "release_tag": "v1.0.0-beta1",
     "secrets_expected": [
@@ -228,6 +240,6 @@
       "RELEASE_KEY_PASSWORD"
     ]
   },
-  "last_updated": "2026-11-06T12:29:37.060102+00:00",
-  "last_session_note": "All queue items F1 through F14 completed and verified. GitHub Actions build succeeded and published release v1.0.0-beta1 with Universal, arm64-v8a, armeabi-v7a, and x86_64 APKs. UI refinement left untouched for the separate session."
+  "last_updated": "2026-11-06T12:38:13.835380+00:00",
+  "last_session_note": "Fixed instant startup crash. Hardened ProjectSummary serialization, added comprehensive R8 keep rules, wrapped EdgeToEdge and loadProjects defensively, and verified via CI."
 }

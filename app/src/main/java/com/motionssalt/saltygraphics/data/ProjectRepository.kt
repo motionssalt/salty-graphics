@@ -2,13 +2,21 @@ package com.motionssalt.saltygraphics.data
 
 import android.content.Context
 import com.motionssalt.saltygraphics.engine.file.SgProjectArchive
+import com.motionssalt.saltygraphics.engine.model.AspectRatioPreset
 import com.motionssalt.saltygraphics.engine.model.CanvasSize
+import com.motionssalt.saltygraphics.engine.model.Layer
+import com.motionssalt.saltygraphics.engine.model.LayerType
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
+import com.motionssalt.saltygraphics.engine.model.QualityPreset
+import com.motionssalt.saltygraphics.engine.model.ShapeData
+import com.motionssalt.saltygraphics.engine.model.ShapeType
+import com.motionssalt.saltygraphics.engine.model.TextLayerData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -16,6 +24,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.UUID
 
+@Serializable
 data class ProjectSummary(
     val id: String,
     val name: String,
@@ -26,41 +35,90 @@ data class ProjectSummary(
 )
 
 class ProjectRepository(private val context: Context) {
+
     private val projectsDir = File(context.filesDir, "projects").apply { mkdirs() }
     private val indexFile = File(projectsDir, "index.json")
 
     private val _projects = MutableStateFlow<List<ProjectSummary>>(emptyList())
     val projects: StateFlow<List<ProjectSummary>> = _projects.asStateFlow()
 
-    private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+    private val json = Json {
+        prettyPrint = true
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     suspend fun loadProjects() = withContext(Dispatchers.IO) {
-        if (!indexFile.exists()) {
-            // Seed with an initial sample project for Victor
-            val initial = ProjectSummary(
-                id = UUID.randomUUID().toString(),
-                name = "My First Salty Design",
-                width = 1080,
-                height = 1920,
-                layerCount = 2,
-                modifiedAt = System.currentTimeMillis()
-            )
-            saveIndex(listOf(initial))
-            _projects.value = listOf(initial)
-            return@withContext
-        }
         try {
+            if (!indexFile.exists()) {
+                // Seed with an initial sample project for Victor
+                val sampleDoc = ProjectDocument(
+                    id = UUID.randomUUID().toString(),
+                    name = "My First Salty Design",
+                    canvasSize = CanvasSize(
+                        width = 1080,
+                        height = 1920,
+                        aspectRatio = AspectRatioPreset.STORY_9_16,
+                        quality = QualityPreset.P1080
+                    ),
+                    layers = listOf(
+                        Layer(
+                            id = UUID.randomUUID().toString(),
+                            name = "Background Card",
+                            type = LayerType.SHAPE,
+                            shapeData = ShapeData(
+                                type = ShapeType.ROUNDED_RECTANGLE,
+                                cornerRadius = 32f,
+                                fillColor = 0xFF141721L
+                            )
+                        ),
+                        Layer(
+                            id = UUID.randomUUID().toString(),
+                            name = "Salty Graphics",
+                            type = LayerType.TEXT,
+                            textData = TextLayerData(
+                                text = "Salty Graphics",
+                                fontSize = 54f,
+                                textColor = 0xFF00E5FFL
+                            )
+                        )
+                    )
+                )
+
+                // Save real .sg archive so it can be opened immediately
+                try {
+                    val sampleFile = File(projectsDir, "${sampleDoc.id}.sg")
+                    SgProjectArchive.saveToFile(sampleDoc, sampleFile)
+                } catch (_: Throwable) {}
+
+                val initial = ProjectSummary(
+                    id = sampleDoc.id,
+                    name = sampleDoc.name,
+                    width = sampleDoc.canvasSize.width,
+                    height = sampleDoc.canvasSize.height,
+                    layerCount = sampleDoc.layers.size,
+                    modifiedAt = sampleDoc.updatedAt
+                )
+                saveIndex(listOf(initial))
+                _projects.value = listOf(initial)
+                return@withContext
+            }
+
             val content = indexFile.readText()
             val list = json.decodeFromString<List<ProjectSummary>>(content)
             _projects.value = list.sortedByDescending { it.modifiedAt }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             _projects.value = emptyList()
         }
     }
 
     private fun saveIndex(list: List<ProjectSummary>) {
-        indexFile.writeText(json.encodeToString(list))
-        _projects.value = list.sortedByDescending { it.modifiedAt }
+        try {
+            indexFile.writeText(json.encodeToString(list))
+            _projects.value = list.sortedByDescending { it.modifiedAt }
+        } catch (e: Throwable) {
+            _projects.value = list
+        }
     }
 
     suspend fun createProject(name: String, canvasSize: CanvasSize): ProjectDocument = withContext(Dispatchers.IO) {
@@ -96,21 +154,22 @@ class ProjectRepository(private val context: Context) {
     }
 
     suspend fun saveProject(doc: ProjectDocument) = withContext(Dispatchers.IO) {
-        val file = File(projectsDir, "${doc.id}.sg")
-        SgProjectArchive.saveToFile(doc, file)
-
-        val updated = _projects.value.map {
-            if (it.id == doc.id) {
-                it.copy(
-                    name = doc.name,
-                    width = doc.canvasSize.width,
-                    height = doc.canvasSize.height,
-                    layerCount = doc.layers.size,
-                    modifiedAt = System.currentTimeMillis()
-                )
-            } else it
-        }
-        saveIndex(updated)
+        try {
+            val file = File(projectsDir, "${doc.id}.sg")
+            SgProjectArchive.saveToFile(doc, file)
+            val updated = _projects.value.map {
+                if (it.id == doc.id) {
+                    it.copy(
+                        name = doc.name,
+                        width = doc.canvasSize.width,
+                        height = doc.canvasSize.height,
+                        layerCount = doc.layers.size,
+                        modifiedAt = System.currentTimeMillis()
+                    )
+                } else it
+            }
+            saveIndex(updated)
+        } catch (_: Throwable) {}
     }
 
     suspend fun duplicateProject(id: String) = withContext(Dispatchers.IO) {

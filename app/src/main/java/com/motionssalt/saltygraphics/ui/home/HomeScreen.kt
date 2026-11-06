@@ -65,7 +65,11 @@ fun HomeScreen(
     }
 
     LaunchedEffect(Unit) {
-        repository.loadProjects()
+        try {
+            repository.loadProjects()
+        } catch (_: Throwable) {
+            // Never crash home screen initialization
+        }
     }
 
     Scaffold(

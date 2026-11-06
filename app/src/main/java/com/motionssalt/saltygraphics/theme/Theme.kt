@@ -1,7 +1,6 @@
 package com.motionssalt.saltygraphics.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -9,7 +8,9 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 
 val LocalUiScale = compositionLocalOf { 1.0f }
@@ -41,20 +42,27 @@ fun SaltyGraphicsTheme(
     val context = LocalContext.current
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            try {
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            } catch (_: Throwable) {
+                DarkColorScheme
+            }
         }
         else -> DarkColorScheme
     }
 
-    val currentDensity = LocalContext.current.resources.displayMetrics.density
-    val scaledDensity = Density(
-        density = currentDensity * uiScale,
-        fontScale = uiScale
-    )
+    val currentDensity = LocalDensity.current
+    val effectiveScale = uiScale.coerceIn(0.5f, 2.5f)
+    val scaledDensity = remember(currentDensity.density, currentDensity.fontScale, effectiveScale) {
+        Density(
+            density = currentDensity.density * effectiveScale,
+            fontScale = currentDensity.fontScale * effectiveScale
+        )
+    }
 
     CompositionLocalProvider(
-        LocalUiScale provides uiScale,
-        androidx.compose.ui.platform.LocalDensity provides scaledDensity
+        LocalUiScale provides effectiveScale,
+        LocalDensity provides scaledDensity
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
