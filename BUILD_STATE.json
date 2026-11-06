@@ -276,7 +276,7 @@
       {
         "id": "R6",
         "title": "The bottom panel becomes a fixed panel, not a row",
-        "status": "pending",
+        "status": "in_progress",
         "notes": ""
       },
       {
@@ -329,9 +329,11 @@
       }
     ],
     "decisions": [],
-    "known_issues": [],
-    "last_updated": "2026-11-06T14:51:00Z",
-    "last_session_note": "Starting Fix Round 1. Identified Color(ULong) color space crash in CanvasView for Shape and Text layers."
+    "known_issues": [
+      "Incoming main Actions run 42243281132 failed; investigating before R6 implementation. Existing workflow overwrites beta1 on each main push; must be tag-only before a successful build."
+    ],
+    "last_updated": "2026-11-06T15:52:31.500487+00:00",
+    "last_session_note": "Resumed existing round at R6. Incoming main has failing Actions runs; inspect and repair CI before advancing. R1-R5 retained as recorded, not reimplemented. Preserve beta1: disable main-branch release replacement before subsequent pushes."
   },
   "last_updated": "2026-11-06T14:51:00Z",
   "last_session_note": "Starting Fix Round 1 queue."
