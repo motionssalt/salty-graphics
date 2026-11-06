@@ -84,7 +84,7 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Version: 1.0.0-beta1 | Developer: ${SocialConfig.DEVELOPER_NAME} (${SocialConfig.BRAND_NAME})",
+                    text = "Version: ${com.motionssalt.saltygraphics.BuildConfig.VERSION_NAME} (${com.motionssalt.saltygraphics.BuildConfig.VERSION_CODE}) | Developer: ${SocialConfig.DEVELOPER_NAME} (${SocialConfig.BRAND_NAME})",
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.primary
                 )

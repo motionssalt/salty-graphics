@@ -19,6 +19,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Compute Build Version
+        id: versioning
+        run: |
+          BUILD_NUM=${{ github.run_number }}
+          VCODE=$((100 + BUILD_NUM))
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+            VNAME="${TAG_NAME#v}"
+          else
+            TAG_NAME="v1.0.${BUILD_NUM}"
+            VNAME="1.0.${BUILD_NUM}-beta"
+          fi
+          echo "APP_VERSION_CODE=${VCODE}" >> $GITHUB_ENV
+          echo "APP_VERSION_NAME=${VNAME}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=${TAG_NAME}" >> $GITHUB_ENV
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "vcode=${VCODE}" >> $GITHUB_OUTPUT
+          echo "vname=${VNAME}" >> $GITHUB_OUTPUT
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -30,21 +49,16 @@ jobs:
 
       - name: Prepare Signing Keystore
         run: |
-          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
-            echo "Using keystore from GitHub Secrets"
-            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.jks
-            echo "RELEASE_KEYSTORE_PATH=/tmp/release.jks" >> $GITHUB_ENV
-            echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
-          else
-            echo "Generating fallback release keystore"
-            keytool -genkeypair -v -keystore /tmp/release.jks -alias salty -keyalg RSA -keysize 2048 -validity 10000 -storepass saltygraphics -keypass saltygraphics -dname "CN=SaltyGraphics, OU=MOTIONSALT, O=MOTIONSALT, L=Lagos, S=Lagos, C=NG"
-            echo "RELEASE_KEYSTORE_PATH=/tmp/release.jks" >> $GITHUB_ENV
-            echo "RELEASE_KEYSTORE_PASSWORD=saltygraphics" >> $GITHUB_ENV
-            echo "RELEASE_KEY_ALIAS=salty" >> $GITHUB_ENV
-            echo "RELEASE_KEY_PASSWORD=saltygraphics" >> $GITHUB_ENV
+          if [ -z "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "::error::RELEASE_KEYSTORE_BASE64 is missing! All builds must be signed with the stable release key."
+            exit 1
           fi
+          echo "Loading stable release keystore from secrets..."
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.jks
+          echo "RELEASE_KEYSTORE_PATH=/tmp/release.jks" >> $GITHUB_ENV
+          echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
 
       - name: Run Engine and JVM Compose Tests
         run: ./gradlew test --stacktrace
@@ -69,6 +83,13 @@ jobs:
           find app/build/outputs/apk/release -name "*.apk" -exec cp {} release-apks/ \;
           ls -la release-apks/
 
+      - name: Verify APK Signatures and Certificate Fingerprint
+        run: |
+          for apk in release-apks/*.apk; do
+            echo "=== Checking certificate for $apk ==="
+            apksigner verify --print-certs "$apk"
+          done
+
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -76,14 +97,19 @@ jobs:
           path: release-apks/*.apk
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Salty Graphics Beta ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Salty Graphics Beta ${{ env.RELEASE_TAG }}
           body: |
-            ### Salty Graphics Android Beta Release
-            Built automatically by GitHub Actions CI.
+            ### Salty Graphics Android Beta Release (${{ env.RELEASE_TAG }})
+            Built automatically by GitHub Actions CI for Victor (MOTIONSALT).
+            
+            - **Version Code:** ${{ env.APP_VERSION_CODE }}
+            - **Version Name:** ${{ env.APP_VERSION_NAME }}
+            - **Certificate SHA-256:** `96:65:26:AF:4F:0A:85:3C:95:AA:8E:16:37:3F:ED:70:9D:58:A8:8D:6B:27:54:6C:63:93:E9:E3:9A:FC:47:85`
+            - **Certificate SHA-1:** `D9:62:D4:EE:EA:6F:B7:6F:FC:0B:08:80:A2:00:BA:AA:91:14:2B:61`
             
             **Included APKs:**
             - Universal APK (runs on all supported devices)
@@ -94,6 +120,8 @@ jobs:
             Install directly on your Android phone.
           files: release-apks/*.apk
           draft: false
-          prerelease: false
+          prerelease: true
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

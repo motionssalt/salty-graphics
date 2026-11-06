@@ -9,12 +9,15 @@ android {
     namespace = "com.motionssalt.saltygraphics"
     compileSdk = 35
 
+    val envVersionCode = (System.getenv("APP_VERSION_CODE") ?: project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 1
+    val envVersionName = (System.getenv("APP_VERSION_NAME") ?: project.findProperty("appVersionName") as String?) ?: "1.0.0-beta"
+
     defaultConfig {
         applicationId = "com.motionssalt.saltygraphics"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0-beta1"
+        versionCode = envVersionCode
+        versionName = envVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -79,6 +82,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
