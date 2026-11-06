@@ -194,7 +194,9 @@
     "F14"
   ],
   "next_steps": [
-    "Complete R11 vector editing, R13 portable archives, then R14 verification/release."
+    "Resume R13: portable media/font/document/action-tree archives and Save project entry points.",
+    "R14: re-audit inherited acceptance gaps, run all tests, establish stable signing, publish next versioned release.",
+    "Do not start UI refinement in this fix round."
   ],
   "decisions": [
     {
@@ -306,8 +308,8 @@
       {
         "id": "R11",
         "title": "Vector creation and editing (reference: Keyflaw's vector tool)",
-        "status": "in_progress",
-        "notes": "R11 regression verification found floating-point drift could turn a moved corner into a microscopic smooth point. Preserve collapsed handles exactly and tolerate subpixel numerical noise; added regression and rerunning touch test. R13/R14 pending. No new release or UI refinement."
+        "status": "done",
+        "notes": "Verified in green Actions 42270618002: debug/release JVM tests and APK compilation. Touch tests add points, drag, switch corner/smooth, open/close paths, add/select a second path, remove, undo and archive-reload. Native tests verify fill/stroke, multi-contour SVG, reject entities/external resources; engine tests verify shape-preserving cubic splits, fractional corner moves, inverse transforms and multi-path roundtrip. Vector creation, six in-pane tabs, numeric point/handle values and native export renderer implemented. Basic SVG curves/arcs import as bounded editable sampled polylines."
       },
       {
         "id": "R12",
@@ -333,46 +335,50 @@
       "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
-      "R9-R14 pending: visual ratios, complete text/font workflow, vector editing, font bundles/multi-import, portable project export entry points, and final release remain unfinished. This is a partial checkpoint, not a completed fix round.",
-      "CI currently generates a fresh fallback signing key because release signing secrets were not available to that run. Do not treat its APK artifacts as a stable in-place upgrade. R14 must establish persistent signing and explicitly address compatibility with beta1 before publishing.",
-      "R1-R5 are marked done by inherited state; this run restored their compilation and ran their existing tests but did not re-audit every original acceptance criterion. Final R14 audit must check remaining universal numeric-control coverage, ruler fling/mapping, and untouched-seed migration safety.",
-      "Existing scaffold text/vector/media rendering limitations remain until R10/R11/R13. No claim of complete editor functionality or full .sg portability is made for this checkpoint."
+      "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
+      "CI still uses the inherited freshly generated fallback signing key. Its artifacts are NOT stable in-place upgrades. R14 must establish persistent signing and address beta1 certificate compatibility before publishing.",
+      "Inherited R1-R10/R12 done markers are not a fresh full acceptance audit. R14 must verify universal numeric control coverage, ruler momentum, safe untouched-seed identification (current name/count heuristic is unsafe), text wrapping/box-mode rendering, font metadata/duplicates/removal/embedding and complete 8-10 font licensing.",
+      "R12 currently bundles seven fonts, below the requested approximate 8-10. The inherited generic license notice is not a substitute for every upstream font licence; verify and correct before release.",
+      "Basic SVG import flattens curves/arcs to editable polylines with target 2px spacing capped at 2048 points per contour; gradients, external resources and scripts are intentionally rejected. No layered SVG import.",
+      "The vector editing overlay currently cancels multi-touch rather than forwarding pinch/pan; audit gesture coexistence in R14 against the original always-available pinch requirement. Outside vector-edit mode the existing canvas gestures remain.",
+      "No phone testing performed, as requested. UI refinement not started."
     ],
-    "last_updated": "2026-11-06T18:25:41.716491+00:00",
-    "last_session_note": "R11 regression verification found floating-point drift could turn a moved corner into a microscopic smooth point. Preserve collapsed handles exactly and tolerate subpixel numerical noise; added regression and rerunning touch test. R13/R14 pending. No new release or UI refinement.",
+    "last_updated": "2026-11-06T18:32:12.859124+00:00",
+    "last_session_note": "PARTIAL CHECKPOINT, NOT ROUND COMPLETION. Resumed at R11 and completed it with Actions verification 42270618002. Restored inherited failing R10/R12 compilation and tests; isolated Robolectric classes rather than disabling tests. R1-R10/R12 inherited done markers retained, not fully re-audited. Resume at R13 portable .sg assets/history and export/import entry points; then R14 acceptance audit, stable signing and new release. No new release and no UI refinement. See known_issues for inherited gaps requiring R14 audit.",
     "verification": {
-      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42255375629",
+      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42270618002",
+      "commit": "2522962a8b8fcf3cac5fb41ed142fe2979ea3527",
       "result": "success",
       "jvm_test_counts": {
-        "engine:testReleaseUnitTest": {
-          "tests": 10,
+        "app/build/test-results/testDebugUnitTest": {
+          "tests": 23,
           "failures": 0,
           "errors": 0,
           "skipped": 0
         },
-        "engine:testDebugUnitTest": {
-          "tests": 10,
+        "app/build/test-results/testReleaseUnitTest": {
+          "tests": 23,
           "failures": 0,
           "errors": 0,
           "skipped": 0
         },
-        "app:testReleaseUnitTest": {
-          "tests": 13,
+        "engine/build/test-results/testDebugUnitTest": {
+          "tests": 14,
           "failures": 0,
           "errors": 0,
           "skipped": 0
         },
-        "app:testDebugUnitTest": {
-          "tests": 13,
+        "engine/build/test-results/testReleaseUnitTest": {
+          "tests": 14,
           "failures": 0,
           "errors": 0,
           "skipped": 0
         }
       },
-      "release_apks": "universal and arm64-v8a, armeabi-v7a, x86_64 built as CI artifacts only; not published",
+      "release_apks": "Universal, arm64-v8a, armeabi-v7a, x86_64 built as Actions artifacts only; no new release published",
       "device_testing": "not performed (per brief)"
     }
   },
-  "last_updated": "2026-11-06T16:52:22.723361+00:00",
-  "last_session_note": "CHECKPOINT, NOT ROUND COMPLETION. R6-R8 implemented and CI-verified this run; inherited R1-R5 done markers retained without redoing them. Resume at R9 (first non-done item). R9-R14 remain pending, not falsely blocked. No new release was published. Existing beta1 release/assets preserved by tag-only publish workflow. Last verified code CI: https://github.com/motionssalt/salty-graphics/actions/runs/42255375629. UI refinement not started."
+  "last_updated": "2026-11-06T18:32:12.859124+00:00",
+  "last_session_note": "PARTIAL CHECKPOINT, NOT ROUND COMPLETION. Resumed at R11 and completed it with Actions verification 42270618002. Restored inherited failing R10/R12 compilation and tests; isolated Robolectric classes rather than disabling tests. R1-R10/R12 inherited done markers retained, not fully re-audited. Resume at R13 portable .sg assets/history and export/import entry points; then R14 acceptance audit, stable signing and new release. No new release and no UI refinement. See known_issues for inherited gaps requiring R14 audit."
 }
