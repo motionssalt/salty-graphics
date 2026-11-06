@@ -333,8 +333,8 @@
       "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-06T16:18:00.446176+00:00",
-    "last_session_note": "R8 in progress: persisted Dark/Light/System with Dark default, root observes choice instantly, M3 semantic UI colours across screens, dynamic colours retained, safe-drawing root and system-bar contrast. Adding theme restart tests."
+    "last_updated": "2026-11-06T16:20:56.235611+00:00",
+    "last_session_note": "R8 CI found a stale explicit fixed-colour import after semantic migration; removed it. Re-running all theme and screen tests before advancing."
   },
   "last_updated": "2026-11-06T14:51:00Z",
   "last_session_note": "Starting Fix Round 1 queue."

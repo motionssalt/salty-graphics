@@ -14,7 +14,6 @@ import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
 import com.motionssalt.saltygraphics.engine.action.PasteMode
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
-import com.motionssalt.saltygraphics.theme.colors.background
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
