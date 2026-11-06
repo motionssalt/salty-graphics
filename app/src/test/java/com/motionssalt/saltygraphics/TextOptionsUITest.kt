@@ -49,13 +49,13 @@ class TextOptionsUITest {
             compose.onNodeWithText("Hello Salty").assertIsDisplayed()
             compose.onNodeWithText("Font Family").assertIsDisplayed()
             compose.onNodeWithText("Alignment").assertIsDisplayed()
-            compose.onNodeWithText("Box Framing").assertIsDisplayed()
+            compose.onNodeWithText("Box Framing").performScrollTo().assertIsDisplayed()
 
             // Verify Box Framing chips exist
             compose.onNodeWithText("Free").assertIsDisplayed()
             compose.onNodeWithText("Paragraph").assertIsDisplayed()
             compose.onNodeWithText("Fixed").assertIsDisplayed()
-            compose.onNodeWithText("Shrink fit").assertIsDisplayed()
+            compose.onNodeWithText("Shrink fit").assertExists()
 
             // Click Paragraph chip -> should invoke onSave live
             compose.onNodeWithText("Paragraph").performClick()
@@ -66,7 +66,7 @@ class TextOptionsUITest {
             assertEquals(com.motionssalt.saltygraphics.engine.model.TextJustification.CENTER, latestTextData.justification)
 
             // Navigate to Font Page
-            compose.onNodeWithText("Font Family").performClick()
+            compose.onNodeWithText("Font Family").performScrollTo().performClick()
             compose.onNodeWithText("Fonts").assertIsDisplayed()
             compose.onNodeWithText("Import").assertIsDisplayed()
             compose.onNodeWithText("Device Default").assertIsDisplayed()

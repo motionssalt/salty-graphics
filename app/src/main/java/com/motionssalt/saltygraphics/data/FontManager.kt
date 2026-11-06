@@ -192,7 +192,8 @@ object FontManager {
 
                 // Determine font family name from file name
                 val rawName = fileName.substringBeforeLast('.')
-                val cleanFamilyName = rawName.replace('_', ' ').replace('-', ' ').trim()
+                val cleanFamilyName = rawName.replace(Regex("(?i)[-_ ]+(Regular|Bold|Italic|Condensed)$"), "")
+                    .replace('_', ' ').replace('-', ' ').trim()
                 val style = if (rawName.contains("Bold", ignoreCase = true)) "Bold"
                 else if (rawName.contains("Italic", ignoreCase = true)) "Italic"
                 else if (rawName.contains("Condensed", ignoreCase = true)) "Condensed"

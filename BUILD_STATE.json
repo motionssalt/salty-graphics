@@ -338,8 +338,8 @@
       "R1-R5 are marked done by inherited state; this run restored their compilation and ran their existing tests but did not re-audit every original acceptance criterion. Final R14 audit must check remaining universal numeric-control coverage, ruler fling/mapping, and untouched-seed migration safety.",
       "Existing scaffold text/vector/media rendering limitations remain until R10/R11/R13. No claim of complete editor functionality or full .sg portability is made for this checkpoint."
     ],
-    "last_updated": "2026-11-06T17:47:28.330251+00:00",
-    "last_session_note": "Resumed from existing queue at R11, first non-done item. Preserve inherited R1-R10/R12 markers; verify current CI and implement vector editing before R13. R14 audits inherited acceptance and signing. UI refinement not started.",
+    "last_updated": "2026-11-06T17:52:28.893107+00:00",
+    "last_session_note": "Baseline repair before R11: missing serialization import restored compilation; inherited tests exposed family/style parsing mismatch and text path dropdown Compose idle loop. Reused shared dropdown and corrected family suffix parsing; awaiting CI. R11 not implemented yet.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42255375629",
       "result": "success",

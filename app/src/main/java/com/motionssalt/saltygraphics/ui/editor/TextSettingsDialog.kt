@@ -326,43 +326,12 @@ fun TextSettingsDialog(
                 color = colors.primary
             )
 
-            var pathDropdownExpanded by remember { mutableStateOf(false) }
-            val selectedPathLayer = candidatePathLayers.find { it.id == textData.followPathLayerId }
-
-            ExposedDropdownMenuBox(
-                expanded = pathDropdownExpanded,
-                onExpandedChange = { pathDropdownExpanded = !pathDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedPathLayer?.name ?: "None (Flat text)",
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pathDropdownExpanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
-                )
-                ExposedDropdownMenu(
-                    expanded = pathDropdownExpanded,
-                    onDismissRequest = { pathDropdownExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("None (Flat text)") },
-                        onClick = {
-                            updateData(textData.copy(followPathLayerId = null))
-                            pathDropdownExpanded = false
-                        }
-                    )
-                    candidatePathLayers.forEach { layer ->
-                        DropdownMenuItem(
-                            text = { Text("${layer.name} (${layer.type.displayName})") },
-                            onClick = {
-                                updateData(textData.copy(followPathLayerId = layer.id))
-                                pathDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
+            val pathOptions = listOf("None (Flat text)") + candidatePathLayers.map { it.name }
+            val selectedPathIndex = candidatePathLayers.indexOfFirst { it.id == textData.followPathLayerId } + 1
+            com.motionssalt.saltygraphics.ui.controls.DropdownControl(
+                label = "Path layer", options = pathOptions, selectedIndex = selectedPathIndex,
+                onOptionSelected = { index -> updateData(textData.copy(followPathLayerId = candidatePathLayers.getOrNull(index - 1)?.id)) }
+            )
 
             if (textData.followPathLayerId != null) {
                 RulerSlider(
