@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.platform.LocalContext
+import com.motionssalt.saltygraphics.data.FontManager
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.theme.*
 
@@ -34,6 +36,7 @@ fun CanvasView(
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     val fit = if (viewport.width > 0 && viewport.height > 0)
         minOf(viewport.width / document.canvasSize.width.toFloat(), viewport.height / document.canvasSize.height.toFloat()) * .94f else 1f
@@ -189,13 +192,71 @@ fun CanvasView(
                         }
                         LayerType.TEXT -> {
                             val textData = layer.textData ?: TextLayerData()
-                            // Represent text layer bounds visually
-                            drawRoundRect(
-                                color = safeColor(textData.color).copy(alpha = 0.85f),
-                                topLeft = Offset(-150f, -30f),
-                                size = Size(300f, 60f),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f)
-                            )
+                            drawIntoCanvas { canvas ->
+                                val nativeCanvas = canvas.nativeCanvas
+                                val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                                    textSize = textData.fontSize
+                                    color = safeColor(textData.color).toArgb()
+                                    letterSpacing = textData.letterSpacing / 1000f
+                                    textAlign = when (textData.justification) {
+                                        TextJustification.LEFT -> android.graphics.Paint.Align.LEFT
+                                        TextJustification.RIGHT -> android.graphics.Paint.Align.RIGHT
+                                        else -> android.graphics.Paint.Align.CENTER
+                                    }
+                                    isFakeBoldText = textData.isBold
+                                }
+
+                                val allFonts = FontManager.getAllFonts(context)
+                                val matchedFont = allFonts.find { it.familyName.equals(textData.fontFamily, ignoreCase = true) }
+                                paint.typeface = FontManager.getTypeface(context, matchedFont)
+
+                                val pathLayer = if (textData.followPathLayerId != null) document.findLayerById(textData.followPathLayerId!!) else null
+                                val vectorPath = pathLayer?.vectorPathData ?: pathLayer?.shapeData?.toVectorPath()
+
+                                if (vectorPath != null && vectorPath.points.size >= 2) {
+                                    val path = android.graphics.Path()
+                                    val points = vectorPath.points
+                                    path.moveTo(points[0].x, points[0].y)
+                                    val segments = if (vectorPath.isClosed) points.size else points.size - 1
+                                    for (i in 0 until segments) {
+                                        val p0 = points[i]
+                                        val p1 = points[(i + 1) % points.size]
+                                        path.cubicTo(p0.outHandleX, p0.outHandleY, p1.inHandleX, p1.inHandleY, p1.x, p1.y)
+                                    }
+                                    if (vectorPath.isClosed) path.close()
+
+                                    val measure = android.graphics.PathMeasure(path, false)
+                                    val pathLen = measure.length
+                                    val hOffset = pathLen * textData.pathOffsetPercent
+
+                                    if (textData.hasOutline) {
+                                        val outlinePaint = android.graphics.Paint(paint).apply {
+                                            style = android.graphics.Paint.Style.STROKE
+                                            strokeWidth = textData.outlineWidth
+                                            color = safeColor(textData.outlineColor).toArgb()
+                                        }
+                                        nativeCanvas.drawTextOnPath(textData.text, path, hOffset, 0f, outlinePaint)
+                                    }
+                                    nativeCanvas.drawTextOnPath(textData.text, path, hOffset, 0f, paint)
+                                } else {
+                                    val x = when (textData.justification) {
+                                        TextJustification.LEFT -> -textData.boxWidth / 2f
+                                        TextJustification.RIGHT -> textData.boxWidth / 2f
+                                        else -> 0f
+                                    }
+                                    val y = (paint.descent() + paint.ascent()) / -2f
+
+                                    if (textData.hasOutline) {
+                                        val outlinePaint = android.graphics.Paint(paint).apply {
+                                            style = android.graphics.Paint.Style.STROKE
+                                            strokeWidth = textData.outlineWidth
+                                            color = safeColor(textData.outlineColor).toArgb()
+                                        }
+                                        nativeCanvas.drawText(textData.text, x, y, outlinePaint)
+                                    }
+                                    nativeCanvas.drawText(textData.text, x, y, paint)
+                                }
+                            }
                         }
                         LayerType.MEDIA -> {
                             drawRect(

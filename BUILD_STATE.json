@@ -300,8 +300,8 @@
       {
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -312,8 +312,8 @@
       {
         "id": "R12",
         "title": "Built-in fonts and importing several fonts at once",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Bundled 7 open-license fonts (Inter, Montserrat, Playfair Display, Oswald, Dancing Script, JetBrains Mono, DejaVu Serif) in assets/fonts and added docs/licenses/FONTS_OFL.txt. Built FontManager supporting multi-file TTF/OTF import with magic byte header validation, size checks, Typeface test parsing, duplicate prevention, deletion, and typeface caching. Created FontSelectionPage with search, style chips, and built-in/imported tags. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R13",

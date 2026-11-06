@@ -276,6 +276,7 @@ fun EditorScreen(
                     )
                     recordAndAutoSave("Add Text Layer", doc.addLayer(newLayer, activeGroupId))
                     selectedLayerIds = setOf(newLayer.id)
+                    isTextSettingsOpen = true
                 },
                 onAddAdjustment = {
                     val newLayer = Layer(
@@ -388,7 +389,6 @@ fun EditorScreen(
             onSave = { newTextData ->
                 val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(textData = newTextData) }
                 recordAndAutoSave("Update Text Settings", updated)
-                isTextSettingsOpen = false
             },
             onDismiss = { isTextSettingsOpen = false }
         )
