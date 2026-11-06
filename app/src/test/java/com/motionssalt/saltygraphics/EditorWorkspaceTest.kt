@@ -6,7 +6,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import org.junit.Before
+import org.junit.After
+import org.robolectric.Robolectric
+import org.robolectric.android.controller.ActivityController
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.ui.editor.*
 import com.motionssalt.saltygraphics.engine.action.ActionTree
@@ -21,12 +27,15 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w1280dp-h1000dp-mdpi")
 class EditorWorkspaceTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createEmptyComposeRule()
+    private lateinit var controller: ActivityController<ComponentActivity>
+    @Before fun startActivity() { controller = Robolectric.buildActivity(ComponentActivity::class.java).setup() }
+    @After fun stopActivity() { controller.pause().stop().destroy() }
 
     @Test fun gridsAndPreviewStayInsideUsableBoundsAcrossScreenClasses() {
         var dimensions by mutableStateOf(320 to 480)
         var selected by mutableStateOf<Layer?>(null)
-        compose.setContent {
+        controller.get().setContent {
             MaterialTheme {
                 Box(Modifier.requiredSize(dimensions.first.dp, dimensions.second.dp)
                     .windowInsetsPadding(WindowInsets(left = 10.dp, top = 24.dp, right = 10.dp, bottom = 32.dp))) {
@@ -65,7 +74,7 @@ class EditorWorkspaceTest {
         val layer = Layer(type = LayerType.TEXT, textData = TextLayerData())
         val tree = ActionTree(ProjectDocument(layers = listOf(layer)))
         var doc by mutableStateOf(tree.currentDocument)
-        compose.setContent {
+        controller.get().setContent {
             MaterialTheme {
                 Box(Modifier.requiredSize(320.dp, 260.dp)) {
                     BottomPanel(doc.layers.firstOrNull(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {

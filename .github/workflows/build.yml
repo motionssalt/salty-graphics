@@ -46,8 +46,19 @@ jobs:
             echo "RELEASE_KEY_PASSWORD=saltygraphics" >> $GITHUB_ENV
           fi
 
-      - name: Run Engine Tests
+      - name: Run Engine and JVM Compose Tests
         run: ./gradlew test --stacktrace
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/test-results/
+            engine/build/test-results/
+            app/build/reports/tests/
+            engine/build/reports/tests/
 
       - name: Build Release APKs
         run: ./gradlew assembleRelease --stacktrace
