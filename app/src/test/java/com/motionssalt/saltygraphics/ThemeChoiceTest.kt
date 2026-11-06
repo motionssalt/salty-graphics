@@ -37,6 +37,9 @@ class ThemeChoiceTest {
             SaltyGraphicsTheme(darkTheme = choice.isDark(systemDark), dynamicColor = false) {
                 val color = MaterialTheme.colorScheme.background
                 SideEffect { background = color }
+                androidx.compose.material3.Surface(color = color) {
+                    androidx.compose.material3.Text("Theme probe")
+                }
             }
         }
         try {
