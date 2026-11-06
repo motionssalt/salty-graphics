@@ -214,16 +214,23 @@ fun CanvasView(
                                 val vectorPath = pathLayer?.vectorPathData ?: pathLayer?.shapeData?.toVectorPath()
 
                                 if (vectorPath != null && vectorPath.points.size >= 2) {
-                                    val path = android.graphics.Path()
-                                    val points = vectorPath.points
-                                    path.moveTo(points[0].x, points[0].y)
-                                    val segments = if (vectorPath.isClosed) points.size else points.size - 1
-                                    for (i in 0 until segments) {
-                                        val p0 = points[i]
-                                        val p1 = points[(i + 1) % points.size]
-                                        path.cubicTo(p0.outHandleX, p0.outHandleY, p1.inHandleX, p1.inHandleY, p1.x, p1.y)
+                                    val path = nativeVectorPath(vectorPath)
+                                    // Referenced geometry includes the target layer transform, expressed in text-local coordinates.
+                                    val targetMatrix = android.graphics.Matrix().apply {
+                                        setTranslate(pathLayer!!.transform.translationX, pathLayer.transform.translationY)
+                                        preRotate(pathLayer.transform.rotationDegrees)
+                                        preScale(pathLayer.transform.scaleX, pathLayer.transform.scaleY)
                                     }
-                                    if (vectorPath.isClosed) path.close()
+                                    val textMatrix = android.graphics.Matrix().apply {
+                                        setTranslate(layer.transform.translationX, layer.transform.translationY)
+                                        preRotate(layer.transform.rotationDegrees)
+                                        preScale(layer.transform.scaleX, layer.transform.scaleY)
+                                    }
+                                    val inverse = android.graphics.Matrix()
+                                    if (textMatrix.invert(inverse)) {
+                                        inverse.preConcat(targetMatrix)
+                                        path.transform(inverse)
+                                    }
 
                                     val measure = android.graphics.PathMeasure(path, false)
                                     val pathLen = measure.length

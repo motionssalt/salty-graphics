@@ -21,7 +21,7 @@ enum class VectorTool(val label: String, val hint: String) {
 @Composable
 fun VectorCreationPage(onChoose: (String) -> Unit, onBack: () -> Unit) {
     PanelPage("Create vector", onBack, scrollable = false) {
-        listOf("Draw with points", "Rectangle", "Ellipse", "Polygon", "Star", "Import SVG").chunked(2).forEach { row ->
+        listOf("Draw with points", "Rectangle", "Ellipse", "Polygon", "Star", "Import SVG").chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 row.forEach { label -> OutlinedButton(onClick = { onChoose(label) }, modifier = Modifier.weight(1f)) { Text(label) } }
             }

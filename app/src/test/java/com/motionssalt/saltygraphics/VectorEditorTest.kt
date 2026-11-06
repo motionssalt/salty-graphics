@@ -54,7 +54,9 @@ class VectorEditorTest {
         } }
         try {
             val handles=compose.onNodeWithTag("vector_handles")
-            handles.performTouchInput { click(Offset(140f,170f));click(Offset(260f,220f)) }
+            handles.performTouchInput { click(Offset(140f,170f)) }
+            compose.waitForIdle()
+            handles.performTouchInput { click(Offset(260f,220f)) }
             compose.runOnIdle{assertEquals(2,layer.editablePaths[0].points.size);assertEquals(3,tree.nodes.size);tool=VectorTool.SELECT}
             val xBefore=layer.editablePaths[0].points[0].x
             handles.performTouchInput { down(Offset(140f,170f));moveTo(Offset(170f,190f),200);up() }

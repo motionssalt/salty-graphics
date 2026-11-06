@@ -103,6 +103,9 @@ fun ExportScreen(
                         canvas.drawRect(-s.width / 2f, -s.height / 2f, s.width / 2f, s.height / 2f, paint)
                     }
                 }
+                LayerType.VECTOR -> {
+                    layer.editablePaths.forEach { path -> com.motionssalt.saltygraphics.ui.editor.drawNativeVector(canvas, path, layer.opacity) }
+                }
                 LayerType.TEXT -> {
                     val t = layer.textData
                     paint.color = (t?.color ?: 0xFFFFFFFF).toInt()
