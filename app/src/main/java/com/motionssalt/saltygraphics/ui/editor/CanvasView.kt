@@ -272,13 +272,14 @@ fun CanvasView(
                                 size = Size(scaledW, scaledH)
                             )
                         }
-                        LayerType.VECTOR, LayerType.GROUP -> {
-                            drawRect(
-                                color = colors.secondary.copy(alpha = 0.5f),
-                                topLeft = Offset(-100f, -100f),
-                                size = Size(200f, 200f)
-                            )
+                        LayerType.VECTOR -> {
+                            drawIntoCanvas { canvas ->
+                                layer.editablePaths.forEach { data ->
+                                    drawNativeVector(canvas.nativeCanvas, data, layer.opacity)
+                                }
+                            }
                         }
+                        LayerType.GROUP -> Unit
                         LayerType.QUARANTINED -> {
                             // Show harmless quarantined placeholder
                             drawRoundRect(

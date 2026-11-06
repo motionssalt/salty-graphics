@@ -1,6 +1,10 @@
 package com.motionssalt.saltygraphics.ui.editor
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +31,7 @@ fun EditorScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     var projectDocument by remember { mutableStateOf<ProjectDocument?>(null) }
@@ -53,6 +58,12 @@ fun EditorScreen(
     var isBlendingOpen by remember { mutableStateOf(false) }
     var isMaskOpen by remember { mutableStateOf(false) }
     var isProjectSettingsOpen by remember { mutableStateOf(false) }
+    var isVectorMenuOpen by remember { mutableStateOf(false) }
+    var isVectorSettingsOpen by remember { mutableStateOf(false) }
+    var vectorTool by remember { mutableStateOf(VectorTool.SELECT) }
+    var vectorPathIndex by remember { mutableIntStateOf(0) }
+    var vectorPointIndex by remember { mutableStateOf<Int?>(null) }
+    var vectorDraft by remember { mutableStateOf<Layer?>(null) }
     var isActionTreeOpen by remember { mutableStateOf(false) }
 
     // Load project and init action tree
@@ -77,9 +88,24 @@ fun EditorScreen(
         }
     }
 
+    val svgLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) coroutineScope.launch {
+            runCatching {
+                val paths = context.contentResolver.openInputStream(uri)?.use { SvgVectorImporter.parse(it) }
+                    ?: error("Cannot read SVG")
+                val current = projectDocument ?: return@launch
+                val newLayer = Layer(name = "Imported SVG", type = LayerType.VECTOR).withVectorPaths(paths)
+                recordAndAutoSave("Import SVG", current.addLayer(newLayer, activeGroupId))
+                selectedLayerIds = setOf(newLayer.id); vectorPathIndex = 0; vectorPointIndex = null
+                isVectorMenuOpen = false; isVectorSettingsOpen = true
+            }.onFailure { Toast.makeText(context, it.message ?: "Invalid SVG", Toast.LENGTH_LONG).show() }
+        }
+    }
+
     // Handle nested group Back navigation
     BackHandler {
-        if (isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
+        if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
+            isVectorMenuOpen = false; isVectorSettingsOpen = false; vectorDraft = null
             isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
         } else if (activeGroupId != null) {
             activeGroupId = null // Return to parent document
@@ -128,7 +154,7 @@ fun EditorScreen(
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
                 onExportClick = { onNavigateToExport(projectId) },
-                onSettingsClick = { isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isProjectSettingsOpen = true },
+                onSettingsClick = { isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isProjectSettingsOpen = true },
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },
                 onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.1f) },
                 onFitToScreen = {
@@ -154,7 +180,7 @@ fun EditorScreen(
 
         ) {
             CanvasView(
-                document = doc,
+                document = vectorDraft?.let { draft -> doc.updateLayer(draft.id) { draft } } ?: doc,
                 selectedLayerIds = selectedLayerIds,
                 zoom = zoom,
                 panOffset = panOffset,
@@ -172,6 +198,13 @@ fun EditorScreen(
                     recordAndAutoSave("Transform Layer", updated)
                 }
             )
+
+            if (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) {
+                VectorCanvasOverlay(currentSelectedLayer, doc.canvasSize, vectorPathIndex, vectorPointIndex, vectorTool,
+                    zoom, panOffset, { vectorPointIndex = it }, { vectorDraft = it },
+                    { changed -> recordAndAutoSave("Edit vector points", doc.updateLayer(changed.id) { changed }) },
+                    { isVectorSettingsOpen = false; vectorDraft = null })
+            }
 
             // Right-side Layers Panel Drawer
             if (isLayersPanelOpen) {
@@ -253,8 +286,31 @@ fun EditorScreen(
             },
 
             panel = {
-                val pageOpen = isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen
-                if (isProjectSettingsOpen) {
+                val pageOpen = isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen
+                if (isVectorMenuOpen) {
+                    VectorCreationPage(onChoose = { choice ->
+                        if (choice == "Import SVG") svgLauncher.launch(arrayOf("image/svg+xml", "text/xml", "application/xml", "application/octet-stream"))
+                        else {
+                            val path = when (choice) {
+                                "Rectangle" -> ShapeData(type = ShapeType.RECTANGLE).toVectorPath()
+                                "Ellipse" -> ShapeData(type = ShapeType.CIRCLE).toVectorPath()
+                                "Polygon" -> ShapeData(type = ShapeType.POLYGON).toVectorPath()
+                                "Star" -> ShapeData(type = ShapeType.STAR).toVectorPath()
+                                else -> VectorPathData()
+                            }
+                            val layer = Layer(name = choice, type = LayerType.VECTOR, vectorPathData = path)
+                            recordAndAutoSave("Add vector", doc.addLayer(layer, activeGroupId))
+                            selectedLayerIds = setOf(layer.id); vectorPathIndex = 0; vectorPointIndex = null
+                            vectorTool = if (choice == "Draw with points") VectorTool.ADD else VectorTool.SELECT
+                            isVectorMenuOpen = false; isVectorSettingsOpen = true
+                        }
+                    }, onBack = { isVectorMenuOpen = false })
+                } else if (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) {
+                    VectorPage(currentSelectedLayer, vectorPathIndex, vectorPointIndex, vectorTool,
+                        { vectorPathIndex = it }, { vectorPointIndex = it }, { vectorTool = it },
+                        { description, layer -> recordAndAutoSave(description, doc.updateLayer(layer.id) { layer }) },
+                        { isVectorSettingsOpen = false })
+                } else if (isProjectSettingsOpen) {
                     ProjectSettingsPage(doc, { recordAndAutoSave("Project settings", it) }, { isProjectSettingsOpen = false })
                 } else if (!pageOpen) {
 
@@ -295,19 +351,12 @@ fun EditorScreen(
                     recordAndAutoSave("Add Shape Layer", doc.addLayer(newLayer, activeGroupId))
                     selectedLayerIds = setOf(newLayer.id)
                 },
-                onAddVector = {
-                    val newLayer = Layer(
-                        name = "Vector Path ${doc.layers.size + 1}",
-                        type = LayerType.VECTOR,
-                        vectorPathData = VectorPathData()
-                    )
-                    recordAndAutoSave("Add Vector Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                },
+                onAddVector = { isVectorMenuOpen = true },
                 onEditLayer = {
                     when (currentSelectedLayer?.type) {
                         LayerType.TEXT -> isTextSettingsOpen = true
                         LayerType.SHAPE -> isShapeSettingsOpen = true
+                        LayerType.VECTOR -> { vectorPathIndex = 0; vectorPointIndex = null; vectorTool = VectorTool.SELECT; isVectorSettingsOpen = true }
                         LayerType.GROUP -> activeGroupId = currentSelectedLayer.id
                         else -> {}
                     }
