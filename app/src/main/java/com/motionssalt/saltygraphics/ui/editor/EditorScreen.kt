@@ -256,13 +256,15 @@ fun EditorScreen(
                             recordAndAutoSave("Toggle Lock", updated)
                         },
                         onDeleteLayers = { ids ->
-                            val currentDoc = doc ?: return@LayersSidePanel
-                            var updated = currentDoc
-                            for (id in ids) {
-                                updated = updated.removeLayer(id)
+                            val currentDoc = doc
+                            if (currentDoc != null) {
+                                var updated = currentDoc
+                                for (id in ids) {
+                                    updated = updated.removeLayer(id)
+                                }
+                                selectedLayerIds = emptySet()
+                                recordAndAutoSave("Delete Layers", updated)
                             }
-                            selectedLayerIds = emptySet()
-                            recordAndAutoSave("Delete Layers", updated)
                         },
                         onRenameLayer = { id, newName ->
                             val updated = doc.updateLayer(id) { it.copy(name = newName) }
@@ -272,12 +274,14 @@ fun EditorScreen(
                             GlobalClipboard.copy(layer)
                         },
                         onPasteProperties = { mode ->
-                            val currentDoc = doc ?: return@LayersSidePanel
-                            var updated = currentDoc
-                            for (id in selectedLayerIds) {
-                                updated = updated.updateLayer(id) { GlobalClipboard.applyTo(it, mode) }
+                            val currentDoc = doc
+                            if (currentDoc != null) {
+                                var updated = currentDoc
+                                for (id in selectedLayerIds) {
+                                    updated = updated.updateLayer(id) { GlobalClipboard.applyTo(it, mode) }
+                                }
+                                recordAndAutoSave("Paste Properties (${mode.displayName})", updated)
                             }
-                            recordAndAutoSave("Paste Properties (${mode.displayName})", updated)
                         },
                         onMoveLayer = { from, to ->
                             val list = doc.activeLayers.toMutableList()
