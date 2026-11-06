@@ -50,31 +50,31 @@ private enum class HandleType {
     EDGE_RIGHT
 }
 
-fun toComposeBlendMode(mode: com.motionssalt.saltygraphics.engine.model.BlendMode): BlendMode {
+fun toComposeBlendMode(mode: com.motionssalt.saltygraphics.engine.model.BlendMode): androidx.compose.ui.graphics.BlendMode {
     return when (mode) {
-        com.motionssalt.saltygraphics.engine.model.BlendMode.NORMAL -> BlendMode.SrcOver
-        com.motionssalt.saltygraphics.engine.model.BlendMode.DARKEN -> BlendMode.Darken
-        com.motionssalt.saltygraphics.engine.model.BlendMode.MULTIPLY -> BlendMode.Multiply
-        com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_BURN -> BlendMode.ColorBurn
-        com.motionssalt.saltygraphics.engine.model.BlendMode.LINEAR_BURN -> BlendMode.Plus
-        com.motionssalt.saltygraphics.engine.model.BlendMode.LIGHTEN -> BlendMode.Lighten
-        com.motionssalt.saltygraphics.engine.model.BlendMode.SCREEN -> BlendMode.Screen
-        com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_DODGE -> BlendMode.ColorDodge
-        com.motionssalt.saltygraphics.engine.model.BlendMode.LINEAR_DODGE -> BlendMode.Plus
-        com.motionssalt.saltygraphics.engine.model.BlendMode.OVERLAY -> BlendMode.Overlay
-        com.motionssalt.saltygraphics.engine.model.BlendMode.SOFT_LIGHT -> BlendMode.Softlight
-        com.motionssalt.saltygraphics.engine.model.BlendMode.HARD_LIGHT -> BlendMode.Hardlight
-        com.motionssalt.saltygraphics.engine.model.BlendMode.VIVID_LIGHT -> BlendMode.Overlay
-        com.motionssalt.saltygraphics.engine.model.BlendMode.LINEAR_LIGHT -> BlendMode.Hardlight
-        com.motionssalt.saltygraphics.engine.model.BlendMode.PIN_LIGHT -> BlendMode.Darken
-        com.motionssalt.saltygraphics.engine.model.BlendMode.DIFFERENCE -> BlendMode.Difference
-        com.motionssalt.saltygraphics.engine.model.BlendMode.EXCLUSION -> BlendMode.Exclusion
-        com.motionssalt.saltygraphics.engine.model.BlendMode.SUBTRACT -> BlendMode.Difference
-        com.motionssalt.saltygraphics.engine.model.BlendMode.DIVIDE -> BlendMode.Screen
-        com.motionssalt.saltygraphics.engine.model.BlendMode.HUE -> BlendMode.Hue
-        com.motionssalt.saltygraphics.engine.model.BlendMode.SATURATION -> BlendMode.Saturation
-        com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR -> BlendMode.Color
-        com.motionssalt.saltygraphics.engine.model.BlendMode.LUMINOSITY -> BlendMode.Luminosity
+        com.motionssalt.saltygraphics.engine.model.BlendMode.NORMAL -> androidx.compose.ui.graphics.BlendMode.SrcOver
+        com.motionssalt.saltygraphics.engine.model.BlendMode.DARKEN -> androidx.compose.ui.graphics.BlendMode.Darken
+        com.motionssalt.saltygraphics.engine.model.BlendMode.MULTIPLY -> androidx.compose.ui.graphics.BlendMode.Multiply
+        com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_BURN -> androidx.compose.ui.graphics.BlendMode.ColorBurn
+        com.motionssalt.saltygraphics.engine.model.BlendMode.LINEAR_BURN -> androidx.compose.ui.graphics.BlendMode.Plus
+        com.motionssalt.saltygraphics.engine.model.BlendMode.LIGHTEN -> androidx.compose.ui.graphics.BlendMode.Lighten
+        com.motionssalt.saltygraphics.engine.model.BlendMode.SCREEN -> androidx.compose.ui.graphics.BlendMode.Screen
+        com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_DODGE -> androidx.compose.ui.graphics.BlendMode.ColorDodge
+        com.motionssalt.saltygraphics.engine.model.BlendMode.LINEAR_DODGE -> androidx.compose.ui.graphics.BlendMode.Plus
+        com.motionssalt.saltygraphics.engine.model.BlendMode.OVERLAY -> androidx.compose.ui.graphics.BlendMode.Overlay
+        com.motionssalt.saltygraphics.engine.model.BlendMode.SOFT_LIGHT -> androidx.compose.ui.graphics.BlendMode.Softlight
+        com.motionssalt.saltygraphics.engine.model.BlendMode.HARD_LIGHT -> androidx.compose.ui.graphics.BlendMode.Hardlight
+        com.motionssalt.saltygraphics.engine.model.BlendMode.VIVID_LIGHT -> androidx.compose.ui.graphics.BlendMode.Overlay
+        com.motionssalt.saltygraphics.engine.model.BlendMode.LINEAR_LIGHT -> androidx.compose.ui.graphics.BlendMode.Hardlight
+        com.motionssalt.saltygraphics.engine.model.BlendMode.PIN_LIGHT -> androidx.compose.ui.graphics.BlendMode.Darken
+        com.motionssalt.saltygraphics.engine.model.BlendMode.DIFFERENCE -> androidx.compose.ui.graphics.BlendMode.Difference
+        com.motionssalt.saltygraphics.engine.model.BlendMode.EXCLUSION -> androidx.compose.ui.graphics.BlendMode.Exclusion
+        com.motionssalt.saltygraphics.engine.model.BlendMode.SUBTRACT -> androidx.compose.ui.graphics.BlendMode.Difference
+        com.motionssalt.saltygraphics.engine.model.BlendMode.DIVIDE -> androidx.compose.ui.graphics.BlendMode.Screen
+        com.motionssalt.saltygraphics.engine.model.BlendMode.HUE -> androidx.compose.ui.graphics.BlendMode.Hue
+        com.motionssalt.saltygraphics.engine.model.BlendMode.SATURATION -> androidx.compose.ui.graphics.BlendMode.Saturation
+        com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR -> androidx.compose.ui.graphics.BlendMode.Color
+        com.motionssalt.saltygraphics.engine.model.BlendMode.LUMINOSITY -> androidx.compose.ui.graphics.BlendMode.Luminosity
     }
 }
 
@@ -534,7 +534,7 @@ fun CanvasView(
                                 val nativeCanvas = canvas.nativeCanvas
                                 val paint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
                                     textSize = textData.fontSize
-                                    color = safeColor(textData.textColor).toArgb()
+                                    color = safeColor(textData.color).toArgb()
                                     alpha = (layer.opacity * 255).roundToInt().coerceIn(0, 255)
                                     letterSpacing = textData.letterSpacing / 1000f
                                     textAlign = when (textData.justification) {

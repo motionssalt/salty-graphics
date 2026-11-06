@@ -288,8 +288,9 @@ class ProjectRepository(private val context: Context) {
         }
 
         // Save preview thumbnail
-        if (result.previewPng != null && result.previewPng.isNotEmpty()) {
-            File(thumbnailsDir, "$newId.png").writeBytes(result.previewPng)
+        val preview = result.previewPng
+        if (preview != null && preview.isNotEmpty()) {
+            File(thumbnailsDir, "$newId.png").writeBytes(preview)
         } else {
             ProjectThumbnailRenderer.saveThumbnail(context, doc)
         }

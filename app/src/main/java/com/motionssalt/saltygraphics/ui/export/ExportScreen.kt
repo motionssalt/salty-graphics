@@ -158,7 +158,7 @@ fun ExportScreen(
                 LayerType.TEXT -> {
                     val t = layer.textData
                     if (t != null) {
-                        paint.color = t.textColor.toInt()
+                        paint.color = t.color.toInt()
                         paint.textSize = t.fontSize
                         paint.textAlign = Paint.Align.CENTER
                         paint.isFakeBoldText = t.isBold

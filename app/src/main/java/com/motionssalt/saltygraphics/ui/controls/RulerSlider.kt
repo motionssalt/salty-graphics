@@ -38,7 +38,7 @@ fun RulerSlider(
     maxValue: Float,
     defaultValue: Float = minValue,
     step: Float = 1f,
-    unit: String = ,
+    unit: String = "",
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme

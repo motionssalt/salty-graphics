@@ -1,5 +1,6 @@
 package com.motionssalt.saltygraphics.ui.editor
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -106,17 +107,17 @@ fun EditorScreen(
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
-        val doc = projectDocument
-        if (uris.isNotEmpty() && doc != null) {
+        val currentDoc = projectDocument ?: return@rememberLauncherForActivityResult
+        if (uris.isNotEmpty()) {
             val result = MediaImporter.importMediaFromUris(
                 context = context,
-                projectId = doc.id,
+                projectId = currentDoc.id,
                 uris = uris,
-                canvasWidth = doc.canvasSize.width,
-                canvasHeight = doc.canvasSize.height
+                canvasWidth = currentDoc.canvasSize.width,
+                canvasHeight = currentDoc.canvasSize.height
             )
             if (result.importedLayers.isNotEmpty()) {
-                var updatedDoc = doc
+                var updatedDoc = currentDoc
                 for (layer in result.importedLayers) {
                     updatedDoc = updatedDoc.addLayer(layer, activeGroupId)
                 }

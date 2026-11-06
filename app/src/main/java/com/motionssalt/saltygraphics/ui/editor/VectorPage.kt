@@ -85,7 +85,7 @@ fun VectorPage(layer: Layer, pathIndex: Int, selectedPoint: Int?, tool: VectorTo
                         RulerSlider("Out Y",point.outHandleY,{change(point.copy(outHandleY=it))},-32768f,32768f,point.y,1f,"px")
                     }
                 }
-                "Transform" -> TransformPanel(layer.transform,{onUpdate("Vector transform",layer.copy(transform=it))},onBack)
+                "Transform" -> TransformPanel(layer.transform, onTransformChange = { onUpdate("Vector transform", layer.copy(transform = it)) }, onClose = onBack)
                 "Opacity" -> ProgressSliderControl("Opacity",layer.opacity*100f,{onUpdate("Vector opacity",layer.copy(opacity=it/100f))},0f,100f,100f,1f,"%")
             }
         }

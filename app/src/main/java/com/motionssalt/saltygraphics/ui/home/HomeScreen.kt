@@ -79,8 +79,9 @@ fun HomeScreen(
                 if (errorMsg != null) {
                     Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
                 }
-                if (successCount == 1 && lastImportedId != null) {
-                    onNavigateToEditor(lastImportedId)
+                val targetId = lastImportedId
+                if (successCount == 1 && targetId != null) {
+                    onNavigateToEditor(targetId)
                 } else if (successCount > 1) {
                     Toast.makeText(context, "Imported $successCount projects successfully", Toast.LENGTH_SHORT).show()
                 }

@@ -125,7 +125,7 @@ object ProjectThumbnailRenderer {
                 LayerType.TEXT -> {
                     val textData = layer.textData ?: TextLayerData()
                     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = textData.textColor.toInt()
+                        color = textData.color.toInt()
                         alpha = (layer.opacity * 255).toInt().coerceIn(0, 255)
                         textSize = maxOf(6f, textData.fontSize * scale)
                         textAlign = Paint.Align.CENTER
