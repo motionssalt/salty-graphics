@@ -122,7 +122,7 @@ class AspectRatioPickerTest {
 
             // Tap Create Canvas
             compose.onNodeWithText("Create Canvas").performClick()
-            compose.waitForIdle()
+            compose.waitUntil(5000) { createdProjectId != null }
 
             assertNotNull("Project must be created", createdProjectId)
             val doc = runBlocking { repo.getProject(createdProjectId!!) }
