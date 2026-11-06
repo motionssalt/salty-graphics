@@ -294,8 +294,8 @@
       {
         "id": "R9",
         "title": "Visual aspect ratio picker (New Project)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Implemented visual aspect ratio picker with true proportional mini shape tiles, horizontal row of most-used ratios, expandable grid with standard/social/paper categories, orientation rotate toggle (portrait <-> landscape), live-updating custom dimension tile with R5 tap-to-edit ValueEditorDialog. Verified with AspectRatioPickerTest (calculations, rotation, range validation, and canvas creation)."
       },
       {
         "id": "R10",
