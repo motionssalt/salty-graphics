@@ -246,8 +246,8 @@
       {
         "id": "R1",
         "title": "Fix the crash on creating text and shape layers (highest priority)",
-        "status": "in_progress",
-        "notes": "Diagnosed root cause: CanvasView and EffectSettingsSheet called Color(ULong) inline constructor passing ARGB value into internal colorSpace id field causing IllegalArgumentException: Unknown color space id when drawing. Also adding layer quarantine and local crash log."
+        "status": "done",
+        "notes": "Root cause identified: CanvasView and EffectSettingsSheet called Color(ULong) inline constructor passing ARGB value directly into internal Color.value, corrupting ColorSpace ID and triggering IllegalArgumentException on draw. Replaced with safeColor(argb.toInt()). Added QuarantinedLayerData and LayerType.QUARANTINED with recoverProjectDocument in SgProjectArchive to quarantine corrupt layers without crashing. Added structured local crash log in MainActivity and attached to DeviceInfoProvider. Verified with LayerRegressionTest passing all layer types and quarantine."
       },
       {
         "id": "R2",

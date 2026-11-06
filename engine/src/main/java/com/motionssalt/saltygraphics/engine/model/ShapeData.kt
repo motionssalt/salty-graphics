@@ -26,8 +26,8 @@ data class ShapeData(
     val sides: Int = 5,           // For polygon
     val starPoints: Int = 5,      // For star
     val starInnerRadiusRatio: Float = 0.5f,
-    val fillColor: Long = 0xFF00E5FF,   // ARGB
-    val strokeColor: Long = 0xFFFFFFFF,
+    val fillColor: Long = 0xFF00E5FFL,   // ARGB
+    val strokeColor: Long = 0xFFFFFFFFL,
     val strokeWidth: Float = 4f,
     val hasFill: Boolean = true,
     val hasStroke: Boolean = false

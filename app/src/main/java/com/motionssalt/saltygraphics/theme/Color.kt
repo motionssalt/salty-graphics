@@ -17,3 +17,12 @@ val SaltyError = Color(0xFFFF5252)
 val SaltyTextPrimary = Color(0xFFF0F4FC)
 val SaltyTextSecondary = Color(0xFF98A4BC)
 val SaltyTextTertiary = Color(0xFF64728C)
+
+/**
+ * Safely converts an ARGB Long (e.g. 0xFF00E5FFL) to a Compose Color in sRGB color space.
+ * Avoids the value class Color(ULong) constructor which incorrectly treats ARGB as ColorSpace ID.
+ */
+fun safeColor(argb: Long): Color = Color(argb.toInt())
+
+fun Long.toComposeColor(): Color = Color(this.toInt())
+

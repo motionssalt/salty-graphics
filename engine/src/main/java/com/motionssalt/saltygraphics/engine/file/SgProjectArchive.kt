@@ -1,10 +1,11 @@
 package com.motionssalt.saltygraphics.engine.file
 
-import com.motionssalt.saltygraphics.engine.model.ProjectDocument
+import com.motionssalt.saltygraphics.engine.model.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import java.io.*
+import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -65,6 +66,7 @@ object SgProjectArchive {
 
     /**
      * Reads a .sg ZIP container stream and returns the reconstructed ProjectDocument and asset map.
+     * Guaranteed crash-proof: individual corrupted layers are quarantined rather than failing the document.
      */
     fun importFromStream(inputStream: InputStream): Pair<ProjectDocument, Map<String, ByteArray>> {
         val zipIn = ZipInputStream(BufferedInputStream(inputStream))
@@ -89,8 +91,81 @@ object SgProjectArchive {
             throw IllegalArgumentException("Invalid .sg file: missing project.json document model")
         }
 
-        val document = json.decodeFromString<ProjectDocument>(projectJson)
+        val document = try {
+            json.decodeFromString<ProjectDocument>(projectJson)
+        } catch (e: Exception) {
+            recoverProjectDocument(projectJson, e)
+        }
+
         return Pair(document, assets)
+    }
+
+    /**
+     * Rescues a project document if full serialization fails due to one or more broken layers.
+     * Quarantines broken layers with error descriptions while preserving healthy layers.
+     */
+    fun recoverProjectDocument(rawJson: String, originalError: Exception): ProjectDocument {
+        return try {
+            val jsonTree = json.parseToJsonElement(rawJson).jsonObject
+            val id = jsonTree["id"]?.jsonPrimitive?.contentOrNull ?: UUID.randomUUID().toString()
+            val name = jsonTree["name"]?.jsonPrimitive?.contentOrNull ?: "Recovered Project"
+            val canvasSize = jsonTree["canvasSize"]?.let {
+                runCatching { json.decodeFromJsonElement<CanvasSize>(it) }.getOrNull()
+            } ?: CanvasSize()
+
+            val rawLayers = jsonTree["layers"]?.jsonArray ?: emptyList()
+            val recoveredLayers = rawLayers.mapIndexed { index, layerElement ->
+                try {
+                    json.decodeFromJsonElement<Layer>(layerElement)
+                } catch (layerEx: Exception) {
+                    val layerObj = layerElement as? JsonObject
+                    val layerId = layerObj?.get("id")?.jsonPrimitive?.contentOrNull ?: UUID.randomUUID().toString()
+                    val layerName = layerObj?.get("name")?.jsonPrimitive?.contentOrNull ?: "Layer ${index + 1}"
+                    Layer(
+                        id = layerId,
+                        name = "$layerName [Quarantined]",
+                        type = LayerType.QUARANTINED,
+                        quarantinedData = QuarantinedLayerData(
+                            rawJson = layerElement.toString(),
+                            error = layerEx.message ?: layerEx.javaClass.simpleName,
+                            originalLayerId = layerId,
+                            originalLayerName = layerName
+                        )
+                    )
+                }
+            }
+
+            val selectedIds = jsonTree["selectedLayerIds"]?.let {
+                runCatching { json.decodeFromJsonElement<Set<String>>(it) }.getOrNull()
+            } ?: emptySet()
+
+            val activeGroupId = jsonTree["activeGroupId"]?.jsonPrimitive?.contentOrNull
+
+            ProjectDocument(
+                id = id,
+                name = name,
+                canvasSize = canvasSize,
+                layers = recoveredLayers,
+                selectedLayerIds = selectedIds,
+                activeGroupId = activeGroupId,
+                createdAt = jsonTree["createdAt"]?.jsonPrimitive?.longOrNull ?: System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+        } catch (_: Exception) {
+            ProjectDocument(
+                name = "Corrupted Project (Quarantined)",
+                layers = listOf(
+                    Layer(
+                        name = "Corrupted Document Data",
+                        type = LayerType.QUARANTINED,
+                        quarantinedData = QuarantinedLayerData(
+                            rawJson = rawJson,
+                            error = originalError.message ?: originalError.javaClass.simpleName
+                        )
+                    )
+                )
+            )
+        }
     }
 
     /**

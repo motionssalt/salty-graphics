@@ -40,7 +40,17 @@ class MainActivity : ComponentActivity() {
             try {
                 Log.e("SaltyGraphics", "Uncaught exception", throwable)
                 val crashFile = File(applicationContext.filesDir, "last_crash.txt")
-                crashFile.writeText(throwable.stackTraceToString())
+                val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())
+                val report = buildString {
+                    appendLine("=== SALTY GRAPHICS CRASH LOG ===")
+                    appendLine("Timestamp: $timestamp")
+                    appendLine("Thread: ${thread.name}")
+                    appendLine("Exception: ${throwable.javaClass.name}: ${throwable.message}")
+                    appendLine()
+                    appendLine("Stack Trace:")
+                    appendLine(throwable.stackTraceToString())
+                }
+                crashFile.writeText(report)
             } catch (_: Throwable) {}
             defaultHandler?.uncaughtException(thread, throwable)
         }

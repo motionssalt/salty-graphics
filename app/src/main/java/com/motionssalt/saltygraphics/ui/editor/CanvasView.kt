@@ -144,7 +144,7 @@ fun CanvasView(
                             val shape = layer.shapeData ?: ShapeData()
                             val halfW = shape.width / 2f
                             val halfH = shape.height / 2f
-                            val shapeColor = Color(shape.fillColor.toULong())
+                            val shapeColor = safeColor(shape.fillColor)
 
                             when (shape.type) {
                                 ShapeType.CIRCLE -> {
@@ -175,7 +175,7 @@ fun CanvasView(
                             val textData = layer.textData ?: TextLayerData()
                             // Represent text layer bounds visually
                             drawRoundRect(
-                                color = Color(textData.color.toULong()).copy(alpha = 0.85f),
+                                color = safeColor(textData.color).copy(alpha = 0.85f),
                                 topLeft = Offset(-150f, -30f),
                                 size = Size(300f, 60f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f)
@@ -200,6 +200,22 @@ fun CanvasView(
                                 color = SaltyAmber.copy(alpha = 0.5f),
                                 topLeft = Offset(-100f, -100f),
                                 size = Size(200f, 200f)
+                            )
+                        }
+                        LayerType.QUARANTINED -> {
+                            // Show harmless quarantined placeholder
+                            drawRoundRect(
+                                color = SaltyError.copy(alpha = 0.25f),
+                                topLeft = Offset(-120f, -60f),
+                                size = Size(240f, 120f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f)
+                            )
+                            drawRoundRect(
+                                color = SaltyError,
+                                topLeft = Offset(-120f, -60f),
+                                size = Size(240f, 120f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f),
+                                style = Stroke(width = 2f)
                             )
                         }
                     }

@@ -46,6 +46,11 @@ class DeviceInfoProvider(private val context: Context) {
 
     fun composeProblemReport(writtenIssue: String, maxTextureSize: Int = 4096): Intent {
         val info = getDeviceInfo(maxTextureSize)
+        val crashFile = java.io.File(context.filesDir, "last_crash.txt")
+        val crashLogContent = if (crashFile.exists()) {
+            try { crashFile.readText().take(4000) } catch (_: Throwable) { null }
+        } else null
+
         val reportBody = buildString {
             appendLine("=== SALTY GRAPHICS PROBLEM REPORT ===")
             appendLine()
@@ -61,6 +66,11 @@ class DeviceInfoProvider(private val context: Context) {
             appendLine("GPU Renderer: ${info.gpuRenderer}")
             appendLine("Max Texture Size: ${info.maxTextureSize}px")
             appendLine("App Version: 1.0.0-beta1")
+            if (!crashLogContent.isNullOrBlank()) {
+                appendLine()
+                appendLine("--- Recent Crash Log ---")
+                appendLine(crashLogContent)
+            }
             appendLine()
             appendLine("Submitted to: ${SocialConfig.DEVELOPER_NAME} (${SocialConfig.BRAND_NAME})")
         }

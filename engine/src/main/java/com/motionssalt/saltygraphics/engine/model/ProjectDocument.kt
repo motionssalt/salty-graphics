@@ -11,8 +11,17 @@ enum class LayerType(val displayName: String) {
     ADJUSTMENT("Adjustment"),
     SHAPE("Shape"),
     VECTOR("Vector"),
-    GROUP("Group")
+    GROUP("Group"),
+    QUARANTINED("Quarantined")
 }
+
+@Serializable
+data class QuarantinedLayerData(
+    val rawJson: String,
+    val error: String,
+    val originalLayerId: String? = null,
+    val originalLayerName: String? = null
+)
 
 @Serializable
 data class Layer(
@@ -31,7 +40,8 @@ data class Layer(
     val textData: TextLayerData? = null,
     val mediaAssetPath: String? = null,
     val effects: List<EffectInstance> = emptyList(),
-    val children: List<Layer> = emptyList() // For Group layers
+    val children: List<Layer> = emptyList(), // For Group layers
+    val quarantinedData: QuarantinedLayerData? = null
 ) {
     /**
      * Approximate bounds in local coordinate space (before transform).
@@ -44,6 +54,7 @@ data class Layer(
             LayerType.VECTOR -> 300f
             LayerType.ADJUSTMENT -> 1000f
             LayerType.GROUP -> 400f
+            LayerType.QUARANTINED -> 240f
         }
 
     val localHeight: Float
@@ -54,6 +65,7 @@ data class Layer(
             LayerType.VECTOR -> 300f
             LayerType.ADJUSTMENT -> 1000f
             LayerType.GROUP -> 400f
+            LayerType.QUARANTINED -> 120f
         }
 }
 
