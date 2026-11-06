@@ -1,9 +1,10 @@
+package com.motionssalt.saltygraphics.ui.settings
+
 import com.motionssalt.saltygraphics.data.StorageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.motionssalt.saltygraphics.ui.controls.SaltySwitch
-package com.motionssalt.saltygraphics.ui.settings
 
 import android.content.Intent
 import android.net.Uri

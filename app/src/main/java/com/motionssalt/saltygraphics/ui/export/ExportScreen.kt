@@ -1,9 +1,10 @@
+package com.motionssalt.saltygraphics.ui.export
+
 import com.motionssalt.saltygraphics.data.StorageManager
 import com.motionssalt.saltygraphics.media.MediaCache
 import com.motionssalt.saltygraphics.engine.model.ShapeType
 import android.graphics.RectF
 import android.os.Build
-package com.motionssalt.saltygraphics.ui.export
 
 import android.content.Intent
 import android.graphics.Bitmap

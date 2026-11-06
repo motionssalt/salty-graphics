@@ -18,8 +18,8 @@ class SgRoundTripTest {
     fun testCompleteSgArchiveRoundTrip() {
         // 1. Text, Shape, Vector, Media, Custom Canvas Color
         val vectorPoints = listOf(
-            BezierPoint(x = -50f, y = -50f, outHandleX = -20f, outHandleY = -50f, hasOutHandle = true),
-            BezierPoint(x = 50f, y = -50f, inHandleX = 20f, inHandleY = -50f, hasInHandle = true),
+            BezierPoint(x = -50f, y = -50f, outHandleX = -20f, outHandleY = -50f),
+            BezierPoint(x = 50f, y = -50f, inHandleX = 20f, inHandleY = -50f),
             BezierPoint(x = 0f, y = 50f)
         )
         val vectorPath = VectorPathData(points = vectorPoints, isClosed = true, fillColor = 0xFF00FF00L)

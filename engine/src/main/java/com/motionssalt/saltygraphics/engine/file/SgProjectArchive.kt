@@ -27,7 +27,10 @@ data class SgImportResult(
     val manifest: SgManifest = SgManifest(),
     val historySnapshot: ActionTreeSnapshot? = null,
     val previewPng: ByteArray? = null
-)
+) {
+    val first: ProjectDocument get() = document
+    val second: Map<String, ByteArray> get() = assets
+}
 
 object SgProjectArchive {
     private val json = Json {

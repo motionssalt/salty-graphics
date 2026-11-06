@@ -54,7 +54,7 @@ class ProjectRepository(private val context: Context) {
         if (!dir.exists() || !dir.isDirectory) return emptyMap()
         val result = mutableMapOf<String, ByteArray>()
         dir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val relPath = file.relativeTo(dir).path.replace('\', '/')
+            val relPath = file.relativeTo(dir).path.replace('\\', '/')
             result[relPath] = file.readBytes()
         }
         return result
