@@ -127,16 +127,13 @@ fun DropdownControl(
             color = colors.onSurface
         )
 
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
+        Box() {
             Surface(
                 onClick = { expanded = true },
                 shape = RoundedCornerShape(8.dp),
                 color = colors.surfaceVariant,
                 border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
-                modifier = Modifier.menuAnchor()
+                modifier = Modifier
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -152,7 +149,7 @@ fun DropdownControl(
                 }
             }
 
-            ExposedDropdownMenu(
+            DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
                 modifier = Modifier.background(colors.surfaceVariant)
