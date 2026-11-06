@@ -43,3 +43,6 @@ Releases publish only from new v* tags. Main builds upload APK artifacts but mus
 
 ## R7 project settings
 Editor Settings opens a page inside the fixed tools pane, never app settings. Home is the sole app-settings entry. EditorSettings is backward-compatible document data (legacy canvas stays black): background ARGB, grid visibility/size/colour, snap preference, default preview quality. Changes use document history. Alpha background is composited over checkerboard only in preview; PNG/WebP get actual alpha; JPEG flattens over white.
+
+## R8 theme choice
+App settings stores Dark/Light/System in SharedPreferences, defaults Dark, and exposes a StateFlow observed above the navigation host. System mode follows configuration changes; dynamic colour remains enabled on Android 12+. All UI surfaces and text/control colours use Material 3 semantic roles, not fixed dark colours. Document/artwork ARGB colours do not change with the app theme. System bars remain transparent with icon contrast following the selected theme. The activity consumes safeDrawing insets at the common root; descendant inset padding does not double-apply consumed insets.

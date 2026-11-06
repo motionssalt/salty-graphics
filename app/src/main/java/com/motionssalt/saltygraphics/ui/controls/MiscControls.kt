@@ -21,6 +21,7 @@ fun SegmentedChipsControl(
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -31,7 +32,7 @@ fun SegmentedChipsControl(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                color = SaltyTextSecondary
+                color = colors.onSurfaceVariant
             )
         }
         Row(
@@ -45,9 +46,9 @@ fun SegmentedChipsControl(
                 Surface(
                     onClick = { onOptionSelected(option) },
                     shape = RoundedCornerShape(8.dp),
-                    color = if (isSelected) SaltyCyan else SaltySurfaceVariantDark,
+                    color = if (isSelected) colors.primary else colors.surfaceVariant,
                     border = CardDefaults.outlinedCardBorder().copy(
-                        brush = androidx.compose.ui.graphics.SolidColor(if (isSelected) SaltyCyan else SaltyOutlineDark)
+                        brush = androidx.compose.ui.graphics.SolidColor(if (isSelected) colors.primary else colors.outline)
                     )
                 ) {
                     Box(
@@ -57,7 +58,7 @@ fun SegmentedChipsControl(
                         Text(
                             text = option,
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal),
-                            color = if (isSelected) SaltyDarkBackground else SaltyTextPrimary
+                            color = if (isSelected) colors.background else colors.onSurface
                         )
                     }
                 }
@@ -73,6 +74,7 @@ fun ToggleControl(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -84,16 +86,16 @@ fun ToggleControl(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-            color = SaltyTextPrimary
+            color = colors.onSurface
         )
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = SaltyCyan,
-                checkedTrackColor = SaltySurfaceVariantDark,
-                uncheckedThumbColor = SaltyTextSecondary,
-                uncheckedTrackColor = SaltyDarkBackground
+                checkedThumbColor = colors.primary,
+                checkedTrackColor = colors.surfaceVariant,
+                uncheckedThumbColor = colors.onSurfaceVariant,
+                uncheckedTrackColor = colors.background
             )
         )
     }
@@ -108,6 +110,7 @@ fun DropdownControl(
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     var expanded by remember { mutableStateOf(false) }
 
     Row(
@@ -121,7 +124,7 @@ fun DropdownControl(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-            color = SaltyTextPrimary
+            color = colors.onSurface
         )
 
         ExposedDropdownMenuBox(
@@ -131,8 +134,8 @@ fun DropdownControl(
             Surface(
                 onClick = { expanded = true },
                 shape = RoundedCornerShape(8.dp),
-                color = SaltySurfaceVariantDark,
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyOutlineDark)),
+                color = colors.surfaceVariant,
+                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
                 modifier = Modifier.menuAnchor()
             ) {
                 Row(
@@ -143,7 +146,7 @@ fun DropdownControl(
                     Text(
                         text = selectedOption.ifBlank { options.firstOrNull() ?: "None" },
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                        color = SaltyCyan
+                        color = colors.primary
                     )
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 }
@@ -152,11 +155,11 @@ fun DropdownControl(
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                modifier = Modifier.background(SaltySurfaceVariantDark)
+                modifier = Modifier.background(colors.surfaceVariant)
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option, color = SaltyTextPrimary) },
+                        text = { Text(option, color = colors.onSurface) },
                         onClick = {
                             onOptionSelected(option)
                             expanded = false

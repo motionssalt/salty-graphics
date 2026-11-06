@@ -34,6 +34,7 @@ fun NewProjectScreen(
     onNavigateBack: () -> Unit,
     onProjectCreated: (String) -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val coroutineScope = rememberCoroutineScope()
 
     var projectName by remember { mutableStateOf("Untitled Project") }
@@ -74,15 +75,15 @@ fun NewProjectScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SaltyDarkBackground,
-                    titleContentColor = SaltyTextPrimary,
-                    navigationIconContentColor = SaltyTextPrimary
+                    containerColor = colors.background,
+                    titleContentColor = colors.onSurface,
+                    navigationIconContentColor = colors.onSurface
                 )
             )
         },
         bottomBar = {
             Surface(
-                color = SaltySurfaceDark,
+                color = colors.surface,
                 tonalElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -99,13 +100,13 @@ fun NewProjectScreen(
                         Text(
                             "${canvasSize.width} x ${canvasSize.height} px",
                             style = MaterialTheme.typography.titleMedium,
-                            color = SaltyCyan,
+                            color = colors.primary,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             "${canvasSize.aspectRatio.displayName} • ${canvasSize.quality.displayName}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = SaltyTextSecondary
+                            color = colors.onSurfaceVariant
                         )
                     }
 
@@ -117,8 +118,8 @@ fun NewProjectScreen(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = SaltyCyan,
-                            contentColor = SaltyDarkBackground
+                            containerColor = colors.primary,
+                            contentColor = colors.background
                         ),
                         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
                     ) {
@@ -127,7 +128,7 @@ fun NewProjectScreen(
                 }
             }
         },
-        containerColor = SaltyDarkBackground
+        containerColor = colors.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -146,9 +147,9 @@ fun NewProjectScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SaltyCyan,
-                        focusedLabelColor = SaltyCyan,
-                        unfocusedBorderColor = SaltyOutlineDark
+                        focusedBorderColor = colors.primary,
+                        focusedLabelColor = colors.primary,
+                        unfocusedBorderColor = colors.outline
                     )
                 )
             }
@@ -158,7 +159,7 @@ fun NewProjectScreen(
                 Text(
                     "Select standard design proportion or custom dimensions:",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SaltyTextSecondary
+                    color = colors.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -184,10 +185,10 @@ fun NewProjectScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(if (isSelected) SaltySurfaceVariantDark else SaltyDarkBackground)
+                                        .background(if (isSelected) colors.surfaceVariant else colors.background)
                                         .border(
                                             width = if (isSelected) 1.5.dp else 1.dp,
-                                            color = if (isSelected) SaltyCyan else SaltyOutlineDark,
+                                            color = if (isSelected) colors.primary else colors.outline,
                                             shape = RoundedCornerShape(8.dp)
                                         )
                                         .clickable { selectedRatio = ratio }
@@ -197,7 +198,7 @@ fun NewProjectScreen(
                                     Text(
                                         text = ratio.displayName,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = if (isSelected) SaltyCyan else SaltyTextPrimary,
+                                        color = if (isSelected) colors.primary else colors.onSurface,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )
                                 }
@@ -221,7 +222,7 @@ fun NewProjectScreen(
                             label = { Text("Width (px)") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SaltyCyan)
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                         )
                         OutlinedTextField(
                             value = customHeightText,
@@ -229,7 +230,7 @@ fun NewProjectScreen(
                             label = { Text("Height (px)") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SaltyCyan)
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                         )
                     }
                 }
@@ -240,7 +241,7 @@ fun NewProjectScreen(
                 Text(
                     "Quality determines the underlying render resolution:",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SaltyTextSecondary
+                    color = colors.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -260,10 +261,10 @@ fun NewProjectScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) SaltySurfaceVariantDark else SaltyDarkBackground)
+                                .background(if (isSelected) colors.surfaceVariant else colors.background)
                                 .border(
                                     width = if (isSelected) 1.5.dp else 1.dp,
-                                    color = if (isSelected) SaltyCyan else SaltyOutlineDark,
+                                    color = if (isSelected) colors.primary else colors.outline,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable { selectedQuality = quality }
@@ -275,25 +276,25 @@ fun NewProjectScreen(
                                 Text(
                                     text = quality.displayName,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = if (isSelected) SaltyCyan else SaltyTextPrimary,
+                                    color = if (isSelected) colors.primary else colors.onSurface,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                                 Text(
                                     text = "Base Dimension: ${quality.baseDimension}px",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = SaltyTextSecondary
+                                    color = colors.onSurfaceVariant
                                 )
                             }
 
                             if (quality.isHeavy) {
                                 Surface(
-                                    color = SaltyAmber.copy(alpha = 0.2f),
+                                    color = colors.secondary.copy(alpha = 0.2f),
                                     shape = RoundedCornerShape(4.dp)
                                 ) {
                                     Text(
                                         text = "VRAM Heavy",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = SaltyAmber,
+                                        color = colors.secondary,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
@@ -308,26 +309,26 @@ fun NewProjectScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SaltyAmber.copy(alpha = 0.15f)),
-                    border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyAmber))
+                    colors = CardDefaults.cardColors(containerColor = colors.secondary.copy(alpha = 0.15f)),
+                    border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.secondary))
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.Top
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = SaltyAmber, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = colors.secondary, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
                                 "High Resolution Memory Notice",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = SaltyAmber
+                                color = colors.secondary
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 "An 8K or large canvas consumes approximately ~130 MB of GPU VRAM per full-size RGBA layer. Salty Graphics utilizes preview proxy downsampling and texture capping to maintain responsive editing and prevent device crashes.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = SaltyTextPrimary
+                                color = colors.onSurface
                             )
                         }
                     }

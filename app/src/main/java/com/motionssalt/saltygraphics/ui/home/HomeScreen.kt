@@ -37,6 +37,7 @@ fun HomeScreen(
     onNavigateToEditor: (String) -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val projects by repository.projects.collectAsState()
@@ -86,7 +87,7 @@ fun HomeScreen(
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 1.sp
                                 ),
-                                color = SaltyCyan
+                                color = colors.primary
                             )
                         }
                     }
@@ -119,7 +120,7 @@ fun HomeScreen(
                                 selectedProjectIds = emptySet()
                             }
                         }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = SaltyError)
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = colors.error)
                         }
                         IconButton(onClick = { selectedProjectIds = emptySet() }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear Selection")
@@ -128,30 +129,30 @@ fun HomeScreen(
                         IconButton(onClick = {
                             importLauncher.launch(arrayOf("*/*"))
                         }) {
-                            Icon(Icons.Default.FileOpen, contentDescription = "Import .sg Project", tint = SaltyCyan)
+                            Icon(Icons.Default.FileOpen, contentDescription = "Import .sg Project", tint = colors.primary)
                         }
                         IconButton(onClick = onNavigateToSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = SaltyTextSecondary)
+                            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = colors.onSurfaceVariant)
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SaltyDarkBackground,
-                    titleContentColor = SaltyTextPrimary
+                    containerColor = colors.background,
+                    titleContentColor = colors.onSurface
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToNewProject,
-                containerColor = SaltyCyan,
-                contentColor = SaltyDarkBackground,
+                containerColor = colors.primary,
+                contentColor = colors.background,
                 modifier = Modifier.navigationBarsPadding()
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New Project")
             }
         },
-        containerColor = SaltyDarkBackground
+        containerColor = colors.background
     ) { innerPadding ->
         if (projects.isEmpty()) {
             Box(
@@ -165,19 +166,19 @@ fun HomeScreen(
                         Icons.Default.Palette,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
-                        tint = SaltyTextTertiary
+                        tint = colors.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         "No projects yet",
                         style = MaterialTheme.typography.titleMedium,
-                        color = SaltyTextSecondary
+                        color = colors.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Tap the + button to create a new canvas or import a .sg project.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = SaltyTextTertiary
+                        color = colors.onSurfaceVariant
                     )
                 }
             }
@@ -235,8 +236,8 @@ fun HomeScreen(
                     label = { Text("Project Name") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SaltyCyan,
-                        focusedLabelColor = SaltyCyan
+                        focusedBorderColor = colors.primary,
+                        focusedLabelColor = colors.primary
                     )
                 )
             },
@@ -250,17 +251,17 @@ fun HomeScreen(
                             selectedProjectIds = emptySet()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
                 ) {
                     Text("Rename")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { projectToRename = null }) {
-                    Text("Cancel", color = SaltyTextSecondary)
+                    Text("Cancel", color = colors.onSurfaceVariant)
                 }
             },
-            containerColor = SaltySurfaceDark
+            containerColor = colors.surface
         )
     }
 }
@@ -274,6 +275,7 @@ fun ProjectCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -284,9 +286,9 @@ fun ProjectCard(
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) SaltySurfaceVariantDark else SaltySurfaceDark
+            containerColor = if (isSelected) colors.surfaceVariant else colors.surface
         ),
-        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyCyan)) else null
+        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.primary)) else null
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             // Thumbnail container
@@ -295,7 +297,7 @@ fun ProjectCard(
                     .fillMaxWidth()
                     .aspectRatio(4f / 5f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(SaltyDarkBackground),
+                    .background(colors.background),
                 contentAlignment = Alignment.Center
             ) {
                 // Subtle canvas representation
@@ -304,13 +306,13 @@ fun ProjectCard(
                         Icons.Default.Image,
                         contentDescription = null,
                         modifier = Modifier.size(36.dp),
-                        tint = if (isSelected) SaltyCyan else SaltyTextTertiary
+                        tint = if (isSelected) colors.primary else colors.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "${project.width} x ${project.height}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = SaltyTextTertiary
+                        color = colors.onSurfaceVariant
                     )
                 }
 
@@ -324,8 +326,8 @@ fun ProjectCard(
                             checked = isSelected,
                             onCheckedChange = null,
                             colors = CheckboxDefaults.colors(
-                                checkedColor = SaltyCyan,
-                                checkmarkColor = SaltyDarkBackground
+                                checkedColor = colors.primary,
+                                checkmarkColor = colors.background
                             )
                         )
                     }
@@ -337,7 +339,7 @@ fun ProjectCard(
             Text(
                 text = project.name,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
-                color = SaltyTextPrimary,
+                color = colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -347,7 +349,7 @@ fun ProjectCard(
             Text(
                 text = "${project.layerCount} layers",
                 style = MaterialTheme.typography.bodyMedium,
-                color = SaltyTextSecondary
+                color = colors.onSurfaceVariant
             )
         }
     }

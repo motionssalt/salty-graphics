@@ -30,11 +30,12 @@ fun EffectSettingsSheet(
     onUpdateEffect: (EffectInstance) -> Unit,
     onClose: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     // In Beta: ships zero real effects (Section 4.2)
     val availableEffects = remember { EffectRegistry.getAvailableEffects(includeDebug = false) }
 
     Surface(
-        color = SaltySurfaceDark,
+        color = colors.surface,
         tonalElevation = 8.dp,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -51,16 +52,16 @@ fun EffectSettingsSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = SaltyCyan)
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = colors.primary)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         "Effects Engine (${targetLayer.effects.size})",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = SaltyCyan
+                        color = colors.primary
                     )
                 }
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = SaltyTextSecondary)
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.onSurfaceVariant)
                 }
             }
 
@@ -70,24 +71,24 @@ fun EffectSettingsSheet(
                         .fillMaxWidth()
                         .height(180.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(SaltyDarkBackground)
+                        .background(colors.background)
                         .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = SaltyTextTertiary, modifier = Modifier.size(36.dp))
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(36.dp))
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             "No effects available in Beta",
                             style = MaterialTheme.typography.titleMedium,
-                            color = SaltyTextSecondary,
+                            color = colors.onSurfaceVariant,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "The underlying GPU effect engine & multi-input shader pipeline is fully wired. Real effects will ship in subsequent releases.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = SaltyTextTertiary,
+                            color = colors.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                     }
@@ -103,7 +104,7 @@ fun EffectSettingsSheet(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(containerColor = SaltySurfaceVariantDark)
+                                colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant)
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Row(
@@ -111,9 +112,9 @@ fun EffectSettingsSheet(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(definition.name, style = MaterialTheme.typography.titleMedium, color = SaltyCyan)
+                                        Text(definition.name, style = MaterialTheme.typography.titleMedium, color = colors.primary)
                                         IconButton(onClick = { onRemoveEffect(effectInstance.effectId) }) {
-                                            Icon(Icons.Default.Close, contentDescription = "Remove Effect", tint = SaltyError)
+                                            Icon(Icons.Default.Close, contentDescription = "Remove Effect", tint = colors.error)
                                         }
                                     }
 
@@ -148,6 +149,7 @@ fun AutoGeneratedControl(
     allLayers: List<Layer>,
     onValueChange: (EffectInstance) -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         when (control.type) {
             ControlType.TOGGLE -> {

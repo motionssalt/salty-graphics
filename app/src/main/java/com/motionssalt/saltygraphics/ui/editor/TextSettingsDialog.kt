@@ -19,6 +19,7 @@ fun TextSettingsDialog(
     onSave: (TextLayerData) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     var textData by remember { mutableStateOf(initialData) }
     var pathDropdownExpanded by remember { mutableStateOf(false) }
 
@@ -33,7 +34,7 @@ fun TextSettingsDialog(
                     onValueChange = { textData = textData.copy(text = it) },
                     label = { Text("Content") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SaltyCyan)
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                 )
 
                 Text("Font Size: ${textData.fontSize.toInt()} sp", style = MaterialTheme.typography.bodyMedium)
@@ -41,7 +42,7 @@ fun TextSettingsDialog(
                     value = textData.fontSize,
                     onValueChange = { textData = textData.copy(fontSize = it) },
                     valueRange = 12f..160f,
-                    colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                    colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                 )
 
                 Text("Letter Spacing: ${textData.letterSpacing} sp", style = MaterialTheme.typography.bodyMedium)
@@ -59,16 +60,16 @@ fun TextSettingsDialog(
                 )
 
                 // Move Along Path (Section 3.11)
-                HorizontalDivider(color = SaltyOutlineDark)
+                HorizontalDivider(color = colors.outline)
                 Text(
                     "Move Along Path",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = SaltyAmber
+                    color = colors.secondary
                 )
                 Text(
                     "Pick a shape or vector layer to follow its outline:",
                     style = MaterialTheme.typography.labelSmall,
-                    color = SaltyTextSecondary
+                    color = colors.onSurfaceVariant
                 )
 
                 ExposedDropdownMenuBox(
@@ -84,7 +85,7 @@ fun TextSettingsDialog(
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SaltyAmber)
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.secondary)
                     )
                     ExposedDropdownMenu(
                         expanded = pathDropdownExpanded,
@@ -115,7 +116,7 @@ fun TextSettingsDialog(
                         value = textData.pathOffsetPercent,
                         onValueChange = { textData = textData.copy(pathOffsetPercent = it) },
                         valueRange = 0f..1f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyAmber, activeTrackColor = SaltyAmber)
+                        colors = SliderDefaults.colors(thumbColor = colors.secondary, activeTrackColor = colors.secondary)
                     )
                 }
             }
@@ -123,7 +124,7 @@ fun TextSettingsDialog(
 
             Button(
                 onClick = { onSave(textData) },
-                colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
             ) {
                 Text("Apply")
             }

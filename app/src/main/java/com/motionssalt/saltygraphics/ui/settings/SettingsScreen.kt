@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import com.motionssalt.saltygraphics.config.SocialConfig
 import com.motionssalt.saltygraphics.data.DeviceInfoProvider
 import com.motionssalt.saltygraphics.data.SettingsManager
+import com.motionssalt.saltygraphics.data.ThemeChoice
+import com.motionssalt.saltygraphics.ui.controls.DropdownControl
 import com.motionssalt.saltygraphics.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +35,9 @@ fun SettingsScreen(
     deviceInfoProvider: DeviceInfoProvider,
     onNavigateBack: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
+    val theme by settingsManager.theme.collectAsState()
     val uiScale by settingsManager.uiScale.collectAsState()
     val useSystemDefault by settingsManager.useSystemDefault.collectAsState()
 
@@ -50,13 +54,13 @@ fun SettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SaltyDarkBackground,
-                    titleContentColor = SaltyTextPrimary,
-                    navigationIconContentColor = SaltyTextPrimary
+                    containerColor = colors.background,
+                    titleContentColor = colors.onSurface,
+                    navigationIconContentColor = colors.onSurface
                 )
             )
         },
-        containerColor = SaltyDarkBackground
+        containerColor = colors.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -66,19 +70,23 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            SettingsSectionCard(title = "Appearance") {
+                DropdownControl("Theme", ThemeChoice.entries.map { it.displayName }, theme.displayName,
+                    { label -> settingsManager.setTheme(ThemeChoice.entries.first { it.displayName == label }) })
+            }
             // About Section
             SettingsSectionCard(title = "About Salty Graphics") {
                 Text(
                     text = "Salty Graphics is a hybrid raster and vector graphic design application built by Victor (solo developer and motion designer, brand MOTIONSALT). Designed for mobile creators with an offline-first GPU render engine and branching action tree history.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SaltyTextSecondary,
+                    color = colors.onSurfaceVariant,
                     lineHeight = 20.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Version: 1.0.0-beta1 | Developer: ${SocialConfig.DEVELOPER_NAME} (${SocialConfig.BRAND_NAME})",
                     style = MaterialTheme.typography.labelSmall,
-                    color = SaltyCyan
+                    color = colors.primary
                 )
             }
 
@@ -93,20 +101,20 @@ fun SettingsScreen(
                         Text(
                             "Use system default scale",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = SaltyTextPrimary
+                            color = colors.onSurface
                         )
                         Text(
                             if (useSystemDefault) "Currently using system display scale" else "Custom scale: ${(uiScale * 100).toInt()}%",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = SaltyTextSecondary
+                            color = colors.onSurfaceVariant
                         )
                     }
                     Switch(
                         checked = useSystemDefault,
                         onCheckedChange = { settingsManager.setUseSystemDefault(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = SaltyCyan,
-                            checkedTrackColor = SaltySurfaceVariantDark
+                            checkedThumbColor = colors.primary,
+                            checkedTrackColor = colors.surfaceVariant
                         )
                     )
                 }
@@ -116,7 +124,7 @@ fun SettingsScreen(
                     Text(
                         "UI Scale: ${(uiScale * 100).toInt()}%",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = SaltyTextPrimary
+                        color = colors.onSurface
                     )
                     Slider(
                         value = uiScale,
@@ -124,9 +132,9 @@ fun SettingsScreen(
                         valueRange = 0.75f..1.50f,
                         steps = 5,
                         colors = SliderDefaults.colors(
-                            thumbColor = SaltyCyan,
-                            activeTrackColor = SaltyCyan,
-                            inactiveTrackColor = SaltySurfaceVariantDark
+                            thumbColor = colors.primary,
+                            activeTrackColor = colors.primary,
+                            inactiveTrackColor = colors.surfaceVariant
                         )
                     )
                 }
@@ -137,7 +145,7 @@ fun SettingsScreen(
                 Text(
                     "Describe any issue, unexpected behavior, or suggestion. Submitting generates a diagnostic report shared via the Android share sheet (works 100% offline with zero backend).",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SaltyTextSecondary
+                    color = colors.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
@@ -148,8 +156,8 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .height(120.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SaltyCyan,
-                        unfocusedBorderColor = SaltyOutlineDark
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = colors.outline
                     )
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -161,8 +169,8 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = SaltyCyan,
-                        contentColor = SaltyDarkBackground
+                        containerColor = colors.primary,
+                        contentColor = colors.background
                     )
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -182,7 +190,7 @@ fun SettingsScreen(
                         context.startActivity(intent)
                     }
                 )
-                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                HorizontalDivider(color = colors.outline.copy(alpha = 0.5f))
                 SocialLinkItem(
                     label = "Instagram",
                     detail = SocialConfig.INSTAGRAM_HANDLE,
@@ -192,7 +200,7 @@ fun SettingsScreen(
                         context.startActivity(intent)
                     }
                 )
-                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                HorizontalDivider(color = colors.outline.copy(alpha = 0.5f))
                 SocialLinkItem(
                     label = "Threads",
                     detail = SocialConfig.THREADS_HANDLE,
@@ -202,7 +210,7 @@ fun SettingsScreen(
                         context.startActivity(intent)
                     }
                 )
-                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                HorizontalDivider(color = colors.outline.copy(alpha = 0.5f))
                 SocialLinkItem(
                     label = "X / Twitter",
                     detail = SocialConfig.X_HANDLE,
@@ -212,7 +220,7 @@ fun SettingsScreen(
                         context.startActivity(intent)
                     }
                 )
-                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                HorizontalDivider(color = colors.outline.copy(alpha = 0.5f))
                 SocialLinkItem(
                     label = "YouTube",
                     detail = SocialConfig.YOUTUBE_HANDLE,
@@ -222,7 +230,7 @@ fun SettingsScreen(
                         context.startActivity(intent)
                     }
                 )
-                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                HorizontalDivider(color = colors.outline.copy(alpha = 0.5f))
                 SocialLinkItem(
                     label = "TikTok",
                     detail = SocialConfig.TIKTOK_HANDLE,
@@ -252,16 +260,17 @@ fun SettingsScreen(
 
 @Composable
 fun SettingsSectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    val colors = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = SaltySurfaceDark)
+        colors = CardDefaults.cardColors(containerColor = colors.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = SaltyCyan
+                color = colors.primary
             )
             Spacer(modifier = Modifier.height(12.dp))
             content()
@@ -276,6 +285,7 @@ fun SocialLinkItem(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -286,23 +296,24 @@ fun SocialLinkItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = SaltyTextSecondary, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(12.dp))
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = SaltyTextPrimary)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
         }
-        Text(detail, style = MaterialTheme.typography.bodyMedium, color = SaltyCyan)
+        Text(detail, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
     }
 }
 
 @Composable
 fun DeviceInfoRow(label: String, value: String) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = SaltyTextSecondary)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = SaltyTextPrimary, fontWeight = FontWeight.Medium)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, fontWeight = FontWeight.Medium)
     }
 }

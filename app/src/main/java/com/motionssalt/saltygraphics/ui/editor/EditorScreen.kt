@@ -14,7 +14,7 @@ import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
 import com.motionssalt.saltygraphics.engine.action.PasteMode
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
-import com.motionssalt.saltygraphics.theme.SaltyDarkBackground
+import com.motionssalt.saltygraphics.theme.colors.background
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,6 +27,7 @@ fun EditorScreen(
     onNavigateToExport: (String) -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val coroutineScope = rememberCoroutineScope()
 
     var projectDocument by remember { mutableStateOf<ProjectDocument?>(null) }
@@ -143,7 +144,7 @@ fun EditorScreen(
                 onGridSizeChange = { recordAndAutoSave("Grid size", doc.copy(editorSettings = doc.editorSettings.copy(gridSize = it))) }
             )
         },
-        containerColor = SaltyDarkBackground
+        containerColor = colors.background
     ) { innerPadding ->
         EditorWorkspace(
             modifier = Modifier.padding(innerPadding).navigationBarsPadding().displayCutoutPadding(),

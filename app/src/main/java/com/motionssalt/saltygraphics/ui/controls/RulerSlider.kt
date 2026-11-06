@@ -38,6 +38,7 @@ fun RulerSlider(
     unit: String = "",
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     val view = LocalView.current
     var isEditorOpen by remember { mutableStateOf(false) }
 
@@ -104,7 +105,7 @@ fun RulerSlider(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                color = if (value == defaultValue) SaltyTextSecondary else SaltyCyan,
+                color = if (value == defaultValue) colors.onSurfaceVariant else colors.primary,
                 maxLines = 1
             )
         }
@@ -115,8 +116,8 @@ fun RulerSlider(
                 .weight(1f)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(8.dp))
-                .background(SaltyDarkBackground)
-                .border(1.dp, SaltyOutlineDark.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                .background(colors.background)
+                .border(1.dp, colors.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                 .draggable(
                     state = draggableState,
                     orientation = Orientation.Horizontal
@@ -149,9 +150,9 @@ fun RulerSlider(
                         else -> h * 0.28f
                     }
                     val tickColor = when {
-                        isSuper -> SaltyTextPrimary.copy(alpha = 0.7f)
-                        isMajor -> SaltyTextSecondary.copy(alpha = 0.5f)
-                        else -> SaltyOutlineDark.copy(alpha = 0.6f)
+                        isSuper -> colors.onSurface.copy(alpha = 0.7f)
+                        isMajor -> colors.onSurfaceVariant.copy(alpha = 0.5f)
+                        else -> colors.outline.copy(alpha = 0.6f)
                     }
 
                     val yStart = (h - tickHeight) / 2f
@@ -166,7 +167,7 @@ fun RulerSlider(
 
                 // Fixed Center Indicator Needle
                 drawLine(
-                    color = SaltyCyan,
+                    color = colors.primary,
                     start = Offset(centerX, h * 0.12f),
                     end = Offset(centerX, h * 0.88f),
                     strokeWidth = 2.5f,
@@ -174,7 +175,7 @@ fun RulerSlider(
                 )
                 // Needle top triangle/pip
                 drawCircle(
-                    color = SaltyCyan,
+                    color = colors.primary,
                     radius = 3.5f,
                     center = Offset(centerX, h * 0.12f)
                 )
@@ -185,8 +186,8 @@ fun RulerSlider(
         Surface(
             onClick = { isEditorOpen = true },
             shape = RoundedCornerShape(8.dp),
-            color = SaltySurfaceVariantDark,
-            border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyCyan.copy(alpha = 0.4f))),
+            color = colors.surfaceVariant,
+            border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.primary.copy(alpha = 0.4f))),
             modifier = Modifier.widthIn(min = 68.dp)
         ) {
             Box(
@@ -196,7 +197,7 @@ fun RulerSlider(
                 Text(
                     text = formattedValue,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-                    color = SaltyCyan,
+                    color = colors.primary,
                     maxLines = 1
                 )
             }

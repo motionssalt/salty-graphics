@@ -42,12 +42,13 @@ fun LayersPanel(
     onEnterGroup: (String) -> Unit,
     onClosePanel: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     var layerToRename by remember { mutableStateOf<Layer?>(null) }
     var renameInput by remember { mutableStateOf("") }
     var showPasteDialog by remember { mutableStateOf(false) }
 
     Surface(
-        color = SaltySurfaceDark,
+        color = colors.surface,
         modifier = Modifier
             .fillMaxHeight()
             .width(320.dp)
@@ -64,11 +65,11 @@ fun LayersPanel(
                 Text(
                     "Layers (${layers.size})",
                     style = MaterialTheme.typography.titleMedium,
-                    color = SaltyCyan,
+                    color = colors.primary,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onClosePanel) {
-                    Icon(Icons.Default.Close, contentDescription = "Close Layers", tint = SaltyTextSecondary)
+                    Icon(Icons.Default.Close, contentDescription = "Close Layers", tint = colors.onSurfaceVariant)
                 }
             }
 
@@ -76,13 +77,13 @@ fun LayersPanel(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(SaltySurfaceVariantDark)
+                    .background(colors.surfaceVariant)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onSelectAll) {
-                    Text("Select All", style = MaterialTheme.typography.labelSmall, color = SaltyTextPrimary)
+                    Text("Select All", style = MaterialTheme.typography.labelSmall, color = colors.onSurface)
                 }
 
                 IconButton(
@@ -93,21 +94,21 @@ fun LayersPanel(
                     },
                     enabled = selectedLayerIds.isNotEmpty()
                 ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy Layer", tint = if (selectedLayerIds.isNotEmpty()) SaltyCyan else SaltyTextTertiary)
+                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy Layer", tint = if (selectedLayerIds.isNotEmpty()) colors.primary else colors.onSurfaceVariant)
                 }
 
                 IconButton(
                     onClick = { showPasteDialog = true },
                     enabled = GlobalClipboard.hasContent() && selectedLayerIds.isNotEmpty()
                 ) {
-                    Icon(Icons.Default.ContentPaste, contentDescription = "Paste Properties", tint = if (GlobalClipboard.hasContent()) SaltyCyan else SaltyTextTertiary)
+                    Icon(Icons.Default.ContentPaste, contentDescription = "Paste Properties", tint = if (GlobalClipboard.hasContent()) colors.primary else colors.onSurfaceVariant)
                 }
 
                 IconButton(
                     onClick = { onDeleteLayers(selectedLayerIds) },
                     enabled = selectedLayerIds.isNotEmpty()
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = if (selectedLayerIds.isNotEmpty()) SaltyError else SaltyTextTertiary)
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = if (selectedLayerIds.isNotEmpty()) colors.error else colors.onSurfaceVariant)
                 }
             }
 
@@ -153,7 +154,7 @@ fun LayersPanel(
                     value = renameInput,
                     onValueChange = { renameInput = it },
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SaltyCyan)
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                 )
             },
             confirmButton = {
@@ -163,17 +164,17 @@ fun LayersPanel(
                         onRenameLayer(layer.id, renameInput.trim())
                         layerToRename = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
                 ) {
                     Text("Rename")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { layerToRename = null }) {
-                    Text("Cancel", color = SaltyTextSecondary)
+                    Text("Cancel", color = colors.onSurfaceVariant)
                 }
             },
-            containerColor = SaltySurfaceDark
+            containerColor = colors.surface
         )
     }
 
@@ -183,14 +184,14 @@ fun LayersPanel(
             title = { Text("Paste Properties (Section 3.9)") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Choose which properties to apply (will replace existing values on selected layers):", style = MaterialTheme.typography.bodyMedium, color = SaltyTextSecondary)
+                    Text("Choose which properties to apply (will replace existing values on selected layers):", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     Button(
                         onClick = {
                             onPasteProperties(PasteMode.TRANSFORM_ONLY)
                             showPasteDialog = false
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = SaltySurfaceVariantDark, contentColor = SaltyTextPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant, contentColor = colors.onSurface)
                     ) {
                         Text("Transform Only")
                     }
@@ -200,7 +201,7 @@ fun LayersPanel(
                             showPasteDialog = false
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = SaltySurfaceVariantDark, contentColor = SaltyTextPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant, contentColor = colors.onSurface)
                     ) {
                         Text("Effects Only")
                     }
@@ -210,7 +211,7 @@ fun LayersPanel(
                             showPasteDialog = false
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
                     ) {
                         Text("Both (Transform & Effects)")
                     }
@@ -219,10 +220,10 @@ fun LayersPanel(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showPasteDialog = false }) {
-                    Text("Cancel", color = SaltyTextSecondary)
+                    Text("Cancel", color = colors.onSurfaceVariant)
                 }
             },
-            containerColor = SaltySurfaceDark
+            containerColor = colors.surface
         )
     }
 }
@@ -243,6 +244,7 @@ fun LayerRow(
     onEnterGroup: () -> Unit,
     onRenameClick: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -250,9 +252,9 @@ fun LayerRow(
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) SaltySurfaceVariantDark else SaltyDarkBackground
+            containerColor = if (isSelected) colors.surfaceVariant else colors.background
         ),
-        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyCyan)) else null
+        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.primary)) else null
     ) {
         Row(
             modifier = Modifier
@@ -265,7 +267,7 @@ fun LayerRow(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(SaltySurfaceVariantDark),
+                    .background(colors.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -279,7 +281,7 @@ fun LayerRow(
                         LayerType.QUARANTINED -> Icons.Default.Warning
                     },
                     contentDescription = null,
-                    tint = if (isSelected) SaltyCyan else SaltyTextSecondary,
+                    tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -291,20 +293,20 @@ fun LayerRow(
                 Text(
                     text = layer.name,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = if (layer.isVisible) SaltyTextPrimary else SaltyTextTertiary,
+                    color = if (layer.isVisible) colors.onSurface else colors.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "${layer.type.displayName} • ${layer.blendMode.displayName}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = SaltyTextTertiary
+                    color = colors.onSurfaceVariant
                 )
             }
 
             if (layer.type == LayerType.GROUP) {
                 IconButton(onClick = onEnterGroup, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Enter Group", tint = SaltyCyan)
+                    Icon(Icons.Default.ChevronRight, contentDescription = "Enter Group", tint = colors.primary)
                 }
             }
 
@@ -312,7 +314,7 @@ fun LayerRow(
                 Icon(
                     if (layer.isVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                     contentDescription = "Toggle Visibility",
-                    tint = if (layer.isVisible) SaltyTextSecondary else SaltyTextTertiary,
+                    tint = if (layer.isVisible) colors.onSurfaceVariant else colors.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -321,7 +323,7 @@ fun LayerRow(
                 Icon(
                     if (layer.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
                     contentDescription = "Toggle Lock",
-                    tint = if (layer.isLocked) SaltyAmber else SaltyTextTertiary,
+                    tint = if (layer.isLocked) colors.secondary else colors.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -330,12 +332,12 @@ fun LayerRow(
             Column {
                 if (canMoveUp) {
                     IconButton(onClick = onMoveUp, modifier = Modifier.size(16.dp)) {
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move Up", tint = SaltyTextSecondary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move Up", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                 }
                 if (canMoveDown) {
                     IconButton(onClick = onMoveDown, modifier = Modifier.size(16.dp)) {
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move Down", tint = SaltyTextSecondary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move Down", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                 }
             }

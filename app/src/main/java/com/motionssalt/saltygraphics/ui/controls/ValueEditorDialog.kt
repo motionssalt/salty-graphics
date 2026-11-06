@@ -52,6 +52,7 @@ fun ValueEditorDialog(
     onValueApplied: (Float) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     // Format initial text
     val initialText = if (step >= 1f && currentValue % 1f == 0f) {
         currentValue.toInt().toString()
@@ -87,8 +88,8 @@ fun ValueEditorDialog(
         ) {
             Card(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = SaltySurfaceDark),
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyOutlineDark)),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
@@ -107,13 +108,13 @@ fun ValueEditorDialog(
                             text = label,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = SaltyCyan
+                            color = colors.primary
                         )
                         val unitBadge = if (unit.isNotBlank()) " ($unit)" else ""
                         Text(
                             text = "Range: $minValue .. $maxValue$unitBadge",
                             style = MaterialTheme.typography.labelSmall,
-                            color = SaltyTextTertiary
+                            color = colors.onSurfaceVariant
                         )
                     }
 
@@ -128,10 +129,10 @@ fun ValueEditorDialog(
                         isError = !isValid,
                         supportingText = {
                             if (!isValid && errorMessage != null) {
-                                Text(errorMessage, color = SaltyError, style = MaterialTheme.typography.bodySmall)
+                                Text(errorMessage, color = colors.error, style = MaterialTheme.typography.bodySmall)
                             } else {
                                 val currentFormatted = if (unit.isNotBlank()) "$textInput $unit" else textInput
-                                Text("Current: $currentFormatted", color = SaltyTextSecondary, style = MaterialTheme.typography.bodySmall)
+                                Text("Current: $currentFormatted", color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                             }
                         },
                         keyboardOptions = KeyboardOptions(
@@ -150,12 +151,12 @@ fun ValueEditorDialog(
                             }
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = SaltyCyan,
-                            unfocusedBorderColor = SaltyOutlineDark,
-                            errorBorderColor = SaltyError,
-                            focusedTextColor = SaltyTextPrimary,
-                            unfocusedTextColor = SaltyTextPrimary,
-                            cursorColor = SaltyCyan
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline,
+                            errorBorderColor = colors.error,
+                            focusedTextColor = colors.onSurface,
+                            unfocusedTextColor = colors.onSurface,
+                            cursorColor = colors.primary
                         )
                     )
 
@@ -166,7 +167,7 @@ fun ValueEditorDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(onClick = onDismiss) {
-                            Text("Cancel", color = SaltyTextSecondary)
+                            Text("Cancel", color = colors.onSurfaceVariant)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
@@ -179,10 +180,10 @@ fun ValueEditorDialog(
                             },
                             enabled = isValid,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = SaltyCyan,
-                                contentColor = SaltyDarkBackground,
-                                disabledContainerColor = SaltySurfaceVariantDark,
-                                disabledContentColor = SaltyTextTertiary
+                                containerColor = colors.primary,
+                                contentColor = colors.background,
+                                disabledContainerColor = colors.surfaceVariant,
+                                disabledContentColor = colors.onSurfaceVariant
                             )
                         ) {
                             Text("OK", fontWeight = FontWeight.Bold)

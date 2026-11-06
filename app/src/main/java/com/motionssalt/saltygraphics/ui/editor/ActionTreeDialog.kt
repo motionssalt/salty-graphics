@@ -30,6 +30,7 @@ fun ActionTreeDialog(
     onJumpToNode: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val allNodes = actionTree.nodes.values.sortedByDescending { it.timestamp }
     val currentNodeId = actionTree.currentNodeId
     val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
@@ -38,9 +39,9 @@ fun ActionTreeDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.AccountTree, contentDescription = null, tint = SaltyCyan)
+                Icon(Icons.Default.AccountTree, contentDescription = null, tint = colors.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Action Tree History", color = SaltyCyan, fontWeight = FontWeight.Bold)
+                Text("Action Tree History", color = colors.primary, fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -48,7 +49,7 @@ fun ActionTreeDialog(
                 Text(
                     "Branching command history. Tap any action node across any branch to jump directly to that project state. Clipboard survives branch jumps.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SaltyTextSecondary
+                    color = colors.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -68,7 +69,7 @@ fun ActionTreeDialog(
                                 .clip(RoundedCornerShape(8.dp))
                                 .border(
                                     width = if (isCurrent) 1.5.dp else 1.dp,
-                                    color = if (isCurrent) SaltyCyan else SaltyOutlineDark,
+                                    color = if (isCurrent) colors.primary else colors.outline,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
@@ -77,7 +78,7 @@ fun ActionTreeDialog(
                                 },
                             shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isCurrent) SaltySurfaceVariantDark else SaltyDarkBackground
+                                containerColor = if (isCurrent) colors.surfaceVariant else colors.background
                             )
                         ) {
                             Row(
@@ -94,28 +95,28 @@ fun ActionTreeDialog(
                                             style = MaterialTheme.typography.bodyMedium.copy(
                                                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
                                             ),
-                                            color = if (isCurrent) SaltyCyan else SaltyTextPrimary
+                                            color = if (isCurrent) colors.primary else colors.onSurface
                                         )
                                         if (isCurrent) {
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Icon(Icons.Default.CheckCircle, contentDescription = "Active State", tint = SaltyCyan, modifier = Modifier.size(16.dp))
+                                            Icon(Icons.Default.CheckCircle, contentDescription = "Active State", tint = colors.primary, modifier = Modifier.size(16.dp))
                                         }
                                     }
                                     Text(
                                         text = if (isRoot) "Root Node" else "Branch Node • ${dateFormat.format(Date(node.timestamp))}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = SaltyTextTertiary
+                                        color = colors.onSurfaceVariant
                                     )
                                 }
 
                                 Surface(
-                                    color = if (isCurrent) SaltyCyan else SaltySurfaceVariantDark,
+                                    color = if (isCurrent) colors.primary else colors.surfaceVariant,
                                     shape = RoundedCornerShape(4.dp)
                                 ) {
                                     Text(
                                         text = if (isCurrent) "Current" else "Jump",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = if (isCurrent) SaltyDarkBackground else SaltyTextSecondary,
+                                        color = if (isCurrent) colors.background else colors.onSurfaceVariant,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                 }
@@ -128,9 +129,9 @@ fun ActionTreeDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = SaltyTextSecondary)
+                Text("Close", color = colors.onSurfaceVariant)
             }
         },
-        containerColor = SaltySurfaceDark
+        containerColor = colors.surface
     )
 }

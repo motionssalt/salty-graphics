@@ -19,6 +19,7 @@ fun BlendingDialog(
     onApply: (BlendMode, Float) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     var blendMode by remember { mutableStateOf(currentBlendMode) }
     var opacity by remember { mutableStateOf(currentOpacity) }
 
@@ -33,23 +34,23 @@ fun BlendingDialog(
                     value = opacity,
                     onValueChange = { opacity = it },
                     valueRange = 0f..1f,
-                    colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                    colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                 )
 
-                HorizontalDivider(color = SaltyOutlineDark)
-                Text("Blend Modes (All 16 Photoshop Modes):", style = MaterialTheme.typography.bodyMedium, color = SaltyTextSecondary)
+                HorizontalDivider(color = colors.outline)
+                Text("Blend Modes (All 16 Photoshop Modes):", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
 
                 BlendMode.entries.forEach { mode ->
                     val isSelected = blendMode == mode
                     Surface(
                         onClick = { blendMode = mode },
-                        color = if (isSelected) SaltySurfaceVariantDark else SaltyDarkBackground,
+                        color = if (isSelected) colors.surfaceVariant else colors.background,
                         shape = MaterialTheme.shapes.small,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = mode.displayName,
-                            color = if (isSelected) SaltyCyan else SaltyTextPrimary,
+                            color = if (isSelected) colors.primary else colors.onSurface,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                         )
@@ -60,7 +61,7 @@ fun BlendingDialog(
 
             Button(
                 onClick = { onApply(blendMode, opacity) },
-                colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
             ) {
                 Text("Apply")
             }
@@ -74,6 +75,7 @@ fun MaskDialog(
     onApply: (MaskMode) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     var maskMode by remember { mutableStateOf(currentMaskMode) }
 
     PanelPage("Mask", onBack = onDismiss) {
@@ -82,20 +84,20 @@ fun MaskDialog(
                 Text(
                     "Configure how this layer masks underlying content:",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SaltyTextSecondary
+                    color = colors.onSurfaceVariant
                 )
 
                 MaskMode.entries.forEach { mode ->
                     val isSelected = maskMode == mode
                     Surface(
                         onClick = { maskMode = mode },
-                        color = if (isSelected) SaltySurfaceVariantDark else SaltyDarkBackground,
+                        color = if (isSelected) colors.surfaceVariant else colors.background,
                         shape = MaterialTheme.shapes.small,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = mode.displayName,
-                            color = if (isSelected) SaltyCyan else SaltyTextPrimary,
+                            color = if (isSelected) colors.primary else colors.onSurface,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                         )
@@ -106,7 +108,7 @@ fun MaskDialog(
 
             Button(
                 onClick = { onApply(maskMode) },
-                colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
             ) {
                 Text("Apply")
             }

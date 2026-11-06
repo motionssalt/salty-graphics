@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -32,6 +33,7 @@ fun CanvasView(
     onUpdateLayerTransform: (String, Transform2D) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     val fit = if (viewport.width > 0 && viewport.height > 0)
         minOf(viewport.width / document.canvasSize.width.toFloat(), viewport.height / document.canvasSize.height.toFloat()) * .94f else 1f
@@ -41,7 +43,7 @@ fun CanvasView(
             .fillMaxSize()
             .clipToBounds()
             .onSizeChanged { viewport = it }
-            .background(SaltyDarkBackground)
+            .background(colors.background)
             .pointerInput(zoom, panOffset, viewport) {
                 // Two-finger pinch-to-zoom and pan
                 detectTransformGestures { _, pan, gestureZoom, _ ->
@@ -135,7 +137,7 @@ fun CanvasView(
 
             // Draw Canvas Border Outline
             drawRect(
-                color = SaltyOutlineDark,
+                color = colors.outline,
                 topLeft = topLeft,
                 size = Size(scaledW, scaledH),
                 style = Stroke(width = 1.5f)
@@ -197,21 +199,21 @@ fun CanvasView(
                         }
                         LayerType.MEDIA -> {
                             drawRect(
-                                color = SaltySurfaceVariantDark,
+                                color = colors.surfaceVariant,
                                 topLeft = Offset(-150f, -150f),
                                 size = Size(300f, 300f)
                             )
                         }
                         LayerType.ADJUSTMENT -> {
                             drawRect(
-                                color = SaltyCyan.copy(alpha = 0.15f),
+                                color = colors.primary.copy(alpha = 0.15f),
                                 topLeft = Offset(-scaledW / 2f, -scaledH / 2f),
                                 size = Size(scaledW, scaledH)
                             )
                         }
                         LayerType.VECTOR, LayerType.GROUP -> {
                             drawRect(
-                                color = SaltyAmber.copy(alpha = 0.5f),
+                                color = colors.secondary.copy(alpha = 0.5f),
                                 topLeft = Offset(-100f, -100f),
                                 size = Size(200f, 200f)
                             )
@@ -219,13 +221,13 @@ fun CanvasView(
                         LayerType.QUARANTINED -> {
                             // Show harmless quarantined placeholder
                             drawRoundRect(
-                                color = SaltyError.copy(alpha = 0.25f),
+                                color = colors.error.copy(alpha = 0.25f),
                                 topLeft = Offset(-120f, -60f),
                                 size = Size(240f, 120f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f)
                             )
                             drawRoundRect(
-                                color = SaltyError,
+                                color = colors.error,
                                 topLeft = Offset(-120f, -60f),
                                 size = Size(240f, 120f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f),
@@ -246,7 +248,7 @@ fun CanvasView(
                     }) {
                         // Bounding Box Outline
                         drawRect(
-                            color = SaltyCyan,
+                            color = colors.primary,
                             topLeft = Offset(-halfW, -halfH),
                             size = Size(halfW * 2f, halfH * 2f),
                             style = Stroke(width = 2f)
@@ -262,18 +264,18 @@ fun CanvasView(
                         )
                         for (corner in corners) {
                             drawCircle(color = Color.White, radius = handleRadius, center = corner)
-                            drawCircle(color = SaltyCyan, radius = handleRadius, center = corner, style = Stroke(width = 2f))
+                            drawCircle(color = colors.primary, radius = handleRadius, center = corner, style = Stroke(width = 2f))
                         }
 
                         // Top Rotation Handle
                         val rotateHandleCenter = Offset(0f, -halfH - 24f)
                         drawLine(
-                            color = SaltyCyan,
+                            color = colors.primary,
                             start = Offset(0f, -halfH),
                             end = rotateHandleCenter,
                             strokeWidth = 1.5f
                         )
-                        drawCircle(color = SaltyAmber, radius = handleRadius, center = rotateHandleCenter)
+                        drawCircle(color = colors.secondary, radius = handleRadius, center = rotateHandleCenter)
                     }
                 }
             }

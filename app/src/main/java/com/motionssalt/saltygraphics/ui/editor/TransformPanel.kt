@@ -23,10 +23,11 @@ fun TransformPanel(
     onTransformChange: (Transform2D) -> Unit,
     onClose: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     var isTrackpadMode by remember { mutableStateOf(transform.isTrackpadMode) }
 
     Surface(
-        color = SaltySurfaceDark,
+        color = colors.surface,
         tonalElevation = 8.dp,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -46,10 +47,10 @@ fun TransformPanel(
                 Text(
                     "2D Transform",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = SaltyCyan
+                    color = colors.primary
                 )
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = SaltyTextSecondary)
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.onSurfaceVariant)
                 }
             }
 
@@ -60,7 +61,7 @@ fun TransformPanel(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Scale", style = MaterialTheme.typography.bodyLarge, color = SaltyTextPrimary)
+                    Text("Scale", style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
                     // Chain link toggle button
                     FilledIconToggleButton(
                         checked = transform.isScaleLinked,
@@ -69,10 +70,10 @@ fun TransformPanel(
                             onTransformChange(transform.copy(isScaleLinked = linked))
                         },
                         colors = IconButtonDefaults.filledIconToggleButtonColors(
-                            containerColor = SaltySurfaceVariantDark,
-                            checkedContainerColor = SaltyCyan,
-                            contentColor = SaltyTextSecondary,
-                            checkedContentColor = SaltyDarkBackground
+                            containerColor = colors.surfaceVariant,
+                            checkedContainerColor = colors.primary,
+                            contentColor = colors.onSurfaceVariant,
+                            checkedContentColor = colors.background
                         )
                     ) {
                         Icon(
@@ -84,27 +85,27 @@ fun TransformPanel(
 
                 if (transform.isScaleLinked) {
                     val uniformScale = (transform.scaleX + transform.scaleY) / 2f
-                    Text("Uniform Scale: ${(uniformScale * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                    Text("Uniform Scale: ${(uniformScale * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
                         value = uniformScale,
                         onValueChange = { onTransformChange(transform.setScaleUniform(it)) },
                         valueRange = 0.1f..5.0f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                        colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
                 } else {
-                    Text("Scale X: ${(transform.scaleX * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                    Text("Scale X: ${(transform.scaleX * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
                         value = transform.scaleX,
                         onValueChange = { onTransformChange(transform.copy(scaleX = it)) },
                         valueRange = 0.1f..5.0f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                        colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
-                    Text("Scale Y: ${(transform.scaleY * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                    Text("Scale Y: ${(transform.scaleY * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
                         value = transform.scaleY,
                         onValueChange = { onTransformChange(transform.copy(scaleY = it)) },
                         valueRange = 0.1f..5.0f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyAmber, activeTrackColor = SaltyAmber)
+                        colors = SliderDefaults.colors(thumbColor = colors.secondary, activeTrackColor = colors.secondary)
                     )
                 }
             }
@@ -116,13 +117,13 @@ fun TransformPanel(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Move", style = MaterialTheme.typography.bodyLarge, color = SaltyTextPrimary)
+                    Text("Move", style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
                     TextButton(onClick = {
                         val newMode = !isTrackpadMode
                         isTrackpadMode = newMode
                         onTransformChange(transform.copy(isTrackpadMode = newMode))
                     }) {
-                        Text(if (isTrackpadMode) "Switch to Sliders" else "Switch to Trackpad", color = SaltyCyan)
+                        Text(if (isTrackpadMode) "Switch to Sliders" else "Switch to Trackpad", color = colors.primary)
                     }
                 }
 
@@ -133,7 +134,7 @@ fun TransformPanel(
                             .fillMaxWidth()
                             .height(110.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(SaltyDarkBackground)
+                            .background(colors.background)
                             .pointerInput(transform.moveSensitivity) {
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
@@ -145,16 +146,16 @@ fun TransformPanel(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.TouchApp, contentDescription = null, tint = SaltyTextTertiary)
+                            Icon(Icons.Default.TouchApp, contentDescription = null, tint = colors.onSurfaceVariant)
                             Text(
                                 "Drag here for precision translation",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = SaltyTextTertiary
+                                color = colors.onSurfaceVariant
                             )
                             Text(
                                 "X: ${transform.translationX.toInt()} px | Y: ${transform.translationY.toInt()} px",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = SaltyCyan
+                                color = colors.primary
                             )
                         }
                     }
@@ -163,28 +164,28 @@ fun TransformPanel(
                     Text(
                         "Trackpad Sensitivity: ${(transform.moveSensitivity * 100).toInt()}%",
                         style = MaterialTheme.typography.labelSmall,
-                        color = SaltyTextSecondary
+                        color = colors.onSurfaceVariant
                     )
                     Slider(
                         value = transform.moveSensitivity,
                         onValueChange = { onTransformChange(transform.copy(moveSensitivity = it)) },
                         valueRange = 0.1f..3.0f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                        colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
                 } else {
-                    Text("Move X: ${transform.translationX.toInt()} px", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                    Text("Move X: ${transform.translationX.toInt()} px", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
                         value = transform.translationX,
                         onValueChange = { onTransformChange(transform.copy(translationX = it)) },
                         valueRange = -1000f..1000f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                        colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
-                    Text("Move Y: ${transform.translationY.toInt()} px", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                    Text("Move Y: ${transform.translationY.toInt()} px", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
                         value = transform.translationY,
                         onValueChange = { onTransformChange(transform.copy(translationY = it)) },
                         valueRange = -1000f..1000f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                        colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
                 }
             }
@@ -194,13 +195,13 @@ fun TransformPanel(
                 Text(
                     "Rotate: ${transform.rotationDegrees.toInt()}°",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = SaltyTextPrimary
+                    color = colors.onSurface
                 )
                 Slider(
                     value = transform.rotationDegrees,
                     onValueChange = { onTransformChange(transform.copy(rotationDegrees = it)) },
                     valueRange = 0f..360f,
-                    colors = SliderDefaults.colors(thumbColor = SaltyAmber, activeTrackColor = SaltyAmber)
+                    colors = SliderDefaults.colors(thumbColor = colors.secondary, activeTrackColor = colors.secondary)
                 )
             }
         }

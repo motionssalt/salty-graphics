@@ -26,6 +26,7 @@ fun ProgressSliderControl(
     unit: String = "",
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     val view = LocalView.current
     var isEditorOpen by remember { mutableStateOf(false) }
 
@@ -63,7 +64,7 @@ fun ProgressSliderControl(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                color = if (value == defaultValue) SaltyTextSecondary else SaltyCyan,
+                color = if (value == defaultValue) colors.onSurfaceVariant else colors.primary,
                 maxLines = 1
             )
         }
@@ -74,9 +75,9 @@ fun ProgressSliderControl(
             onValueChange = { onValueChange(it) },
             valueRange = minValue..maxValue,
             colors = SliderDefaults.colors(
-                thumbColor = SaltyCyan,
-                activeTrackColor = SaltyCyan,
-                inactiveTrackColor = SaltySurfaceVariantDark
+                thumbColor = colors.primary,
+                activeTrackColor = colors.primary,
+                inactiveTrackColor = colors.surfaceVariant
             ),
             modifier = Modifier.weight(1f)
         )
@@ -85,8 +86,8 @@ fun ProgressSliderControl(
         Surface(
             onClick = { isEditorOpen = true },
             shape = RoundedCornerShape(8.dp),
-            color = SaltySurfaceVariantDark,
-            border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyCyan.copy(alpha = 0.4f))),
+            color = colors.surfaceVariant,
+            border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.primary.copy(alpha = 0.4f))),
             modifier = Modifier.widthIn(min = 68.dp)
         ) {
             Box(
@@ -96,7 +97,7 @@ fun ProgressSliderControl(
                 Text(
                     text = formattedValue,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-                    color = SaltyCyan,
+                    color = colors.primary,
                     maxLines = 1
                 )
             }

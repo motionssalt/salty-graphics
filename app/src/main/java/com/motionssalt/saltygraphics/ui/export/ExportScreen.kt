@@ -51,6 +51,7 @@ fun ExportScreen(
     repository: ProjectRepository,
     onNavigateBack: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -151,13 +152,13 @@ fun ExportScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SaltyDarkBackground,
-                    titleContentColor = SaltyTextPrimary,
-                    navigationIconContentColor = SaltyTextPrimary
+                    containerColor = colors.background,
+                    titleContentColor = colors.onSurface,
+                    navigationIconContentColor = colors.onSurface
                 )
             )
         },
-        containerColor = SaltyDarkBackground
+        containerColor = colors.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -172,13 +173,13 @@ fun ExportScreen(
                 Text(
                     text = "Resolution: $finalWidth x $finalHeight px",
                     style = MaterialTheme.typography.titleMedium,
-                    color = SaltyCyan,
+                    color = colors.primary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "Export always renders from the master document model at full quality (never downsampled preview proxy).",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SaltyTextSecondary
+                    color = colors.onSurfaceVariant
                 )
             }
 
@@ -194,10 +195,10 @@ fun ExportScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) SaltySurfaceVariantDark else SaltyDarkBackground)
+                                .background(if (isSelected) colors.surfaceVariant else colors.background)
                                 .border(
                                     width = if (isSelected) 1.5.dp else 1.dp,
-                                    color = if (isSelected) SaltyCyan else SaltyOutlineDark,
+                                    color = if (isSelected) colors.primary else colors.outline,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable { selectedFormat = format }
@@ -207,7 +208,7 @@ fun ExportScreen(
                             Text(
                                 text = format.displayName,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = if (isSelected) SaltyCyan else SaltyTextPrimary,
+                                color = if (isSelected) colors.primary else colors.onSurface,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -216,12 +217,12 @@ fun ExportScreen(
 
                 if (selectedFormat != ExportFormat.PNG) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Quality: ${exportQualityPercent.toInt()}%", style = MaterialTheme.typography.bodyMedium, color = SaltyTextPrimary)
+                    Text("Quality: ${exportQualityPercent.toInt()}%", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
                     Slider(
                         value = exportQualityPercent,
                         onValueChange = { exportQualityPercent = it },
                         valueRange = 10f..100f,
-                        colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                        colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
                 }
             }
@@ -239,10 +240,10 @@ fun ExportScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) SaltySurfaceVariantDark else SaltyDarkBackground)
+                                .background(if (isSelected) colors.surfaceVariant else colors.background)
                                 .border(
                                     width = if (isSelected) 1.5.dp else 1.dp,
-                                    color = if (isSelected) SaltyCyan else SaltyOutlineDark,
+                                    color = if (isSelected) colors.primary else colors.outline,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable { resolutionScale = s }
@@ -252,7 +253,7 @@ fun ExportScreen(
                             Text(
                                 text = "${(s * 100).toInt()}%",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = if (isSelected) SaltyCyan else SaltyTextPrimary,
+                                color = if (isSelected) colors.primary else colors.onSurface,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -271,7 +272,7 @@ fun ExportScreen(
                         saveFileLauncher.launch(fileName)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
                 ) {
                     Icon(Icons.Default.FileDownload, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -305,7 +306,7 @@ fun ExportScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SaltyCyan)
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -315,7 +316,7 @@ fun ExportScreen(
 
             if (isExporting) {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = SaltyCyan)
+                    CircularProgressIndicator(color = colors.primary)
                 }
             }
         }

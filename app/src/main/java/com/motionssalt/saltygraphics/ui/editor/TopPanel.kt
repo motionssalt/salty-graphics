@@ -41,11 +41,12 @@ fun TopPanel(
     onToggleGrid: () -> Unit,
     onGridSizeChange: (Int) -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     var showViewModeMenu by remember { mutableStateOf(false) }
     var showOperationMenu by remember { mutableStateOf(false) }
 
     Surface(
-        color = SaltySurfaceDark,
+        color = colors.surface,
         tonalElevation = 6.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -62,59 +63,59 @@ fun TopPanel(
             // Left Group: Back, Layers, View mode, Preview quality
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onNavigateBack, modifier = Modifier.size(38.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = SaltyTextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.onSurface)
                 }
 
                 IconButton(onClick = onToggleLayers, modifier = Modifier.size(38.dp)) {
-                    Icon(Icons.Default.Layers, contentDescription = "Layers", tint = SaltyCyan)
+                    Icon(Icons.Default.Layers, contentDescription = "Layers", tint = colors.primary)
                 }
 
                 // View Mode Dropdown
                 Box {
                     IconButton(onClick = { showViewModeMenu = true }, modifier = Modifier.size(38.dp)) {
-                        Icon(Icons.Default.ZoomIn, contentDescription = "View Mode", tint = SaltyTextPrimary)
+                        Icon(Icons.Default.ZoomIn, contentDescription = "View Mode", tint = colors.onSurface)
                     }
                     DropdownMenu(
                         expanded = showViewModeMenu,
                         onDismissRequest = { showViewModeMenu = false },
-                        modifier = Modifier.background(SaltySurfaceVariantDark)
+                        modifier = Modifier.background(colors.surfaceVariant)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Zoom In (+)", color = SaltyTextPrimary) },
-                            leadingIcon = { Icon(Icons.Default.ZoomIn, contentDescription = null, tint = SaltyCyan) },
+                            text = { Text("Zoom In (+)", color = colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.ZoomIn, contentDescription = null, tint = colors.primary) },
                             onClick = {
                                 onZoomIn()
                                 showViewModeMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Zoom Out (-)", color = SaltyTextPrimary) },
-                            leadingIcon = { Icon(Icons.Default.ZoomOut, contentDescription = null, tint = SaltyCyan) },
+                            text = { Text("Zoom Out (-)", color = colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.ZoomOut, contentDescription = null, tint = colors.primary) },
                             onClick = {
                                 onZoomOut()
                                 showViewModeMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Fit to Screen", color = SaltyTextPrimary) },
-                            leadingIcon = { Icon(Icons.Default.FitScreen, contentDescription = null, tint = SaltyCyan) },
+                            text = { Text("Fit to Screen", color = colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.FitScreen, contentDescription = null, tint = colors.primary) },
                             onClick = {
                                 onFitToScreen()
                                 showViewModeMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("100% Zoom", color = SaltyTextPrimary) },
-                            leadingIcon = { Icon(Icons.Default.Fullscreen, contentDescription = null, tint = SaltyCyan) },
+                            text = { Text("100% Zoom", color = colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.Fullscreen, contentDescription = null, tint = colors.primary) },
                             onClick = {
                                 onReset100Percent()
                                 showViewModeMenu = false
                             }
                         )
-                        HorizontalDivider(color = SaltyOutlineDark)
+                        HorizontalDivider(color = colors.outline)
                         DropdownMenuItem(
-                            text = { Text(if (showGrid) "Hide Gridlines" else "Show Gridlines", color = SaltyTextPrimary) },
-                            leadingIcon = { Icon(Icons.Default.GridOn, contentDescription = null, tint = if (showGrid) SaltyCyan else SaltyTextSecondary) },
+                            text = { Text(if (showGrid) "Hide Gridlines" else "Show Gridlines", color = colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.GridOn, contentDescription = null, tint = if (showGrid) colors.primary else colors.onSurfaceVariant) },
                             onClick = {
                                 onToggleGrid()
                                 showViewModeMenu = false
@@ -122,7 +123,7 @@ fun TopPanel(
                         )
                         if (showGrid) {
                             DropdownMenuItem(
-                                text = { Text("Grid Size: ${gridSize}px", color = SaltyTextSecondary) },
+                                text = { Text("Grid Size: ${gridSize}px", color = colors.onSurfaceVariant) },
                                 onClick = {
                                     val nextSize = when (gridSize) {
                                         20 -> 50
@@ -140,7 +141,7 @@ fun TopPanel(
                 Surface(
                     onClick = onPreviewQualityClick,
                     shape = RoundedCornerShape(6.dp),
-                    color = SaltySurfaceVariantDark,
+                    color = colors.surfaceVariant,
                     modifier = Modifier.padding(start = 2.dp)
                 ) {
                     Text(
@@ -151,8 +152,8 @@ fun TopPanel(
                         },
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         color = when (previewQuality) {
-                            PreviewQuality.LOW -> SaltyAmber
-                            PreviewQuality.MEDIUM -> SaltyCyan
+                            PreviewQuality.LOW -> colors.secondary
+                            PreviewQuality.MEDIUM -> colors.primary
                             PreviewQuality.HIGH -> Color.White
                         },
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
@@ -165,7 +166,7 @@ fun TopPanel(
                 modifier = Modifier
                     .width(1.dp)
                     .height(20.dp)
-                    .background(SaltyOutlineDark)
+                    .background(colors.outline)
             )
 
             // Right Group: Operation, Export, Settings
@@ -173,16 +174,16 @@ fun TopPanel(
                 // Operation (Undo, Redo, Action Tree)
                 Box {
                     IconButton(onClick = { showOperationMenu = true }, modifier = Modifier.size(38.dp)) {
-                        Icon(Icons.Default.History, contentDescription = "Operation & Action Tree", tint = SaltyTextPrimary)
+                        Icon(Icons.Default.History, contentDescription = "Operation & Action Tree", tint = colors.onSurface)
                     }
                     DropdownMenu(
                         expanded = showOperationMenu,
                         onDismissRequest = { showOperationMenu = false },
-                        modifier = Modifier.background(SaltySurfaceVariantDark)
+                        modifier = Modifier.background(colors.surfaceVariant)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Undo", color = if (canUndo) SaltyTextPrimary else SaltyTextTertiary) },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = if (canUndo) SaltyCyan else SaltyTextTertiary) },
+                            text = { Text("Undo", color = if (canUndo) colors.onSurface else colors.onSurfaceVariant) },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = if (canUndo) colors.primary else colors.onSurfaceVariant) },
                             enabled = canUndo,
                             onClick = {
                                 onUndoClick()
@@ -190,18 +191,18 @@ fun TopPanel(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Redo", color = if (canRedo) SaltyTextPrimary else SaltyTextTertiary) },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = null, tint = if (canRedo) SaltyCyan else SaltyTextTertiary) },
+                            text = { Text("Redo", color = if (canRedo) colors.onSurface else colors.onSurfaceVariant) },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = null, tint = if (canRedo) colors.primary else colors.onSurfaceVariant) },
                             enabled = canRedo,
                             onClick = {
                                 onRedoClick()
                                 showOperationMenu = false
                             }
                         )
-                        HorizontalDivider(color = SaltyOutlineDark)
+                        HorizontalDivider(color = colors.outline)
                         DropdownMenuItem(
-                            text = { Text("Open Action Tree", color = SaltyCyan) },
-                            leadingIcon = { Icon(Icons.Default.AccountTree, contentDescription = null, tint = SaltyCyan) },
+                            text = { Text("Open Action Tree", color = colors.primary) },
+                            leadingIcon = { Icon(Icons.Default.AccountTree, contentDescription = null, tint = colors.primary) },
                             onClick = {
                                 onOpenActionTree()
                                 showOperationMenu = false
@@ -211,11 +212,11 @@ fun TopPanel(
                 }
 
                 IconButton(onClick = onExportClick, modifier = Modifier.size(38.dp)) {
-                    Icon(Icons.Default.FileDownload, contentDescription = "Export", tint = SaltyCyan)
+                    Icon(Icons.Default.FileDownload, contentDescription = "Export", tint = colors.primary)
                 }
 
                 IconButton(onClick = onSettingsClick, modifier = Modifier.size(38.dp)) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings", tint = SaltyTextSecondary)
+                    Icon(Icons.Default.Settings, contentDescription = "Settings", tint = colors.onSurfaceVariant)
                 }
             }
         }

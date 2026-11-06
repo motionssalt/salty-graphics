@@ -54,6 +54,7 @@ object RecentColorsRegistry {
  */
 @Composable
 fun CheckerboardPattern(modifier: Modifier = Modifier, squareSize: Float = 16f) {
+    val colors = MaterialTheme.colorScheme
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
@@ -82,6 +83,7 @@ fun ColorPickerRow(
     allowTransparent: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     var isDialogOpen by remember { mutableStateOf(false) }
 
     Row(
@@ -95,15 +97,15 @@ fun ColorPickerRow(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-            color = SaltyTextPrimary
+            color = colors.onSurface
         )
 
         // Swatch Pill
         Surface(
             onClick = { isDialogOpen = true },
             shape = RoundedCornerShape(8.dp),
-            color = SaltySurfaceVariantDark,
-            border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyOutlineDark)),
+            color = colors.surfaceVariant,
+            border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
             modifier = Modifier.height(34.dp)
         ) {
             Row(
@@ -115,7 +117,7 @@ fun ColorPickerRow(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .border(1.dp, SaltyOutlineDark, RoundedCornerShape(6.dp))
+                        .border(1.dp, colors.outline, RoundedCornerShape(6.dp))
                 ) {
                     if (color == 0L || (color and 0xFF000000L) == 0L) {
                         CheckerboardPattern(modifier = Modifier.fillMaxSize(), squareSize = 8f)
@@ -132,7 +134,7 @@ fun ColorPickerRow(
                 Text(
                     text = hexString,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp),
-                    color = if (color == 0L) SaltyAmber else SaltyCyan
+                    color = if (color == 0L) colors.secondary else colors.primary
                 )
             }
         }
@@ -161,6 +163,7 @@ fun ColorPickerDialog(
     onApply: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val isInitiallyTransparent = initialColor == 0L || (initialColor and 0xFF000000L) == 0L
     var isTransparentSelected by remember { mutableStateOf(isInitiallyTransparent && allowTransparent) }
 
@@ -219,8 +222,8 @@ fun ColorPickerDialog(
         ) {
             Card(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = SaltySurfaceDark),
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(SaltyOutlineDark)),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
@@ -239,14 +242,14 @@ fun ColorPickerDialog(
                             text = title,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = SaltyCyan
+                            color = colors.primary
                         )
 
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .border(1.5.dp, SaltyOutlineDark, RoundedCornerShape(8.dp))
+                                .border(1.5.dp, colors.outline, RoundedCornerShape(8.dp))
                         ) {
                             if (isTransparentSelected) {
                                 CheckerboardPattern(modifier = Modifier.fillMaxSize(), squareSize = 8f)
@@ -265,9 +268,9 @@ fun ColorPickerDialog(
                         Surface(
                             onClick = { isTransparentSelected = !isTransparentSelected },
                             shape = RoundedCornerShape(8.dp),
-                            color = if (isTransparentSelected) SaltyCyan.copy(alpha = 0.2f) else SaltySurfaceVariantDark,
+                            color = if (isTransparentSelected) colors.primary.copy(alpha = 0.2f) else colors.surfaceVariant,
                             border = CardDefaults.outlinedCardBorder().copy(
-                                brush = androidx.compose.ui.graphics.SolidColor(if (isTransparentSelected) SaltyCyan else SaltyOutlineDark)
+                                brush = androidx.compose.ui.graphics.SolidColor(if (isTransparentSelected) colors.primary else colors.outline)
                             ),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -280,14 +283,14 @@ fun ColorPickerDialog(
                                     modifier = Modifier
                                         .size(20.dp)
                                         .clip(CircleShape)
-                                        .border(1.dp, SaltyOutlineDark, CircleShape)
+                                        .border(1.dp, colors.outline, CircleShape)
                                 ) {
                                     CheckerboardPattern(modifier = Modifier.fillMaxSize(), squareSize = 6f)
                                 }
                                 Text(
                                     "Transparent Background",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = if (isTransparentSelected) SaltyCyan else SaltyTextPrimary,
+                                    color = if (isTransparentSelected) colors.primary else colors.onSurface,
                                     fontWeight = if (isTransparentSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -301,7 +304,7 @@ fun ColorPickerDialog(
                                 .fillMaxWidth()
                                 .height(130.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .border(1.dp, SaltyOutlineDark, RoundedCornerShape(10.dp))
+                                .border(1.dp, colors.outline, RoundedCornerShape(10.dp))
                                 .pointerInput(hue) {
                                     detectTapGestures { offset ->
                                         saturation = (offset.x / size.width).coerceIn(0f, 1f)
@@ -336,13 +339,13 @@ fun ColorPickerDialog(
 
                         // Hue Slider (Rainbow Gradient)
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Hue (${hue.toInt()}°)", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                            Text("Hue (${hue.toInt()}°)", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(26.dp)
                                     .clip(RoundedCornerShape(6.dp))
-                                    .border(1.dp, SaltyOutlineDark, RoundedCornerShape(6.dp))
+                                    .border(1.dp, colors.outline, RoundedCornerShape(6.dp))
                                     .pointerInput(Unit) {
                                         detectTapGestures { offset ->
                                             hue = (offset.x / size.width * 360f).coerceIn(0f, 360f)
@@ -372,13 +375,13 @@ fun ColorPickerDialog(
 
                         // Alpha Slider
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Opacity (${(alpha * 100).toInt()}%)", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                            Text("Opacity (${(alpha * 100).toInt()}%)", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(26.dp)
                                     .clip(RoundedCornerShape(6.dp))
-                                    .border(1.dp, SaltyOutlineDark, RoundedCornerShape(6.dp))
+                                    .border(1.dp, colors.outline, RoundedCornerShape(6.dp))
                                     .pointerInput(currentRgbInt) {
                                         detectTapGestures { offset ->
                                             alpha = (offset.x / size.width).coerceIn(0f, 1f)
@@ -439,15 +442,15 @@ fun ColorPickerDialog(
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = SaltyCyan,
-                                    unfocusedBorderColor = SaltyOutlineDark
+                                    focusedBorderColor = colors.primary,
+                                    unfocusedBorderColor = colors.outline
                                 )
                             )
                         }
 
                         // Presets & Recent Colors
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Presets & Recent", style = MaterialTheme.typography.labelSmall, color = SaltyTextSecondary)
+                            Text("Presets & Recent", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -459,7 +462,7 @@ fun ColorPickerDialog(
                                             .size(28.dp)
                                             .clip(CircleShape)
                                             .background(safeColor(preset))
-                                            .border(1.dp, SaltyOutlineDark, CircleShape)
+                                            .border(1.dp, colors.outline, CircleShape)
                                             .clickable {
                                                 isTransparentSelected = false
                                                 val a = ((preset shr 24) and 0xFF).toFloat() / 255f
@@ -486,7 +489,7 @@ fun ColorPickerDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(onClick = onDismiss) {
-                            Text("Cancel", color = SaltyTextSecondary)
+                            Text("Cancel", color = colors.onSurfaceVariant)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
@@ -494,8 +497,8 @@ fun ColorPickerDialog(
                                 onApply(currentArgbLong)
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = SaltyCyan,
-                                contentColor = SaltyDarkBackground
+                                containerColor = colors.primary,
+                                contentColor = colors.background
                             )
                         ) {
                             Text("Apply", fontWeight = FontWeight.Bold)

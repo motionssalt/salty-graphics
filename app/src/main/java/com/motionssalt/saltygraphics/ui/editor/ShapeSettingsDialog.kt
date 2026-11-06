@@ -16,6 +16,7 @@ fun ShapeSettingsDialog(
     onSave: (ShapeData) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     var shape by remember { mutableStateOf(initialShape) }
 
     PanelPage("Shape", onBack = onDismiss) {
@@ -27,7 +28,7 @@ fun ShapeSettingsDialog(
                     value = shape.width,
                     onValueChange = { shape = shape.copy(width = it) },
                     valueRange = 50f..1000f,
-                    colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                    colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                 )
 
                 Text("Height: ${shape.height.toInt()} px", style = MaterialTheme.typography.bodyMedium)
@@ -35,7 +36,7 @@ fun ShapeSettingsDialog(
                     value = shape.height,
                     onValueChange = { shape = shape.copy(height = it) },
                     valueRange = 50f..1000f,
-                    colors = SliderDefaults.colors(thumbColor = SaltyCyan, activeTrackColor = SaltyCyan)
+                    colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                 )
 
                 // Corner radius slider (Can go all the way until it becomes a circle/oval per Section 3.6)
@@ -46,7 +47,7 @@ fun ShapeSettingsDialog(
                         value = shape.cornerRadius.coerceIn(0f, maxRadius),
                         onValueChange = { shape = shape.copy(cornerRadius = it) },
                         valueRange = 0f..maxRadius,
-                        colors = SliderDefaults.colors(thumbColor = SaltyAmber, activeTrackColor = SaltyAmber)
+                        colors = SliderDefaults.colors(thumbColor = colors.secondary, activeTrackColor = colors.secondary)
                     )
                 }
 
@@ -74,7 +75,7 @@ fun ShapeSettingsDialog(
 
             Button(
                 onClick = { onSave(shape) },
-                colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
+                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
             ) {
                 Text("Apply")
             }

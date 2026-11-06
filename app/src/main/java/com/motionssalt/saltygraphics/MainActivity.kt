@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -65,16 +66,17 @@ class MainActivity : ComponentActivity() {
         val deviceInfoProvider = DeviceInfoProvider(applicationContext)
 
         setContent {
+            val theme by settingsManager.theme.collectAsState()
             val uiScale by settingsManager.uiScale.collectAsState()
 
             SaltyGraphicsTheme(
-                darkTheme = true,
+                darkTheme = theme.isDark(isSystemInDarkTheme()),
                 dynamicColor = true,
                 uiScale = uiScale
             ) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = SaltyDarkBackground
+                    modifier = Modifier.fillMaxSize().safeDrawingPadding(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
 
