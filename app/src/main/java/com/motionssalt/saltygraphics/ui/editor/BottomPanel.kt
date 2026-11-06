@@ -33,7 +33,9 @@ fun BottomPanel(
     Surface(
         color = SaltySurfaceDark,
         tonalElevation = 8.dp,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
     ) {
         Row(
             modifier = Modifier

@@ -83,7 +83,10 @@ fun NewProjectScreen(
         bottomBar = {
             Surface(
                 color = SaltySurfaceDark,
-                tonalElevation = 8.dp
+                tonalElevation = 8.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
             ) {
                 Row(
                     modifier = Modifier

@@ -145,7 +145,8 @@ fun HomeScreen(
             FloatingActionButton(
                 onClick = onNavigateToNewProject,
                 containerColor = SaltyCyan,
-                contentColor = SaltyDarkBackground
+                contentColor = SaltyDarkBackground,
+                modifier = Modifier.navigationBarsPadding()
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New Project")
             }

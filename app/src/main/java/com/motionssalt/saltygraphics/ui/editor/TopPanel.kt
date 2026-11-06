@@ -47,7 +47,10 @@ fun TopPanel(
     Surface(
         color = SaltySurfaceDark,
         tonalElevation = 6.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .displayCutoutPadding()
     ) {
         Row(
             modifier = Modifier

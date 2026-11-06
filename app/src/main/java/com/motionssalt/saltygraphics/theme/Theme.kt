@@ -1,17 +1,15 @@
 package com.motionssalt.saltygraphics.theme
 
+import android.app.Activity
 import android.os.Build
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Density
+import androidx.core.view.WindowCompat
 
 val LocalUiScale = compositionLocalOf { 1.0f }
 
@@ -32,6 +30,23 @@ private val DarkColorScheme = darkColorScheme(
     error = SaltyError
 )
 
+private val LightColorScheme = lightColorScheme(
+    primary = Color(0xFF006874),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF9EEFFD),
+    onPrimaryContainer = Color(0xFF001F24),
+    secondary = Color(0xFF785900),
+    onSecondary = Color.White,
+    background = Color(0xFFFBFDFD),
+    onBackground = Color(0xFF191C1D),
+    surface = Color(0xFFF8FAFA),
+    onSurface = Color(0xFF191C1D),
+    surfaceVariant = Color(0xFFDBE4E6),
+    onSurfaceVariant = Color(0xFF3F484A),
+    outline = Color(0xFF6F797B),
+    error = Color(0xFFBA1A1A)
+)
+
 @Composable
 fun SaltyGraphicsTheme(
     darkTheme: Boolean = true,
@@ -45,10 +60,23 @@ fun SaltyGraphicsTheme(
             try {
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             } catch (_: Throwable) {
-                DarkColorScheme
+                if (darkTheme) DarkColorScheme else LightColorScheme
             }
         }
-        else -> DarkColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !darkTheme
+                insetsController.isAppearanceLightNavigationBars = !darkTheme
+            }
+        }
     }
 
     val currentDensity = LocalDensity.current

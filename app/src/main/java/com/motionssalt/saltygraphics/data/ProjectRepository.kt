@@ -51,62 +51,24 @@ class ProjectRepository(private val context: Context) {
     suspend fun loadProjects() = withContext(Dispatchers.IO) {
         try {
             if (!indexFile.exists()) {
-                // Seed with an initial sample project for Victor
-                val sampleDoc = ProjectDocument(
-                    id = UUID.randomUUID().toString(),
-                    name = "My First Salty Design",
-                    canvasSize = CanvasSize(
-                        width = 1080,
-                        height = 1920,
-                        aspectRatio = AspectRatioPreset.STORY_9_16,
-                        quality = QualityPreset.P1080
-                    ),
-                    layers = listOf(
-                        Layer(
-                            id = UUID.randomUUID().toString(),
-                            name = "Background Card",
-                            type = LayerType.SHAPE,
-                            shapeData = ShapeData(
-                                type = ShapeType.ROUNDED_RECTANGLE,
-                                cornerRadius = 32f,
-                                fillColor = 0xFF141721L
-                            )
-                        ),
-                        Layer(
-                            id = UUID.randomUUID().toString(),
-                            name = "Salty Graphics",
-                            type = LayerType.TEXT,
-                            textData = TextLayerData(
-                                text = "Salty Graphics",
-                                fontSize = 54f,
-                                color = 0xFF00E5FFL
-                            )
-                        )
-                    )
-                )
-
-                // Save real .sg archive so it can be opened immediately
-                try {
-                    val sampleFile = File(projectsDir, "${sampleDoc.id}.sg")
-                    SgProjectArchive.saveToFile(sampleDoc, sampleFile)
-                } catch (_: Throwable) {}
-
-                val initial = ProjectSummary(
-                    id = sampleDoc.id,
-                    name = sampleDoc.name,
-                    width = sampleDoc.canvasSize.width,
-                    height = sampleDoc.canvasSize.height,
-                    layerCount = sampleDoc.layers.size,
-                    modifiedAt = sampleDoc.updatedAt
-                )
-                saveIndex(listOf(initial))
-                _projects.value = listOf(initial)
+                // R3: No default sample project on first launch. Friendly empty state shown.
+                _projects.value = emptyList()
                 return@withContext
             }
 
             val content = indexFile.readText()
             val list = json.decodeFromString<List<ProjectSummary>>(content)
-            _projects.value = list.sortedByDescending { it.modifiedAt }
+            
+            // R3 Migration: on upgrade, remove the seeded sample project if it is still unmodified
+            val migrated = list.filterNot { it.name == "My First Salty Design" && it.layerCount == 2 }
+            if (migrated.size != list.size) {
+                list.filter { it.name == "My First Salty Design" && it.layerCount == 2 }.forEach {
+                    try { File(projectsDir, "${it.id}.sg").delete() } catch (_: Throwable) {}
+                }
+                saveIndex(migrated)
+            } else {
+                _projects.value = list.sortedByDescending { it.modifiedAt }
+            }
         } catch (e: Throwable) {
             _projects.value = emptyList()
         }

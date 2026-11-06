@@ -252,14 +252,14 @@
       {
         "id": "R2",
         "title": "Safe-area insets (status bar and navigation bar)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Added statusBarsPadding and displayCutoutPadding to TopPanel, navigationBarsPadding to BottomPanel, NewProjectScreen, ExportScreen, and HomeScreen FAB. Configured WindowCompat insets controller in Theme.kt for status and navigation bar icon contrast in both dark and light modes."
       },
       {
         "id": "R3",
         "title": "Remove the default sample project",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Removed seeding of sample project on first launch (empty list returned, triggering friendly empty state). Added upgrade migration in ProjectRepository to remove untouched seed project ('My First Salty Design' with 2 layers) and delete its .sg file while preserving all user-created or edited projects. Verified with ProjectRepositoryTest."
       },
       {
         "id": "R4",

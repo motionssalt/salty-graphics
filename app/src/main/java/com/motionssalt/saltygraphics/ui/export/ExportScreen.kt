@@ -261,7 +261,10 @@ fun ExportScreen(
             }
 
             // Export Actions (SAF or Share Sheet)
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Button(
                     onClick = {
                         val fileName = "${doc.name.replace(" ", "_")}.${selectedFormat.extension}"
