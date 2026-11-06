@@ -240,6 +240,99 @@
       "RELEASE_KEY_PASSWORD"
     ]
   },
-  "last_updated": "2026-11-06T12:38:13.835380+00:00",
-  "last_session_note": "Fixed instant startup crash. Hardened ProjectSummary serialization, added comprehensive R8 keep rules, wrapped EdgeToEdge and loadProjects defensively, and verified via CI."
+  "fix_round_1": {
+    "status": "in_progress",
+    "queue": [
+      {
+        "id": "R1",
+        "title": "Fix the crash on creating text and shape layers (highest priority)",
+        "status": "in_progress",
+        "notes": "Diagnosed root cause: CanvasView and EffectSettingsSheet called Color(ULong) inline constructor passing ARGB value into internal colorSpace id field causing IllegalArgumentException: Unknown color space id when drawing. Also adding layer quarantine and local crash log."
+      },
+      {
+        "id": "R2",
+        "title": "Safe-area insets (status bar and navigation bar)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R3",
+        "title": "Remove the default sample project",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R4",
+        "title": "The control library (both slider types, color picker, and more)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R5",
+        "title": "Tap-to-edit values with a proper input experience",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R6",
+        "title": "The bottom panel becomes a fixed panel, not a row",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R7",
+        "title": "Project settings versus app settings",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R8",
+        "title": "Theme (dark, light, system)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R9",
+        "title": "Visual aspect ratio picker (New Project)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R10",
+        "title": "Text options (reference: Keyflaw's Text options)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R11",
+        "title": "Vector creation and editing (reference: Keyflaw's vector tool)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R12",
+        "title": "Built-in fonts and importing several fonts at once",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R13",
+        "title": "Save and import the project itself (.sg)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "R14",
+        "title": "Verify, release, and hand off",
+        "status": "pending",
+        "notes": ""
+      }
+    ],
+    "decisions": [],
+    "known_issues": [],
+    "last_updated": "2026-11-06T14:51:00Z",
+    "last_session_note": "Starting Fix Round 1. Identified Color(ULong) color space crash in CanvasView for Shape and Text layers."
+  },
+  "last_updated": "2026-11-06T14:51:00Z",
+  "last_session_note": "Starting Fix Round 1 queue."
 }
