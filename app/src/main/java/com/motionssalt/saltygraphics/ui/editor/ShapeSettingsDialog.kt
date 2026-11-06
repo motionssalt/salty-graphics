@@ -18,10 +18,8 @@ fun ShapeSettingsDialog(
 ) {
     var shape by remember { mutableStateOf(initialShape) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("${shape.type.displayName} Settings", fontWeight = FontWeight.Bold, color = SaltyCyan) },
-        text = {
+    PanelPage("Shape", onBack = onDismiss) {
+
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Width & Height
                 Text("Width: ${shape.width.toInt()} px", style = MaterialTheme.typography.bodyMedium)
@@ -72,20 +70,14 @@ fun ShapeSettingsDialog(
                     )
                 }
             }
-        },
-        confirmButton = {
+
+
             Button(
                 onClick = { onSave(shape) },
                 colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
             ) {
                 Text("Apply")
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SaltyTextSecondary)
-            }
-        },
-        containerColor = SaltySurfaceDark
-    )
+
+    }
 }

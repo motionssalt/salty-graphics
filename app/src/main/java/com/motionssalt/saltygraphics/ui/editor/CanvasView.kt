@@ -13,6 +13,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.unit.IntSize
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.theme.*
 
@@ -29,11 +32,17 @@ fun CanvasView(
     onUpdateLayerTransform: (String, Transform2D) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var viewport by remember { mutableStateOf(IntSize.Zero) }
+    val fit = if (viewport.width > 0 && viewport.height > 0)
+        minOf(viewport.width / document.canvasSize.width.toFloat(), viewport.height / document.canvasSize.height.toFloat()) * .94f else 1f
+    val effectiveZoom = fit * zoom
     Box(
         modifier = modifier
             .fillMaxSize()
+            .clipToBounds()
+            .onSizeChanged { viewport = it }
             .background(SaltyDarkBackground)
-            .pointerInput(Unit) {
+            .pointerInput(zoom, panOffset, viewport) {
                 // Two-finger pinch-to-zoom and pan
                 detectTransformGestures { _, pan, gestureZoom, _ ->
                     val newZoom = (zoom * gestureZoom).coerceIn(0.1f, 10f)
@@ -41,7 +50,7 @@ fun CanvasView(
                     onZoomPanChange(newZoom, newPan)
                 }
             }
-            .pointerInput(document.layers, selectedLayerIds) {
+            .pointerInput(document.layers, selectedLayerIds, zoom, panOffset, viewport) {
                 detectTapGestures { tapOffset ->
                     // Convert screen tap to canvas space
                     val canvasCenterX = size.width / 2f + panOffset.x
@@ -49,11 +58,11 @@ fun CanvasView(
 
                     val canvasW = document.canvasSize.width.toFloat()
                     val canvasH = document.canvasSize.height.toFloat()
-                    val canvasLeft = canvasCenterX - (canvasW * zoom / 2f)
-                    val canvasTop = canvasCenterY - (canvasH * zoom / 2f)
+                    val canvasLeft = canvasCenterX - (canvasW * effectiveZoom / 2f)
+                    val canvasTop = canvasCenterY - (canvasH * effectiveZoom / 2f)
 
-                    val xInCanvas = (tapOffset.x - canvasLeft) / zoom
-                    val yInCanvas = (tapOffset.y - canvasTop) / zoom
+                    val xInCanvas = (tapOffset.x - canvasLeft) / effectiveZoom
+                    val yInCanvas = (tapOffset.y - canvasTop) / effectiveZoom
 
                     // Hit test from topmost layer to bottom
                     var hitLayer: Layer? = null
@@ -81,8 +90,8 @@ fun CanvasView(
             val canvasH = document.canvasSize.height.toFloat()
 
             // Draw Canvas Document Boundary
-            val scaledW = canvasW * zoom
-            val scaledH = canvasH * zoom
+            val scaledW = canvasW * effectiveZoom
+            val scaledH = canvasH * effectiveZoom
             val topLeft = Offset(center.x - (scaledW / 2f), center.y - (scaledH / 2f))
 
             // Canvas Background
@@ -94,7 +103,7 @@ fun CanvasView(
 
             // Optional Gridlines
             if (showGrid && gridSize > 0) {
-                val gridSpacing = gridSize * zoom
+                val gridSpacing = gridSize * effectiveZoom
                 if (gridSpacing > 4f) {
                     var x = topLeft.x
                     while (x <= topLeft.x + scaledW) {
@@ -131,13 +140,13 @@ fun CanvasView(
             for (layer in document.activeLayers) {
                 if (!layer.isVisible) continue
 
-                val layerCenterX = center.x + (layer.transform.translationX * zoom)
-                val layerCenterY = center.y + (layer.transform.translationY * zoom)
+                val layerCenterX = center.x + (layer.transform.translationX * effectiveZoom)
+                val layerCenterY = center.y + (layer.transform.translationY * effectiveZoom)
 
                 withTransform({
                     translate(layerCenterX, layerCenterY)
                     rotate(layer.transform.rotationDegrees, pivot = Offset.Zero)
-                    scale(layer.transform.scaleX * zoom, layer.transform.scaleY * zoom, pivot = Offset.Zero)
+                    scale(layer.transform.scaleX * effectiveZoom, layer.transform.scaleY * effectiveZoom, pivot = Offset.Zero)
                 }) {
                     when (layer.type) {
                         LayerType.SHAPE -> {
@@ -223,8 +232,8 @@ fun CanvasView(
 
                 // Bounding Box & Handles for Selected Layer (Section 3.6)
                 if (selectedLayerIds.contains(layer.id)) {
-                    val halfW = (layer.localWidth * layer.transform.scaleX * zoom) / 2f
-                    val halfH = (layer.localHeight * layer.transform.scaleY * zoom) / 2f
+                    val halfW = (layer.localWidth * layer.transform.scaleX * effectiveZoom) / 2f
+                    val halfH = (layer.localHeight * layer.transform.scaleY * effectiveZoom) / 2f
 
                     withTransform({
                         translate(layerCenterX, layerCenterY)

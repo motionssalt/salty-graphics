@@ -22,12 +22,10 @@ fun TextSettingsDialog(
     var textData by remember { mutableStateOf(initialData) }
     var pathDropdownExpanded by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Text Settings", fontWeight = FontWeight.Bold, color = SaltyCyan) },
-        text = {
+    PanelPage("Text", onBack = onDismiss) {
+
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(
@@ -121,20 +119,14 @@ fun TextSettingsDialog(
                     )
                 }
             }
-        },
-        confirmButton = {
+
+
             Button(
                 onClick = { onSave(textData) },
                 colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
             ) {
                 Text("Apply")
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SaltyTextSecondary)
-            }
-        },
-        containerColor = SaltySurfaceDark
-    )
+
+    }
 }

@@ -1,8 +1,6 @@
 package com.motionssalt.saltygraphics.ui.editor
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -12,132 +10,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.engine.model.Layer
-import com.motionssalt.saltygraphics.engine.model.LayerType
-import com.motionssalt.saltygraphics.theme.*
+
+private data class Tool(val label: String, val icon: ImageVector, val action: () -> Unit)
 
 @Composable
 fun BottomPanel(
-    selectedLayer: Layer?,
-    onAddMedia: () -> Unit,
-    onAddText: () -> Unit,
-    onAddAdjustment: () -> Unit,
-    onAddShape: () -> Unit,
-    onAddVector: () -> Unit,
-    onEditLayer: () -> Unit,
-    onOpenTransform: () -> Unit,
-    onOpenEffects: () -> Unit,
-    onOpenBlending: () -> Unit,
-    onOpenMask: () -> Unit,
+    selectedLayer: Layer?, onAddMedia: () -> Unit, onAddText: () -> Unit,
+    onAddAdjustment: () -> Unit, onAddShape: () -> Unit, onAddVector: () -> Unit,
+    onEditLayer: () -> Unit, onOpenTransform: () -> Unit, onOpenEffects: () -> Unit,
+    onOpenBlending: () -> Unit, onOpenMask: () -> Unit, onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        color = SaltySurfaceDark,
-        tonalElevation = 8.dp,
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (selectedLayer == null) {
-                // No layer selected options
-                BottomPanelButton(
-                    label = "Media",
-                    icon = Icons.Default.AddPhotoAlternate,
-                    onClick = onAddMedia
-                )
-                BottomPanelButton(
-                    label = "Text",
-                    icon = Icons.Default.TextFields,
-                    onClick = onAddText
-                )
-                BottomPanelButton(
-                    label = "Adjustment",
-                    icon = Icons.Default.Tune,
-                    onClick = onAddAdjustment
-                )
-                BottomPanelButton(
-                    label = "Shape",
-                    icon = Icons.Default.Category,
-                    onClick = onAddShape
-                )
-                BottomPanelButton(
-                    label = "Vector Pen",
-                    icon = Icons.Default.Draw,
-                    onClick = onAddVector
-                )
-            } else {
-                // A layer is selected options
-                val canEdit = selectedLayer.type != LayerType.ADJUSTMENT
-                BottomPanelButton(
-                    label = when (selectedLayer.type) {
-                        LayerType.MEDIA -> "Replace"
-                        LayerType.TEXT -> "Text Settings"
-                        LayerType.SHAPE -> "Shape Settings"
-                        LayerType.VECTOR -> "Edit Points"
-                        LayerType.GROUP -> "Edit Group"
-                        LayerType.ADJUSTMENT -> "Adjustment"
-                        LayerType.QUARANTINED -> "Quarantined"
-                    },
-                    icon = Icons.Default.Edit,
-                    enabled = canEdit,
-                    onClick = onEditLayer
-                )
-
-                BottomPanelButton(
-                    label = "Transform",
-                    icon = Icons.Default.OpenWith,
-                    onClick = onOpenTransform
-                )
-
-                BottomPanelButton(
-                    label = "Effects (${selectedLayer.effects.size})",
-                    icon = Icons.Default.AutoAwesome,
-                    onClick = onOpenEffects
-                )
-
-                BottomPanelButton(
-                    label = "Blending",
-                    icon = Icons.Default.Layers,
-                    onClick = onOpenBlending
-                )
-
-                BottomPanelButton(
-                    label = "Mask",
-                    icon = Icons.Default.FilterFrames,
-                    onClick = onOpenMask
-                )
+    val tools = if (selectedLayer == null) listOf(
+        Tool("Media", Icons.Default.AddPhotoAlternate, onAddMedia),
+        Tool("Text", Icons.Default.TextFields, onAddText),
+        Tool("Adjustment", Icons.Default.Tune, onAddAdjustment),
+        Tool("Shape", Icons.Default.Category, onAddShape),
+        Tool("Vector", Icons.Default.Draw, onAddVector)
+    ) else listOf(
+        Tool("Edit", Icons.Default.Edit, onEditLayer),
+        Tool("Transform", Icons.Default.OpenWith, onOpenTransform),
+        Tool("Effects", Icons.Default.AutoAwesome, onOpenEffects),
+        Tool("Blending", Icons.Default.Layers, onOpenBlending),
+        Tool("Mask", Icons.Default.FilterFrames, onOpenMask),
+        Tool("Delete", Icons.Default.Delete, onDelete)
+    )
+    Column(modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        tools.chunked(3).forEach { row ->
+            Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                row.forEach { tool ->
+                    FilledTonalButton(onClick = tool.action, modifier = Modifier.weight(1f).fillMaxHeight(),
+                        contentPadding = PaddingValues(2.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(tool.icon, null)
+                            Text(tool.label, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                        }
+                    }
+                }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
-    }
-}
-
-@Composable
-fun BottomPanelButton(
-    label: String,
-    icon: ImageVector,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = SaltySurfaceVariantDark,
-            contentColor = SaltyCyan,
-            disabledContainerColor = SaltySurfaceVariantDark.copy(alpha = 0.5f),
-            disabledContentColor = SaltyTextTertiary
-        ),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }

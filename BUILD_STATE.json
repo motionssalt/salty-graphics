@@ -277,7 +277,7 @@
         "id": "R6",
         "title": "The bottom panel becomes a fixed panel, not a row",
         "status": "in_progress",
-        "notes": ""
+        "notes": "Baseline repaired and green in Actions 42247160964. Implemented bounded adaptive tools pane, all existing tools routed inside it, 3-column non-scrolling grid, undoable selected-layer Delete, viewport-relative canvas fitting. JVM Compose verification pending."
       },
       {
         "id": "R7",
@@ -329,13 +329,12 @@
       }
     ],
     "decisions": [
-      "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets."
+      "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
+      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
-    "known_issues": [
-      "Incoming main Actions run 42243281132 failed; investigating before R6 implementation. Existing workflow overwrites beta1 on each main push; must be tag-only before a successful build."
-    ],
-    "last_updated": "2026-11-06T15:52:56.607223+00:00",
-    "last_session_note": "Repaired inherited compile errors: missing controls/background imports and quarantined layer icon/label cases. Release publishing now tag-only to preserve beta1. Waiting for Actions gate before R6."
+    "known_issues": [],
+    "last_updated": "2026-11-06T15:57:59.765795+00:00",
+    "last_session_note": "R6 code checkpoint: run JVM Compose tests and Actions before marking done."
   },
   "last_updated": "2026-11-06T14:51:00Z",
   "last_session_note": "Starting Fix Round 1 queue."

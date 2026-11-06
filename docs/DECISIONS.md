@@ -35,3 +35,8 @@
   - `project.json`: full document model (layers, transforms, shapes, vector paths, blend modes, masks, and action tree state).
   - `assets/`: embedded raster images (PNG/JPG/WebP) and custom fonts (TTF/OTF).
 - Zero external backend required; fully offline-first.
+
+## Fix round 1: R6 fixed tools pane
+The usable workspace (system bars and toolbar excluded) gives portrait tools 40% height, clamped 260–340dp but never more than 45%. At width >=840dp or width greater than height, tools dock right: 40% width, clamped 280–360dp and capped at 45%. Main grids are three columns and never scroll; subpages scroll vertically inside the same bounds. No resizer or drag handle. Canvas fit is recomputed from its actual viewport and document dimensions, with 6% breathing room. Delete records one history action. Existing tool dialogs are now in-panel pages; numeric/color input dialogs remain dedicated input surfaces.
+
+Releases publish only from new v* tags. Main builds upload APK artifacts but must never overwrite beta1 or any previous release.

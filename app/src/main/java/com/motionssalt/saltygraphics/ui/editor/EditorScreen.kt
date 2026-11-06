@@ -77,7 +77,9 @@ fun EditorScreen(
 
     // Handle nested group Back navigation
     BackHandler {
-        if (activeGroupId != null) {
+        if (isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
+            isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
+        } else if (activeGroupId != null) {
             activeGroupId = null // Return to parent document
         } else {
             onNavigateBack()
@@ -128,7 +130,7 @@ fun EditorScreen(
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },
                 onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.1f) },
                 onFitToScreen = {
-                    zoom = 0.5f
+                    zoom = 1f
                     panOffset = Offset.Zero
                 },
                 onReset100Percent = {
@@ -139,72 +141,15 @@ fun EditorScreen(
                 onGridSizeChange = { gridSize = it }
             )
         },
-        bottomBar = {
-            BottomPanel(
-                selectedLayer = currentSelectedLayer,
-                onAddMedia = {
-                    val newLayer = Layer(
-                        name = "Media Layer ${doc.layers.size + 1}",
-                        type = LayerType.MEDIA
-                    )
-                    recordAndAutoSave("Add Media Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                },
-                onAddText = {
-                    val newLayer = Layer(
-                        name = "Text Layer ${doc.layers.size + 1}",
-                        type = LayerType.TEXT,
-                        textData = TextLayerData()
-                    )
-                    recordAndAutoSave("Add Text Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                },
-                onAddAdjustment = {
-                    val newLayer = Layer(
-                        name = "Adjustment Layer",
-                        type = LayerType.ADJUSTMENT
-                    )
-                    recordAndAutoSave("Add Adjustment Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                },
-                onAddShape = {
-                    val newLayer = Layer(
-                        name = "Shape Layer ${doc.layers.size + 1}",
-                        type = LayerType.SHAPE,
-                        shapeData = ShapeData()
-                    )
-                    recordAndAutoSave("Add Shape Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                },
-                onAddVector = {
-                    val newLayer = Layer(
-                        name = "Vector Path ${doc.layers.size + 1}",
-                        type = LayerType.VECTOR,
-                        vectorPathData = VectorPathData()
-                    )
-                    recordAndAutoSave("Add Vector Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                },
-                onEditLayer = {
-                    when (currentSelectedLayer?.type) {
-                        LayerType.TEXT -> isTextSettingsOpen = true
-                        LayerType.SHAPE -> isShapeSettingsOpen = true
-                        LayerType.GROUP -> activeGroupId = currentSelectedLayer.id
-                        else -> {}
-                    }
-                },
-                onOpenTransform = { isTransformPanelOpen = true },
-                onOpenEffects = { isEffectsSheetOpen = true },
-                onOpenBlending = { isBlendingOpen = true },
-                onOpenMask = { isMaskOpen = true }
-            )
-        },
         containerColor = SaltyDarkBackground
     ) { innerPadding ->
+        EditorWorkspace(
+            modifier = Modifier.padding(innerPadding).navigationBarsPadding().displayCutoutPadding(),
+            preview = {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+
         ) {
             CanvasView(
                 document = doc,
@@ -302,9 +247,81 @@ fun EditorScreen(
                 }
             }
 
+        }
+            },
+
+            panel = {
+                val pageOpen = isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen
+                if (!pageOpen) {
+
+            BottomPanel(
+                selectedLayer = currentSelectedLayer,
+                onAddMedia = {
+                    val newLayer = Layer(
+                        name = "Media Layer ${doc.layers.size + 1}",
+                        type = LayerType.MEDIA
+                    )
+                    recordAndAutoSave("Add Media Layer", doc.addLayer(newLayer, activeGroupId))
+                    selectedLayerIds = setOf(newLayer.id)
+                },
+                onAddText = {
+                    val newLayer = Layer(
+                        name = "Text Layer ${doc.layers.size + 1}",
+                        type = LayerType.TEXT,
+                        textData = TextLayerData()
+                    )
+                    recordAndAutoSave("Add Text Layer", doc.addLayer(newLayer, activeGroupId))
+                    selectedLayerIds = setOf(newLayer.id)
+                },
+                onAddAdjustment = {
+                    val newLayer = Layer(
+                        name = "Adjustment Layer",
+                        type = LayerType.ADJUSTMENT
+                    )
+                    recordAndAutoSave("Add Adjustment Layer", doc.addLayer(newLayer, activeGroupId))
+                    selectedLayerIds = setOf(newLayer.id)
+                },
+                onAddShape = {
+                    val newLayer = Layer(
+                        name = "Shape Layer ${doc.layers.size + 1}",
+                        type = LayerType.SHAPE,
+                        shapeData = ShapeData()
+                    )
+                    recordAndAutoSave("Add Shape Layer", doc.addLayer(newLayer, activeGroupId))
+                    selectedLayerIds = setOf(newLayer.id)
+                },
+                onAddVector = {
+                    val newLayer = Layer(
+                        name = "Vector Path ${doc.layers.size + 1}",
+                        type = LayerType.VECTOR,
+                        vectorPathData = VectorPathData()
+                    )
+                    recordAndAutoSave("Add Vector Layer", doc.addLayer(newLayer, activeGroupId))
+                    selectedLayerIds = setOf(newLayer.id)
+                },
+                onEditLayer = {
+                    when (currentSelectedLayer?.type) {
+                        LayerType.TEXT -> isTextSettingsOpen = true
+                        LayerType.SHAPE -> isShapeSettingsOpen = true
+                        LayerType.GROUP -> activeGroupId = currentSelectedLayer.id
+                        else -> {}
+                    }
+                },
+                onOpenTransform = { isTransformPanelOpen = true },
+                onOpenEffects = { isEffectsSheetOpen = true },
+                onOpenBlending = { isBlendingOpen = true },
+                onOpenMask = { isMaskOpen = true },
+                onDelete = {
+                    val updated = selectedLayerIds.fold(doc) { d, id -> d.removeLayer(id) }
+                    selectedLayerIds = emptySet()
+                    recordAndAutoSave("Delete Layers", updated)
+                }
+            )
+
+                }
             // Transform Bottom Sheet
             if (isTransformPanelOpen && currentSelectedLayer != null) {
-                Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                PanelPage("Transform", onBack = { isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false }) {
                     TransformPanel(
                         transform = currentSelectedLayer.transform,
                         onTransformChange = { newT ->
@@ -318,7 +335,7 @@ fun EditorScreen(
 
             // Effects Bottom Sheet
             if (isEffectsSheetOpen && currentSelectedLayer != null) {
-                Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                PanelPage("Effects", onBack = { isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false }, scrollable = false) {
                     EffectSettingsSheet(
                         targetLayer = currentSelectedLayer,
                         allLayers = doc.activeLayers,
@@ -344,9 +361,6 @@ fun EditorScreen(
                     )
                 }
             }
-        }
-    }
-
     // Dialogs
     val currentShape = currentSelectedLayer?.shapeData
     if (isShapeSettingsOpen && currentShape != null) {
@@ -398,6 +412,11 @@ fun EditorScreen(
                 isMaskOpen = false
             },
             onDismiss = { isMaskOpen = false }
+        )
+    }
+
+
+            }
         )
     }
 

@@ -22,12 +22,10 @@ fun BlendingDialog(
     var blendMode by remember { mutableStateOf(currentBlendMode) }
     var opacity by remember { mutableStateOf(currentOpacity) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Layer Blending", fontWeight = FontWeight.Bold, color = SaltyCyan) },
-        text = {
+    PanelPage("Blending", onBack = onDismiss) {
+
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text("Opacity: ${(opacity * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium)
@@ -58,22 +56,16 @@ fun BlendingDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
+
+
             Button(
                 onClick = { onApply(blendMode, opacity) },
                 colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
             ) {
                 Text("Apply")
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SaltyTextSecondary)
-            }
-        },
-        containerColor = SaltySurfaceDark
-    )
+
+    }
 }
 
 @Composable
@@ -84,10 +76,8 @@ fun MaskDialog(
 ) {
     var maskMode by remember { mutableStateOf(currentMaskMode) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Layer Masking", fontWeight = FontWeight.Bold, color = SaltyCyan) },
-        text = {
+    PanelPage("Mask", onBack = onDismiss) {
+
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "Configure how this layer masks underlying content:",
@@ -112,20 +102,14 @@ fun MaskDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
+
+
             Button(
                 onClick = { onApply(maskMode) },
                 colors = ButtonDefaults.buttonColors(containerColor = SaltyCyan, contentColor = SaltyDarkBackground)
             ) {
                 Text("Apply")
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SaltyTextSecondary)
-            }
-        },
-        containerColor = SaltySurfaceDark
-    )
+
+    }
 }
