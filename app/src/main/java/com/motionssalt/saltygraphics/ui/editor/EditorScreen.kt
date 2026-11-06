@@ -258,7 +258,7 @@ fun EditorScreen(
                         onDeleteLayers = { ids ->
                             val currentDoc = doc
                             if (currentDoc != null) {
-                                var updated = currentDoc
+                                var updated: ProjectDocument = currentDoc
                                 for (id in ids) {
                                     updated = updated.removeLayer(id)
                                 }
@@ -276,7 +276,7 @@ fun EditorScreen(
                         onPasteProperties = { mode ->
                             val currentDoc = doc
                             if (currentDoc != null) {
-                                var updated = currentDoc
+                                var updated: ProjectDocument = currentDoc
                                 for (id in selectedLayerIds) {
                                     updated = updated.updateLayer(id) { GlobalClipboard.applyTo(it, mode) }
                                 }
