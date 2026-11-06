@@ -256,7 +256,8 @@ fun EditorScreen(
                             recordAndAutoSave("Toggle Lock", updated)
                         },
                         onDeleteLayers = { ids ->
-                            var updated = doc
+                            val currentDoc = doc ?: return@LayersSidePanel
+                            var updated = currentDoc
                             for (id in ids) {
                                 updated = updated.removeLayer(id)
                             }
@@ -271,7 +272,8 @@ fun EditorScreen(
                             GlobalClipboard.copy(layer)
                         },
                         onPasteProperties = { mode ->
-                            var updated = doc
+                            val currentDoc = doc ?: return@LayersSidePanel
+                            var updated = currentDoc
                             for (id in selectedLayerIds) {
                                 updated = updated.updateLayer(id) { GlobalClipboard.applyTo(it, mode) }
                             }
@@ -342,9 +344,10 @@ fun EditorScreen(
     }
 
     // Dialogs
-    if (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) {
+    val currentShape = currentSelectedLayer?.shapeData
+    if (isShapeSettingsOpen && currentShape != null) {
         ShapeSettingsDialog(
-            initialShape = currentSelectedLayer.shapeData,
+            initialShape = currentShape,
             onSave = { newShape ->
                 val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(shapeData = newShape) }
                 recordAndAutoSave("Update Shape Settings", updated)
@@ -354,10 +357,11 @@ fun EditorScreen(
         )
     }
 
-    if (isTextSettingsOpen && currentSelectedLayer?.textData != null) {
+    val currentText = currentSelectedLayer?.textData
+    if (isTextSettingsOpen && currentText != null) {
         val candidates = doc.activeLayers.filter { it.type == LayerType.SHAPE || it.type == LayerType.VECTOR }
         TextSettingsDialog(
-            initialData = currentSelectedLayer.textData,
+            initialData = currentText,
             candidatePathLayers = candidates,
             onSave = { newTextData ->
                 val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(textData = newTextData) }
