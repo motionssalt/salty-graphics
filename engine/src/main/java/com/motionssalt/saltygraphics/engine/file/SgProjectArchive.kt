@@ -107,11 +107,13 @@ object SgProjectArchive {
         var historyJson: String? = null
         var previewPng: ByteArray? = null
         val assets = mutableMapOf<String, ByteArray>()
+        var entryCount = 0
 
         try {
             val zipIn = ZipInputStream(BufferedInputStream(inputStream))
             var entry = zipIn.nextEntry
             while (entry != null) {
+                entryCount++
                 val name = entry.name
                 when {
                     name == "manifest.json" -> {
