@@ -79,7 +79,7 @@ class ProjectRepository(private val context: Context) {
                             textData = TextLayerData(
                                 text = "Salty Graphics",
                                 fontSize = 54f,
-                                textColor = 0xFF00E5FFL
+                                color = 0xFF00E5FFL
                             )
                         )
                     )
