@@ -88,15 +88,9 @@ fun ToggleControl(
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
             color = colors.onSurface
         )
-        Switch(
+        SaltySwitch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = colors.primary,
-                checkedTrackColor = colors.surfaceVariant,
-                uncheckedThumbColor = colors.onSurfaceVariant,
-                uncheckedTrackColor = colors.background
-            )
+            onCheckedChange = onCheckedChange
         )
     }
 }

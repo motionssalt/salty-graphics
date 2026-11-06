@@ -79,7 +79,7 @@ fun TextSettingsDialog(
                     fontStyleName = fontItem.styleName,
                     customFontAssetPath = fontItem.assetPath ?: fontItem.filePath
                 ))
-                currentSubPage = "main"
+                // S15: Choosing a font must NOT return to text editing; stay on font page
             },
             onBack = { currentSubPage = "main" }
         )
@@ -524,8 +524,23 @@ fun FontSelectionPage(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
+                                val tf = remember(font.id) {
+                                    try {
+                                        FontManager.getTypeface(context, font)
+                                    } catch (_: Throwable) {
+                                        android.graphics.Typeface.DEFAULT
+                                    }
+                                }
+                                val ff = remember(tf) {
+                                    try {
+                                        androidx.compose.ui.text.font.FontFamily(tf)
+                                    } catch (_: Throwable) {
+                                        androidx.compose.ui.text.font.FontFamily.Default
+                                    }
+                                }
                                 Text(
                                     text = font.displayName,
+                                    fontFamily = ff,
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (isSelected) colors.primary else colors.onSurface

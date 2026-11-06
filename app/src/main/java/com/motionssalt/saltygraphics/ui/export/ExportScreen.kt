@@ -1,3 +1,8 @@
+import com.motionssalt.saltygraphics.data.StorageManager
+import com.motionssalt.saltygraphics.media.MediaCache
+import com.motionssalt.saltygraphics.engine.model.ShapeType
+import android.graphics.RectF
+import android.os.Build
 package com.motionssalt.saltygraphics.ui.export
 
 import android.content.Intent
@@ -81,7 +86,6 @@ fun ExportScreen(
         val canvas = Canvas(bitmap)
         drawExportBackground(canvas, doc.editorSettings.backgroundColor, selectedFormat == ExportFormat.JPEG)
 
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         val halfW = finalWidth / 2f
         val halfH = finalHeight / 2f
 
@@ -90,37 +94,118 @@ fun ExportScreen(
             val lx = halfW + (layer.transform.translationX * resolutionScale)
             val ly = halfH + (layer.transform.translationY * resolutionScale)
 
-            canvas.save()
+            val layerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                alpha = (layer.opacity * 255).toInt().coerceIn(0, 255)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                layerPaint.blendMode = when (layer.blendMode) {
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.DARKEN -> android.graphics.BlendMode.DARKEN
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.MULTIPLY -> android.graphics.BlendMode.MULTIPLY
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_BURN -> android.graphics.BlendMode.COLOR_BURN
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.LIGHTEN -> android.graphics.BlendMode.LIGHTEN
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.SCREEN -> android.graphics.BlendMode.SCREEN
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_DODGE -> android.graphics.BlendMode.COLOR_DODGE
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.OVERLAY -> android.graphics.BlendMode.OVERLAY
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.SOFT_LIGHT -> android.graphics.BlendMode.SOFT_LIGHT
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.HARD_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.DIFFERENCE -> android.graphics.BlendMode.DIFFERENCE
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.EXCLUSION -> android.graphics.BlendMode.EXCLUSION
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.HUE -> android.graphics.BlendMode.HUE
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.SATURATION -> android.graphics.BlendMode.SATURATION
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR -> android.graphics.BlendMode.COLOR
+                    com.motionssalt.saltygraphics.engine.model.BlendMode.LUMINOSITY -> android.graphics.BlendMode.LUMINOSITY
+                    else -> android.graphics.BlendMode.SRC_OVER
+                }
+            }
+
+            canvas.saveLayer(null, layerPaint)
             canvas.translate(lx, ly)
             canvas.rotate(layer.transform.rotationDegrees)
             canvas.scale(layer.transform.scaleX * resolutionScale, layer.transform.scaleY * resolutionScale)
+
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
             when (layer.type) {
                 LayerType.SHAPE -> {
                     val s = layer.shapeData
                     if (s != null) {
-                        paint.color = s.fillColor.toInt()
-                        canvas.drawRect(-s.width / 2f, -s.height / 2f, s.width / 2f, s.height / 2f, paint)
+                        val rect = RectF(-s.width / 2f, -s.height / 2f, s.width / 2f, s.height / 2f)
+                        if (s.hasFill) {
+                            paint.style = Paint.Style.FILL
+                            paint.color = s.fillColor.toInt()
+                            when (s.type) {
+                                ShapeType.CIRCLE -> canvas.drawOval(rect, paint)
+                                ShapeType.ROUNDED_RECTANGLE -> canvas.drawRoundRect(rect, s.cornerRadius, s.cornerRadius, paint)
+                                else -> canvas.drawRect(rect, paint)
+                            }
+                        }
+                        if (s.hasStroke && s.strokeWidth > 0) {
+                            paint.style = Paint.Style.STROKE
+                            paint.strokeWidth = s.strokeWidth
+                            paint.color = s.strokeColor.toInt()
+                            when (s.type) {
+                                ShapeType.CIRCLE -> canvas.drawOval(rect, paint)
+                                ShapeType.ROUNDED_RECTANGLE -> canvas.drawRoundRect(rect, s.cornerRadius, s.cornerRadius, paint)
+                                else -> canvas.drawRect(rect, paint)
+                            }
+                        }
                     }
                 }
                 LayerType.VECTOR -> {
-                    layer.editablePaths.forEach { path -> com.motionssalt.saltygraphics.ui.editor.drawNativeVector(canvas, path, layer.opacity) }
+                    layer.editablePaths.forEach { path -> com.motionssalt.saltygraphics.ui.editor.drawNativeVector(canvas, path, 1f) }
                 }
                 LayerType.TEXT -> {
                     val t = layer.textData
-                    paint.color = (t?.color ?: 0xFFFFFFFF).toInt()
-                    paint.textSize = (t?.fontSize ?: 64f) * resolutionScale
-                    paint.textAlign = Paint.Align.CENTER
-                    canvas.drawText(t?.text ?: "Text", 0f, 0f, paint)
+                    if (t != null) {
+                        paint.color = t.textColor.toInt()
+                        paint.textSize = t.fontSize
+                        paint.textAlign = Paint.Align.CENTER
+                        paint.isFakeBoldText = t.isBold
+                        if (t.isItalic) paint.textSkewX = -0.25f
+                        val y = (paint.descent() + paint.ascent()) / -2f
+                        if (t.hasOutline) {
+                            val outlinePaint = Paint(paint).apply {
+                                style = Paint.Style.STROKE
+                                strokeWidth = t.outlineWidth
+                                color = t.outlineColor.toInt()
+                            }
+                            canvas.drawText(t.text, 0f, y, outlinePaint)
+                        }
+                        canvas.drawText(t.text, 0f, y, paint)
+                    }
                 }
-                else -> {
-                    paint.color = android.graphics.Color.DKGRAY
-                    canvas.drawRect(-150f, -150f, 150f, 150f, paint)
+                LayerType.MEDIA -> {
+                    val mediaPath = layer.mediaAssetPath
+                    val bmp = if (mediaPath != null) MediaCache.getOrLoad(context, doc.id, mediaPath) else null
+                    val mw = layer.mediaWidth ?: 300f
+                    val mh = layer.mediaHeight ?: 300f
+                    if (bmp != null) {
+                        val dst = RectF(-mw / 2f, -mh / 2f, mw / 2f, mh / 2f)
+                        canvas.drawBitmap(bmp, null, dst, paint)
+                    } else {
+                        paint.color = android.graphics.Color.DKGRAY
+                        canvas.drawRect(-mw / 2f, -mh / 2f, mw / 2f, mh / 2f, paint)
+                    }
                 }
+                LayerType.ADJUSTMENT -> {
+                    paint.color = 0x80808080.toInt()
+                    canvas.drawRect(-finalWidth / 2f, -finalHeight / 2f, finalWidth / 2f, finalHeight / 2f, paint)
+                }
+                else -> {}
             }
             canvas.restore()
         }
         return bitmap
+    }
+
+    var currentFolderName by remember { mutableStateOf(StorageManager.getSavedFolderName(context)) }
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { treeUri: Uri? ->
+        if (treeUri != null) {
+            StorageManager.setSavedFolder(context, treeUri)
+            currentFolderName = StorageManager.getSavedFolderName(context)
+        }
     }
 
     val saveFileLauncher = rememberLauncherForActivityResult(
@@ -281,6 +366,32 @@ fun ExportScreen(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
+                    }
+                }
+            }
+
+            // S16: Save Location card
+            SettingsSectionCard(title = "Save Location") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Save to: $currentFolderName",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.primary
+                        )
+                        Text(
+                            text = "Direct export into this folder without prompting each time.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.onSurfaceVariant
+                        )
+                    }
+                    TextButton(onClick = { folderPickerLauncher.launch(null) }) {
+                        Text("Change", color = colors.primary, fontWeight = FontWeight.Bold)
                     }
                 }
             }

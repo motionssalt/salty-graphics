@@ -40,6 +40,8 @@ data class Layer(
     val additionalVectorPaths: List<VectorPathData> = emptyList(),
     val textData: TextLayerData? = null,
     val mediaAssetPath: String? = null,
+    val mediaWidth: Float? = null,
+    val mediaHeight: Float? = null,
     val effects: List<EffectInstance> = emptyList(),
     val children: List<Layer> = emptyList(), // For Group layers
     val quarantinedData: QuarantinedLayerData? = null
@@ -55,9 +57,21 @@ data class Layer(
     val localWidth: Float
         get() = when (type) {
             LayerType.SHAPE -> shapeData?.width ?: 200f
-            LayerType.TEXT -> 400f
-            LayerType.MEDIA -> 400f
-            LayerType.VECTOR -> 300f
+            LayerType.TEXT -> {
+                textData?.let {
+                    val charW = it.fontSize * 0.6f
+                    maxOf(100f, it.text.length * charW)
+                } ?: 400f
+            }
+            LayerType.MEDIA -> mediaWidth ?: 400f
+            LayerType.VECTOR -> {
+                val pts = editablePaths.flatMap { it.points }
+                if (pts.isNotEmpty()) {
+                    val minX = pts.minOf { it.x }
+                    val maxX = pts.maxOf { it.x }
+                    maxOf(40f, maxX - minX)
+                } else 300f
+            }
             LayerType.ADJUSTMENT -> 1000f
             LayerType.GROUP -> 400f
             LayerType.QUARANTINED -> 240f
@@ -66,9 +80,16 @@ data class Layer(
     val localHeight: Float
         get() = when (type) {
             LayerType.SHAPE -> shapeData?.height ?: 200f
-            LayerType.TEXT -> (textData?.fontSize ?: 64f) * 1.5f
-            LayerType.MEDIA -> 400f
-            LayerType.VECTOR -> 300f
+            LayerType.TEXT -> (textData?.fontSize ?: 64f) * 1.4f
+            LayerType.MEDIA -> mediaHeight ?: 400f
+            LayerType.VECTOR -> {
+                val pts = editablePaths.flatMap { it.points }
+                if (pts.isNotEmpty()) {
+                    val minY = pts.minOf { it.y }
+                    val maxY = pts.maxOf { it.y }
+                    maxOf(40f, maxY - minY)
+                } else 300f
+            }
             LayerType.ADJUSTMENT -> 1000f
             LayerType.GROUP -> 400f
             LayerType.QUARANTINED -> 120f

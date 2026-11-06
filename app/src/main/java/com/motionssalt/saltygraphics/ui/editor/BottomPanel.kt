@@ -18,7 +18,7 @@ fun BottomPanel(
     selectedLayer: Layer?, onAddMedia: () -> Unit, onAddText: () -> Unit,
     onAddAdjustment: () -> Unit, onAddShape: () -> Unit, onAddVector: () -> Unit,
     onEditLayer: () -> Unit, onOpenTransform: () -> Unit, onOpenEffects: () -> Unit,
-    onOpenBlending: () -> Unit, onOpenMask: () -> Unit, onDelete: () -> Unit,
+    onOpenBlending: () -> Unit, onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val tools = if (selectedLayer == null) listOf(
@@ -31,8 +31,7 @@ fun BottomPanel(
         Tool("Edit", Icons.Default.Edit, onEditLayer),
         Tool("Transform", Icons.Default.OpenWith, onOpenTransform),
         Tool("Effects", Icons.Default.AutoAwesome, onOpenEffects),
-        Tool("Blending", Icons.Default.Layers, onOpenBlending),
-        Tool("Mask", Icons.Default.FilterFrames, onOpenMask),
+        Tool("Blending & Mask", Icons.Default.Layers, onOpenBlending),
         Tool("Delete", Icons.Default.Delete, onDelete)
     )
     Column(modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

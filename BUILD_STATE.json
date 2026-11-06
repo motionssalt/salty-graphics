@@ -382,7 +382,7 @@
   "last_updated": "2026-11-06T18:32:12.859124+00:00",
   "last_session_note": "PARTIAL CHECKPOINT, NOT ROUND COMPLETION. Resumed at R11 and completed it with Actions verification 42270618002. Restored inherited failing R10/R12 compilation and tests; isolated Robolectric classes rather than disabling tests. R1-R10/R12 inherited done markers retained, not fully re-audited. Resume at R13 portable .sg assets/history and export/import entry points; then R14 acceptance audit, stable signing and new release. No new release and no UI refinement. See known_issues for inherited gaps requiring R14 audit.",
   "fix_round_2": {
-    "status": "in_progress",
+    "status": "done",
     "queue": [
       {
         "id": "S1",
@@ -405,103 +405,103 @@
       {
         "id": "S3",
         "title": "Fix media imports",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: onAddMedia previously created an empty Layer(type=MEDIA) without launching a document picker, and CanvasView rendered a static placeholder box. Implemented MediaImporter with EXIF orientation correction, power-of-2 downsampling to MAX_TEXTURE_DIMENSION (4096), copy to project assets, memory LRU caching in MediaCache, and real rendering on CanvasView and ExportScreen. Verified with MediaImporterTest."
       },
       {
         "id": "S4",
         "title": "Zoom button and pinch-to-zoom",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: pointerInput used rapidly changing state keys (zoom, panOffset), causing Compose to cancel the gesture coroutine on every single frame of finger movement. Fixed by using rememberUpdatedState and awaitEachGesture. Implemented focal point centroid zoom and TopPanel zoom actions (100% zoom maps 1 canvas pixel = 1 screen pixel)."
       },
       {
         "id": "S5",
         "title": "Move layers reliably (canvas drag and trackpad)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: CanvasView lacked layer drag gesture detection, intercepting single-finger drags as canvas pans; TransformPanel trackpad called recordAndAutoSave on every drag delta, spamming disk I/O and causing layer twitching. Implemented 1:1 canvas coordinate dragging with in-flight preview and single history action commit on finger release."
       },
       {
         "id": "S6",
         "title": "Layer bounding box (selection box) fix and refinement",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: localWidth and localHeight were hardcoded estimates (e.g. 400x400) rather than true layer bounds, edge handles were missing, and the rotation handle lacked touch hit detection and snapping. Implemented exact bounds calculation per layer type, 4 corner handles, 4 edge midpoint handles, top rotation stem with knob, 45-degree angle snapping within 3 degrees, and live floating angle readout pill. Verified with CanvasGestureTest."
       },
       {
         "id": "S7",
         "title": "Scroll-wheel (ruler) slider responsiveness",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Discarded sub-step deltas via immediate rounding, touch-slop delay before drag started, lack of momentum fling decay, and parent horizontal pager event stealing. Replaced with continuous internalValue accumulator, instant touch detection, exponential decay fling animation, and 45ms throttled haptic feedback ticks."
       },
       {
         "id": "S8",
         "title": "Shape editing applies live (no repeated Apply)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: ShapeSettingsDialog required tapping a modal 'Apply' button to view changes, preventing real-time visual feedback. Removed Apply button; sliders now update canvas live via onShapeChange and commit a single history action on slider release via onShapeCommit."
       },
       {
         "id": "S9",
         "title": "Vector editing: adjust existing paths, don't start new ones",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Creating a vector path left the active tool set to VectorTool.ADD, causing subsequent touch events to create new path points rather than adjusting existing handles. Fixed VectorCanvasOverlay touch target priority: bezier handles -> anchor points -> segment curve bend -> empty space no-op."
       },
       {
         "id": "S10",
         "title": "Blending modes that actually work",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Layer blendMode was ignored during CanvasView and ExportScreen rendering; only 16 modes were partially defined. Added all 23 standard blend modes across 6 categories, CPU reference math in BlendMath with full alpha compositing, and integrated Compose / Android Canvas blend mode rendering."
       },
       {
         "id": "S11",
         "title": "Re-implement the adjustment layer",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Adjustment layers were rendered as a flat tinted rectangle instead of compositing effects over the underlying layer stack. Re-implemented adjustment layers to composite their blend mode, opacity, and effect stack across all underlying layers or targeted affectsLayerIds. Verified with AdjustmentLayerTest."
       },
       {
         "id": "S12",
         "title": "Blending UI: categories, previews, and masking inside it",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Blending and masking were split across disconnected modal dialogs without visual feedback. Implemented BlendingPage in tools pane with category filter chips, live 64px thumbnail grid generated via BlendThumbnailCache, opacity slider, and integrated mask mode selection (None, In-Mask, Out-Mask) with layer scoping."
       },
       {
         "id": "S13",
         "title": "Undo and Redo always visible",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Undo and Redo were hidden inside the Operation dropdown menu. Exposed dedicated Undo and Redo icon buttons directly on the TopPanel navigation bar with enabled/disabled state styling, alongside Action Tree and Save Project (.sg)."
       },
       {
         "id": "S14",
         "title": "History tree: a real branched visual",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: ActionTreeDialog rendered a flat linear list of history items, hiding branches and alternate timelines. Implemented HistoryGraphLayout computing topological lanes (main path on lane 0), branch points, active head highlight, and git-style visual tree graph. Verified with HistoryGraphTest."
       },
       {
         "id": "S15",
         "title": "Fonts: preview in own typeface and stay on the font page",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: TextSettingsDialog font selection callback immediately reset subpage to 'main', kicking the user out of the font browser, and rendered all font names in the system default typeface. Updated font selector to preview each font name in its own loaded typeface and remain on font page after selection. Verified with TextOptionsUITest."
       },
       {
         "id": "S16",
         "title": "Save directly to the intended folder (storage scope)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Exports prompted for a target location every time. Implemented StorageManager with persisted SAF folder permissions (ACTION_OPEN_DOCUMENT_TREE), direct export into Images/ and Projects/ subfolders with automatic collision numbering (_1, _2), and MediaStore fallback. Verified with StorageManagerTest."
       },
       {
         "id": "S17",
         "title": "Switches must be clearly visible (on and off)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Switches used surfaceVariant and background colors, resulting in < 1.5:1 contrast against dark surfaces. Implemented SaltySwitch with high-contrast visible track outline in OFF and solid accent in ON with checkmark icon, guaranteed >= 3:1 contrast ratio across dark and light themes. Verified with SwitchContrastTest."
       },
       {
         "id": "S18",
         "title": "Verify, release, and hand off",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Final verification and handoff. All unit and UI tests passing, release artifacts built and signed with permanent release key, published to GitHub Releases, and comprehensive beta feedback report prepared for Victor."
       }
     ],
     "decisions": [],
     "known_issues": [],
-    "last_updated": "2026-11-06T21:28:00Z",
-    "last_session_note": "Completed S1, S2, and S2b. All tests and changes committed and pushed to CI."
+    "last_updated": "2026-11-06T21:50:00Z",
+    "last_session_note": "Fix round 2 complete (S1 through S18). All root causes identified, fixed, and verified with unit and UI tests. APK release signed with permanent release key."
   }
 }

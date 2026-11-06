@@ -170,12 +170,50 @@ fun TopPanel(
                     .background(colors.outline)
             )
 
-            // Right Group: Operation, Export, Settings
+            // Right Group: Direct Undo/Redo (S13), Action Tree, Operation Menu, Export, Settings
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Operation (Undo, Redo, Action Tree)
+                // Always visible Undo button
+                IconButton(
+                    onClick = onUndoClick,
+                    enabled = canUndo,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Undo,
+                        contentDescription = "Undo",
+                        tint = if (canUndo) colors.onSurface else colors.onSurface.copy(alpha = 0.35f)
+                    )
+                }
+
+                // Always visible Redo button
+                IconButton(
+                    onClick = onRedoClick,
+                    enabled = canRedo,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Redo,
+                        contentDescription = "Redo",
+                        tint = if (canRedo) colors.onSurface else colors.onSurface.copy(alpha = 0.35f)
+                    )
+                }
+
+                // History / Action Tree button
+                IconButton(
+                    onClick = onOpenActionTree,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        Icons.Default.AccountTree,
+                        contentDescription = "Action Tree History",
+                        tint = colors.primary
+                    )
+                }
+
+                // Operation Dropdown (Save Project .sg, etc.)
                 Box {
                     IconButton(onClick = { showOperationMenu = true }, modifier = Modifier.size(38.dp)) {
-                        Icon(Icons.Default.History, contentDescription = "Operation & Action Tree", tint = colors.onSurface)
+                        Icon(Icons.Default.MoreVert, contentDescription = "More Operations", tint = colors.onSurface)
                     }
                     DropdownMenu(
                         expanded = showOperationMenu,
@@ -183,29 +221,10 @@ fun TopPanel(
                         modifier = Modifier.background(colors.surfaceVariant)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Undo", color = if (canUndo) colors.onSurface else colors.onSurfaceVariant) },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = if (canUndo) colors.primary else colors.onSurfaceVariant) },
-                            enabled = canUndo,
+                            text = { Text("Save Project (.sg)", color = colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.Save, contentDescription = null, tint = colors.primary) },
                             onClick = {
-                                onUndoClick()
-                                showOperationMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Redo", color = if (canRedo) colors.onSurface else colors.onSurfaceVariant) },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = null, tint = if (canRedo) colors.primary else colors.onSurfaceVariant) },
-                            enabled = canRedo,
-                            onClick = {
-                                onRedoClick()
-                                showOperationMenu = false
-                            }
-                        )
-                        HorizontalDivider(color = colors.outline)
-                        DropdownMenuItem(
-                            text = { Text("Open Action Tree", color = colors.primary) },
-                            leadingIcon = { Icon(Icons.Default.AccountTree, contentDescription = null, tint = colors.primary) },
-                            onClick = {
-                                onOpenActionTree()
+                                onSaveSgClick()
                                 showOperationMenu = false
                             }
                         )

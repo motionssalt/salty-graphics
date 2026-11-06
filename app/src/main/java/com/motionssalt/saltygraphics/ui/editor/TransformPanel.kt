@@ -21,9 +21,11 @@ import com.motionssalt.saltygraphics.theme.*
 fun TransformPanel(
     transform: Transform2D,
     onTransformChange: (Transform2D) -> Unit,
+    onTransformCommit: (Transform2D) -> Unit = onTransformChange,
     onClose: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
+    var currentTransform by remember(transform) { mutableStateOf(transform) }
     var isTrackpadMode by remember { mutableStateOf(transform.isTrackpadMode) }
 
     Surface(
@@ -62,12 +64,13 @@ fun TransformPanel(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Scale", style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
-                    // Chain link toggle button
                     FilledIconToggleButton(
-                        checked = transform.isScaleLinked,
+                        checked = currentTransform.isScaleLinked,
                         onCheckedChange = { linked ->
-                            // Re-linking does NOT reset values per Section 3.7
-                            onTransformChange(transform.copy(isScaleLinked = linked))
+                            val updated = currentTransform.copy(isScaleLinked = linked)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                            onTransformCommit(updated)
                         },
                         colors = IconButtonDefaults.filledIconToggleButtonColors(
                             containerColor = colors.surfaceVariant,
@@ -77,33 +80,48 @@ fun TransformPanel(
                         )
                     ) {
                         Icon(
-                            if (transform.isScaleLinked) Icons.Default.Link else Icons.Default.LinkOff,
+                            if (currentTransform.isScaleLinked) Icons.Default.Link else Icons.Default.LinkOff,
                             contentDescription = "Link Scale X/Y"
                         )
                     }
                 }
 
-                if (transform.isScaleLinked) {
-                    val uniformScale = (transform.scaleX + transform.scaleY) / 2f
+                if (currentTransform.isScaleLinked) {
+                    val uniformScale = (currentTransform.scaleX + currentTransform.scaleY) / 2f
                     Text("Uniform Scale: ${(uniformScale * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
                         value = uniformScale,
-                        onValueChange = { onTransformChange(transform.setScaleUniform(it)) },
+                        onValueChange = {
+                            val updated = currentTransform.setScaleUniform(it)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                        },
+                        onValueChangeFinished = { onTransformCommit(currentTransform) },
                         valueRange = 0.1f..5.0f,
                         colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
                 } else {
-                    Text("Scale X: ${(transform.scaleX * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    Text("Scale X: ${(currentTransform.scaleX * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
-                        value = transform.scaleX,
-                        onValueChange = { onTransformChange(transform.copy(scaleX = it)) },
+                        value = currentTransform.scaleX,
+                        onValueChange = {
+                            val updated = currentTransform.copy(scaleX = it)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                        },
+                        onValueChangeFinished = { onTransformCommit(currentTransform) },
                         valueRange = 0.1f..5.0f,
                         colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
-                    Text("Scale Y: ${(transform.scaleY * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    Text("Scale Y: ${(currentTransform.scaleY * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
-                        value = transform.scaleY,
-                        onValueChange = { onTransformChange(transform.copy(scaleY = it)) },
+                        value = currentTransform.scaleY,
+                        onValueChange = {
+                            val updated = currentTransform.copy(scaleY = it)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                        },
+                        onValueChangeFinished = { onTransformCommit(currentTransform) },
                         valueRange = 0.1f..5.0f,
                         colors = SliderDefaults.colors(thumbColor = colors.secondary, activeTrackColor = colors.secondary)
                     )
@@ -121,27 +139,34 @@ fun TransformPanel(
                     TextButton(onClick = {
                         val newMode = !isTrackpadMode
                         isTrackpadMode = newMode
-                        onTransformChange(transform.copy(isTrackpadMode = newMode))
+                        val updated = currentTransform.copy(isTrackpadMode = newMode)
+                        currentTransform = updated
+                        onTransformChange(updated)
+                        onTransformCommit(updated)
                     }) {
                         Text(if (isTrackpadMode) "Switch to Sliders" else "Switch to Trackpad", color = colors.primary)
                     }
                 }
 
                 if (isTrackpadMode) {
-                    // Precision Trackpad with drag gesture detection
+                    // Precision Trackpad with smooth in-flight dragging and commit on release
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(110.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(colors.background)
-                            .pointerInput(transform.moveSensitivity) {
-                                detectDragGestures { change, dragAmount ->
-                                    change.consume()
-                                    onTransformChange(
-                                        transform.translateBy(dragAmount.x, dragAmount.y)
-                                    )
-                                }
+                            .pointerInput(currentTransform.moveSensitivity) {
+                                detectDragGestures(
+                                    onDragEnd = { onTransformCommit(currentTransform) },
+                                    onDragCancel = { onTransformCommit(currentTransform) },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        val updated = currentTransform.translateBy(dragAmount.x, dragAmount.y)
+                                        currentTransform = updated
+                                        onTransformChange(updated)
+                                    }
+                                )
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -153,7 +178,7 @@ fun TransformPanel(
                                 color = colors.onSurfaceVariant
                             )
                             Text(
-                                "X: ${transform.translationX.toInt()} px | Y: ${transform.translationY.toInt()} px",
+                                "X: ${currentTransform.translationX.toInt()} px | Y: ${currentTransform.translationY.toInt()} px",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.primary
                             )
@@ -162,28 +187,43 @@ fun TransformPanel(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        "Trackpad Sensitivity: ${(transform.moveSensitivity * 100).toInt()}%",
+                        "Trackpad Sensitivity: ${(currentTransform.moveSensitivity * 100).toInt()}%",
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant
                     )
                     Slider(
-                        value = transform.moveSensitivity,
-                        onValueChange = { onTransformChange(transform.copy(moveSensitivity = it)) },
+                        value = currentTransform.moveSensitivity,
+                        onValueChange = {
+                            val updated = currentTransform.copy(moveSensitivity = it)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                        },
+                        onValueChangeFinished = { onTransformCommit(currentTransform) },
                         valueRange = 0.1f..3.0f,
                         colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
                 } else {
-                    Text("Move X: ${transform.translationX.toInt()} px", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    Text("Move X: ${currentTransform.translationX.toInt()} px", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
-                        value = transform.translationX,
-                        onValueChange = { onTransformChange(transform.copy(translationX = it)) },
+                        value = currentTransform.translationX,
+                        onValueChange = {
+                            val updated = currentTransform.copy(translationX = it)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                        },
+                        onValueChangeFinished = { onTransformCommit(currentTransform) },
                         valueRange = -1000f..1000f,
                         colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
-                    Text("Move Y: ${transform.translationY.toInt()} px", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    Text("Move Y: ${currentTransform.translationY.toInt()} px", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Slider(
-                        value = transform.translationY,
-                        onValueChange = { onTransformChange(transform.copy(translationY = it)) },
+                        value = currentTransform.translationY,
+                        onValueChange = {
+                            val updated = currentTransform.copy(translationY = it)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                        },
+                        onValueChangeFinished = { onTransformCommit(currentTransform) },
                         valueRange = -1000f..1000f,
                         colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
                     )
@@ -193,13 +233,18 @@ fun TransformPanel(
             // Rotate Section (around layer center on flat canvas)
             Column {
                 Text(
-                    "Rotate: ${transform.rotationDegrees.toInt()}°",
+                    "Rotate: ${currentTransform.rotationDegrees.toInt()}°",
                     style = MaterialTheme.typography.bodyLarge,
                     color = colors.onSurface
                 )
                 Slider(
-                    value = transform.rotationDegrees,
-                    onValueChange = { onTransformChange(transform.copy(rotationDegrees = it)) },
+                    value = currentTransform.rotationDegrees,
+                    onValueChange = {
+                        val updated = currentTransform.copy(rotationDegrees = it)
+                        currentTransform = updated
+                        onTransformChange(updated)
+                    },
+                    onValueChangeFinished = { onTransformCommit(currentTransform) },
                     valueRange = 0f..360f,
                     colors = SliderDefaults.colors(thumbColor = colors.secondary, activeTrackColor = colors.secondary)
                 )

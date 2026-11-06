@@ -1,13 +1,13 @@
 package com.motionssalt.saltygraphics.ui.controls
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -18,11 +18,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.motionssalt.saltygraphics.theme.*
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -35,14 +38,18 @@ fun RulerSlider(
     maxValue: Float,
     defaultValue: Float = minValue,
     step: Float = 1f,
-    unit: String = "",
+    unit: String = ,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
     val view = LocalView.current
+    val coroutineScope = rememberCoroutineScope()
     var isEditorOpen by remember { mutableStateOf(false) }
 
-    // Display formatted value
+    // Internal continuous float state for 1:1 smooth dragging without losing sub-step deltas
+    var internalValue by remember(value) { mutableFloatStateOf(value) }
+    var lastHapticTime by remember { mutableLongStateOf(0L) }
+
     val formattedValue = remember(value, step, unit) {
         val numStr = if (step >= 1f && value % 1f == 0f) {
             value.toInt().toString()
@@ -52,33 +59,28 @@ fun RulerSlider(
         if (unit.isNotBlank()) "$numStr $unit" else numStr
     }
 
-    // Touch dragging & momentum
-    val range = maxValue - minValue
     val tickPixelSpacing = 16f // pixels per step
 
-    var dragAccumulator by remember { mutableStateOf(0f) }
-
-    val draggableState = rememberDraggableState { delta ->
-        // Dragging left moves value up, dragging right moves value down (like a scroll wheel under an indicator)
-        val deltaSteps = -delta / tickPixelSpacing
-        val deltaValue = deltaSteps * step
-        val newValue = (value + deltaValue).coerceIn(minValue, maxValue)
-
-        // Light snap to default, zero, or whole numbers
-        val snapped = if (abs(newValue - defaultValue) < step * 0.35f) {
+    fun applyNewValue(rawVal: Float) {
+        val clamped = rawVal.coerceIn(minValue, maxValue)
+        internalValue = clamped
+        val snapped = if (abs(clamped - defaultValue) < step * 0.35f) {
             defaultValue
-        } else if (abs(newValue) < step * 0.35f && minValue <= 0f && maxValue >= 0f) {
+        } else if (abs(clamped) < step * 0.35f && minValue <= 0f && maxValue >= 0f) {
             0f
         } else {
-            (newValue / step).roundToInt() * step
+            (clamped / step).roundToInt() * step
         }.coerceIn(minValue, maxValue)
 
         if (snapped != value) {
             onValueChange(snapped)
-            // Haptic tick
-            try {
-                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-            } catch (_: Throwable) {}
+            val now = System.currentTimeMillis()
+            if (now - lastHapticTime > 45L) {
+                lastHapticTime = now
+                try {
+                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                } catch (_: Throwable) {}
+            }
         }
     }
 
@@ -93,6 +95,7 @@ fun RulerSlider(
         // Label Button: Reset to default on tap
         Surface(
             onClick = {
+                internalValue = defaultValue
                 onValueChange(defaultValue)
                 try {
                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
@@ -110,7 +113,7 @@ fun RulerSlider(
             )
         }
 
-        // Center Ruler Canvas
+        // Center Ruler Canvas with instant touch response & momentum fling
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -118,10 +121,51 @@ fun RulerSlider(
                 .clip(RoundedCornerShape(8.dp))
                 .background(colors.background)
                 .border(1.dp, colors.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                .draggable(
-                    state = draggableState,
-                    orientation = Orientation.Horizontal
-                ),
+                .pointerInput(minValue, maxValue, step) {
+                    val velocityTracker = VelocityTracker()
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        velocityTracker.resetTracking()
+                        velocityTracker.addPosition(down.uptimeMillis, down.position)
+
+                        var previousX = down.position.x
+                        var isDragging = false
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) {
+                                // Gesture released: handle fling momentum
+                                val velocity = velocityTracker.calculateVelocity().x
+                                if (abs(velocity) > 200f) {
+                                    coroutineScope.launch {
+                                        val anim = Animatable(internalValue)
+                                        val targetVelocity = -velocity / tickPixelSpacing * step
+                                        anim.animateDecay(targetVelocity, exponentialDecay(frictionMultiplier = 2.0f)) {
+                                            applyNewValue(this.value)
+                                        }
+                                    }
+                                }
+                                break
+                            }
+
+                            val currentX = change.position.x
+                            val deltaX = currentX - previousX
+                            previousX = currentX
+
+                            if (!isDragging && abs(currentX - down.position.x) > 2f) {
+                                isDragging = true
+                            }
+
+                            if (isDragging && deltaX != 0f) {
+                                change.consume() // Claim horizontal drag so parent vertical scroll does not steal it
+                                velocityTracker.addPosition(change.uptimeMillis, change.position)
+                                val deltaValue = (-deltaX / tickPixelSpacing) * step
+                                applyNewValue(internalValue + deltaValue)
+                            }
+                        }
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -149,6 +193,7 @@ fun RulerSlider(
                         isMajor -> h * 0.45f
                         else -> h * 0.28f
                     }
+
                     val tickColor = when {
                         isSuper -> colors.onSurface.copy(alpha = 0.7f)
                         isMajor -> colors.onSurfaceVariant.copy(alpha = 0.5f)
@@ -173,7 +218,6 @@ fun RulerSlider(
                     strokeWidth = 2.5f,
                     cap = StrokeCap.Round
                 )
-                // Needle top triangle/pip
                 drawCircle(
                     color = colors.primary,
                     radius = 3.5f,
@@ -182,7 +226,7 @@ fun RulerSlider(
             }
         }
 
-        // Tappable Value Pill (Opens ValueEditorDialog)
+        // Tappable Value Pill
         Surface(
             onClick = { isEditorOpen = true },
             shape = RoundedCornerShape(8.dp),
@@ -212,7 +256,10 @@ fun RulerSlider(
             maxValue = maxValue,
             step = step,
             unit = unit,
-            onValueApplied = { onValueChange(it) },
+            onValueApplied = {
+                internalValue = it
+                onValueChange(it)
+            },
             onDismiss = { isEditorOpen = false }
         )
     }

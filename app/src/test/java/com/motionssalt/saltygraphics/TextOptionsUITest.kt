@@ -77,11 +77,13 @@ class TextOptionsUITest {
             // Built-in font tags exist
             compose.onAllNodesWithText("built-in").onFirst().assertIsDisplayed()
 
-            // Select Inter font
+            // Select Inter font: S15 stays on font page while updating textData live
             compose.onNodeWithText("Inter").performClick()
             assertEquals("Inter", latestTextData.fontFamily)
+            compose.onNodeWithText("Fonts").assertIsDisplayed()
 
-            // Back to main options
+            // Back arrow returns to main text options
+            compose.onNodeWithContentDescription("Back").performClick()
             compose.onNodeWithText("Text Options").assertIsDisplayed()
         } finally {
             host.pause().stop().destroy()

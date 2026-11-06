@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.data.ProjectRepository
+import com.motionssalt.saltygraphics.media.MediaImporter
 import com.motionssalt.saltygraphics.engine.action.ActionTree
 import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
 import com.motionssalt.saltygraphics.engine.action.PasteMode
@@ -99,6 +100,32 @@ fun EditorScreen(
                 selectedLayerIds = setOf(newLayer.id); vectorPathIndex = 0; vectorPointIndex = null
                 isVectorMenuOpen = false; isVectorSettingsOpen = true
             }.onFailure { Toast.makeText(context, it.message ?: "Invalid SVG", Toast.LENGTH_LONG).show() }
+        }
+    }
+
+    val mediaPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        val doc = projectDocument
+        if (uris.isNotEmpty() && doc != null) {
+            val result = MediaImporter.importMediaFromUris(
+                context = context,
+                projectId = doc.id,
+                uris = uris,
+                canvasWidth = doc.canvasSize.width,
+                canvasHeight = doc.canvasSize.height
+            )
+            if (result.importedLayers.isNotEmpty()) {
+                var updatedDoc = doc
+                for (layer in result.importedLayers) {
+                    updatedDoc = updatedDoc.addLayer(layer, activeGroupId)
+                }
+                recordAndAutoSave("Import Media (${result.importedLayers.size})", updatedDoc)
+                selectedLayerIds = setOf(result.importedLayers.last().id)
+            }
+            if (result.failureReasons.isNotEmpty()) {
+                Toast.makeText(context, result.failureReasons.first(), Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -215,7 +242,10 @@ fun EditorScreen(
                     selectedLayerIds = if (id != null) setOf(id) else emptySet()
                 },
                 onUpdateLayerTransform = { id, newTransform ->
-                    val updated = doc.updateLayer(id) { it.copy(transform = newTransform) }
+                    projectDocument = doc.updateLayer(id) { it.copy(transform = newTransform) }
+                },
+                onCommitLayerTransform = { id, finalTransform ->
+                    val updated = doc.updateLayer(id) { it.copy(transform = finalTransform) }
                     recordAndAutoSave("Transform Layer", updated)
                 }
             )
@@ -338,12 +368,7 @@ fun EditorScreen(
             BottomPanel(
                 selectedLayer = currentSelectedLayer,
                 onAddMedia = {
-                    val newLayer = Layer(
-                        name = "Media Layer ${doc.layers.size + 1}",
-                        type = LayerType.MEDIA
-                    )
-                    recordAndAutoSave("Add Media Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
+                    mediaPickerLauncher.launch("image/*")
                 },
                 onAddText = {
                     val newLayer = Layer(
@@ -385,7 +410,6 @@ fun EditorScreen(
                 onOpenTransform = { isTransformPanelOpen = true },
                 onOpenEffects = { isEffectsSheetOpen = true },
                 onOpenBlending = { isBlendingOpen = true },
-                onOpenMask = { isMaskOpen = true },
                 onDelete = {
                     val updated = selectedLayerIds.fold(doc) { d, id -> d.removeLayer(id) }
                     selectedLayerIds = emptySet()
@@ -399,8 +423,11 @@ fun EditorScreen(
                 PanelPage("Transform", onBack = { isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false }) {
                     TransformPanel(
                         transform = currentSelectedLayer.transform,
-                        onTransformChange = { newT ->
-                            val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = newT) }
+                        onTransformChange = { previewT ->
+                            projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = previewT) }
+                        },
+                        onTransformCommit = { finalT ->
+                            val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = finalT) }
                             recordAndAutoSave("Transform Layer", updated)
                         },
                         onClose = { isTransformPanelOpen = false }
@@ -441,10 +468,12 @@ fun EditorScreen(
     if (isShapeSettingsOpen && currentShape != null) {
         ShapeSettingsDialog(
             initialShape = currentShape,
-            onSave = { newShape ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(shapeData = newShape) }
-                recordAndAutoSave("Update Shape Settings", updated)
-                isShapeSettingsOpen = false
+            onShapeChange = { previewShape ->
+                projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(shapeData = previewShape) }
+            },
+            onShapeCommit = { committedShape ->
+                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(shapeData = committedShape) }
+                recordAndAutoSave("Update Shape", updated)
             },
             onDismiss = { isShapeSettingsOpen = false }
         )
@@ -465,27 +494,23 @@ fun EditorScreen(
     }
 
     if (isBlendingOpen && currentSelectedLayer != null) {
-        BlendingDialog(
+        val selIdx = doc.activeLayers.indexOfFirst { it.id == currentSelectedLayer.id }
+        val underlying = if (selIdx > 0) doc.activeLayers.subList(0, selIdx) else emptyList()
+        BlendingPage(
             currentBlendMode = currentSelectedLayer.blendMode,
             currentOpacity = currentSelectedLayer.opacity,
-            onApply = { mode, op ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(blendMode = mode, opacity = op) }
-                recordAndAutoSave("Update Blend Mode", updated)
-                isBlendingOpen = false
-            },
-            onDismiss = { isBlendingOpen = false }
-        )
-    }
-
-    if (isMaskOpen && currentSelectedLayer != null) {
-        MaskDialog(
             currentMaskMode = currentSelectedLayer.maskMode,
-            onApply = { mode ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(maskMode = mode) }
-                recordAndAutoSave("Update Mask Mode", updated)
-                isMaskOpen = false
+            affectsLayerIds = currentSelectedLayer.affectsLayerIds,
+            allUnderlyingLayers = underlying,
+            onBlendChange = { mode, op ->
+                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(blendMode = mode, opacity = op) }
+                recordAndAutoSave("Update Blending", updated)
             },
-            onDismiss = { isMaskOpen = false }
+            onMaskChange = { maskMode, affectsIds ->
+                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(maskMode = maskMode, affectsLayerIds = affectsIds) }
+                recordAndAutoSave("Update Mask", updated)
+            },
+            onBack = { isBlendingOpen = false }
         )
     }
 

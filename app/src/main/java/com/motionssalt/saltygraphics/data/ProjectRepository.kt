@@ -149,7 +149,15 @@ class ProjectRepository(private val context: Context) {
         }
     }
 
-    suspend fun getProjectFull(id: String): SgProjectArchive.loadFromFile? = null
+    suspend fun getProjectFull(id: String): com.motionssalt.saltygraphics.engine.file.SgImportResult? = withContext(Dispatchers.IO) {
+        val file = File(projectsDir, "$id.sg")
+        if (!file.exists()) return@withContext null
+        try {
+            SgProjectArchive.loadFromFile(file)
+        } catch (_: Exception) {
+            null
+        }
+    }
 
     suspend fun saveProject(doc: ProjectDocument, historySnapshot: ActionTreeSnapshot? = null) = withContext(Dispatchers.IO) {
         try {

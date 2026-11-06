@@ -59,3 +59,34 @@ Baseline verification: inherited font serialization import and filename family/s
 
 ## Current R11 verification and handoff (2026-11-06)
 Actions https://github.com/motionssalt/salty-graphics/actions/runs/42270618002 passed for code commit 2522962: app 23 tests and engine 14 tests in **each** debug/release variant (74 executions total, zero failures/errors/skips), plus all release APK builds. R11 is now done. R1–R10/R12 status was inherited and is not a claim of a new exhaustive acceptance audit. R13 and R14 remain pending; this is a partial fix-round checkpoint, not completion. No new version tag or release was published. Resume at R13; final audit must address the inherited numeric-control, seed-migration, text-layout, font-portability/licence and signing gaps listed in BUILD_STATE.json before any release. UI refinement has not started.
+
+
+## Fix round 2: S1–S18 Architecture Decisions
+
+### 1. Release Versioning and Stable Signing Key
+- Permanent release keystore stored in repository secrets (`RELEASE_KEYSTORE_BASE64`, `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`).
+- Stable certificate fingerprint: SHA-256 `96:65:26:AF:4F:0A:85:3C:95:AA:8E:16:37:3F:ED:70:9D:58:A8:8D:6B:27:54:6C:63:93:E9:E3:9A:FC:47:85`.
+- Dynamic versioning in GitHub Actions: `versionCode = 100 + github.run_number`, `versionName = "1.0.${github.run_number}-beta"`. Each release creates a unique tag `v1.0.${github.run_number}`.
+- Because previous pre-releases used ephemeral keystores, users must uninstall earlier beta builds once; all subsequent builds share this permanent key and update in-place seamlessly.
+
+### 2. Group Blending and Offscreen Buffer Compositing
+- Standard 2D graphics compositing model: nested groups composite their children to an isolated buffer before compositing the group result to the underlying backdrop.
+- Supported blend modes expanded to all 23 standard modes across 6 categories (Normal, Darken, Lighten, Contrast, Inversion, Component).
+- Reference CPU blending formulas in `BlendMath` implement W3C / Porter-Duff compositing with full alpha blending.
+
+### 3. Storage Scope and Folder Persistence
+- StorageManager persists folder tree URI permissions via SAF (`ACTION_OPEN_DOCUMENT_TREE` + `takePersistableUriPermission`).
+- Directly creates and writes into `Images/` and `Projects/` subfolders with collision auto-numbering (`_1`, `_2`).
+- Graceful fallback to Android MediaStore when no custom folder has been chosen.
+
+### 4. Canvas Gesture Stability and Handle Hierarchy
+- Replaced unstable pointerInput keys with `rememberUpdatedState` so pinch-to-zoom and pan gestures are not canceled on state updates.
+- Touch target priority: Rotation knob (with 45° snapping within 3° and angle readout pill) -> 4 Corner scale handles -> 4 Edge midpoint handles -> Layer body drag (1:1 with finger) -> Background canvas pan / deselect.
+- In-flight drag preview updates canvas at 60fps; single undoable action committed on pointer up.
+
+### 5. High-Contrast Switch Discipline
+- Custom `SaltySwitch` enforces >= 3:1 contrast ratio against dark and light surfaces in both ON and OFF states.
+- Visible outline in OFF state; solid primary accent track with checkmark icon in ON state; 48dp accessible touch target.
+
+### 6. Shape Live Editing
+- Removed modal "Apply" button from Shape dialog. Geometry updates live on canvas; single history action recorded on slider release.

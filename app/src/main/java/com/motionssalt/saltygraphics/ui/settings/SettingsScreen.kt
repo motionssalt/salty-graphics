@@ -1,3 +1,8 @@
+import com.motionssalt.saltygraphics.data.StorageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.motionssalt.saltygraphics.ui.controls.SaltySwitch
 package com.motionssalt.saltygraphics.ui.settings
 
 import android.content.Intent
@@ -42,6 +47,23 @@ fun SettingsScreen(
     val useSystemDefault by settingsManager.useSystemDefault.collectAsState()
 
     var issueText by remember { mutableStateOf("") }
+    var versionTapCount by remember { mutableIntStateOf(0) }
+    var devOptionsEnabled by remember {
+        mutableStateOf(context.getSharedPreferences("salty_dev_prefs", android.content.Context.MODE_PRIVATE).getBoolean("dev_options", false))
+    }
+    var debugEffectsEnabled by remember {
+        mutableStateOf(context.getSharedPreferences("salty_dev_prefs", android.content.Context.MODE_PRIVATE).getBoolean("debug_effects", false))
+    }
+    var currentSavedFolderName by remember { mutableStateOf(StorageManager.getSavedFolderName(context)) }
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { treeUri: android.net.Uri? ->
+        if (treeUri != null) {
+            StorageManager.setSavedFolder(context, treeUri)
+            currentSavedFolderName = StorageManager.getSavedFolderName(context)
+            Toast.makeText(context, "Save folder updated", Toast.LENGTH_SHORT).show()
+        }
+    }
     val deviceInfo = remember { deviceInfoProvider.getDeviceInfo() }
 
     Scaffold(
@@ -86,10 +108,76 @@ fun SettingsScreen(
                 Text(
                     text = "Version: ${com.motionssalt.saltygraphics.BuildConfig.VERSION_NAME} (${com.motionssalt.saltygraphics.BuildConfig.VERSION_CODE}) | Developer: ${SocialConfig.DEVELOPER_NAME} (${SocialConfig.BRAND_NAME})",
                     style = MaterialTheme.typography.labelSmall,
-                    color = colors.primary
+                    color = colors.primary,
+                    modifier = Modifier.clickable {
+                        versionTapCount++
+                        if (versionTapCount >= 7 && !devOptionsEnabled) {
+                            devOptionsEnabled = true
+                            context.getSharedPreferences("salty_dev_prefs", android.content.Context.MODE_PRIVATE).edit()
+                                .putBoolean("dev_options", true).apply()
+                            Toast.makeText(context, "Developer options unlocked!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 )
             }
 
+            // S16: Save Location setting
+            SettingsSectionCard(title = "Save Location") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = currentSavedFolderName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = colors.onSurface
+                        )
+                        Text(
+                            text = "Default directory for direct exports and project files.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.onSurfaceVariant
+                        )
+                    }
+                    TextButton(onClick = { folderPickerLauncher.launch(null) }) {
+                        Text("Change", color = colors.primary, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // S11: Developer Options
+            if (devOptionsEnabled) {
+                SettingsSectionCard(title = "Developer Options") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Enable Debug Test Effects",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = colors.onSurface
+                            )
+                            Text(
+                                "Exposes Invert, Brightness, and Tint test effects in the effects engine to verify adjustment layer compositing.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.onSurfaceVariant
+                            )
+                        }
+                        SaltySwitch(
+                            checked = debugEffectsEnabled,
+                            onCheckedChange = { enabled ->
+                                debugEffectsEnabled = enabled
+                                context.getSharedPreferences("salty_dev_prefs", android.content.Context.MODE_PRIVATE).edit()
+                                    .putBoolean("debug_effects", enabled).apply()
+                            }
+                        )
+                    }
+                }
+            }
             // UI Scale Slider
             SettingsSectionCard(title = "Display & UI Scaling") {
                 Row(
