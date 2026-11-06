@@ -36,11 +36,16 @@ class ThemeChoiceTest {
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         var systemDark by mutableStateOf(false)
         var background = Color.Unspecified
+        var compositionCount = 0
         host.get().setContent {
             val choice by manager.theme.collectAsState()
             SaltyGraphicsTheme(darkTheme = choice.isDark(systemDark), dynamicColor = false) {
                 val color = MaterialTheme.colorScheme.background
-                SideEffect { background = color }
+                SideEffect {
+                    background = color
+                    compositionCount++
+                    if (compositionCount < 20) println("Theme composition $compositionCount $choice $systemDark $color")
+                }
                 androidx.compose.material3.Surface(color = color) {
                     androidx.compose.material3.Text("Theme probe")
                 }
@@ -52,6 +57,7 @@ class ThemeChoiceTest {
                 println("Verifying theme $choice with system dark=$osDark")
                 compose.runOnIdle { systemDark = osDark; manager.setTheme(choice) }
                 compose.waitForIdle()
+                println("Idle at composition $compositionCount")
                 assertEquals(choice, SettingsManager(context).theme.value)
                 assertEquals(choice.isDark(osDark), background.luminance() < .5f)
                 val bars = WindowCompat.getInsetsController(host.get().window, host.get().window.decorView)
