@@ -34,18 +34,14 @@ class ThemeChoiceTest {
         val manager = SettingsManager(context)
         assertEquals(ThemeChoice.DARK, manager.theme.value)
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
-        var systemDark by mutableStateOf(false)
+        val systemTheme = kotlinx.coroutines.flow.MutableStateFlow(false)
         var background = Color.Unspecified
-        var compositionCount = 0
         host.get().setContent {
             val choice by manager.theme.collectAsState()
+            val systemDark by systemTheme.collectAsState()
             SaltyGraphicsTheme(darkTheme = choice.isDark(systemDark), dynamicColor = false) {
                 val color = MaterialTheme.colorScheme.background
-                SideEffect {
-                    background = color
-                    compositionCount++
-                    if (compositionCount < 20) println("Theme composition $compositionCount $choice $systemDark $color")
-                }
+                SideEffect { background = color }
                 androidx.compose.material3.Surface(color = color) {
                     androidx.compose.material3.Text("Theme probe")
                 }
@@ -54,10 +50,8 @@ class ThemeChoiceTest {
         try {
             for ((choice, osDark) in listOf(ThemeChoice.DARK to false, ThemeChoice.LIGHT to false,
                 ThemeChoice.SYSTEM to false, ThemeChoice.SYSTEM to true)) {
-                println("Verifying theme $choice with system dark=$osDark")
-                compose.runOnIdle { systemDark = osDark; manager.setTheme(choice) }
+                compose.runOnIdle { systemTheme.value = osDark; manager.setTheme(choice) }
                 compose.waitForIdle()
-                println("Idle at composition $compositionCount")
                 assertEquals(choice, SettingsManager(context).theme.value)
                 assertEquals(choice.isDark(osDark), background.luminance() < .5f)
                 val bars = WindowCompat.getInsetsController(host.get().window, host.get().window.decorView)
