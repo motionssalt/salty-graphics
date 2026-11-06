@@ -69,7 +69,7 @@ fun SaltyGraphicsTheme(
 
     val view = LocalView.current
     if (!view.isInEditMode) {
-        SideEffect {
+        DisposableEffect(view, darkTheme) {
             val window = (view.context as? Activity)?.window
             if (window != null) {
                 window.statusBarColor = android.graphics.Color.TRANSPARENT
@@ -79,6 +79,7 @@ fun SaltyGraphicsTheme(
                 insetsController.isAppearanceLightStatusBars = !darkTheme
                 insetsController.isAppearanceLightNavigationBars = !darkTheme
             }
+            onDispose { }
         }
     }
 
