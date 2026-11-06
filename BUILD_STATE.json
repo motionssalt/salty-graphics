@@ -276,8 +276,8 @@
       {
         "id": "R6",
         "title": "The bottom panel becomes a fixed panel, not a row",
-        "status": "in_progress",
-        "notes": "Baseline repaired and green in Actions 42247160964. Implemented bounded adaptive tools pane, all existing tools routed inside it, 3-column non-scrolling grid, undoable selected-layer Delete, viewport-relative canvas fitting. JVM Compose verification pending."
+        "status": "done",
+        "notes": "R6 verified in green Actions 42249077771: all debug/release JVM tests and release APK build pass. Compose tests simulate safe insets across 320x480, 412x860, 1000x800 and 640x360; all add/selected tools visible, preview separated, Delete one action and undo restores layer. No UI refinement."
       },
       {
         "id": "R7",
@@ -333,8 +333,8 @@
       "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-06T16:05:20.183137+00:00",
-    "last_session_note": "R6 compiled; release-variant Robolectric tests exposed missing scenario host manifest. Tests now launch a JVM activity directly, independent of debug-only manifest. CI retains complete XML/HTML test reports on failures."
+    "last_updated": "2026-11-06T16:10:25.220074+00:00",
+    "last_session_note": "R6 verified in green Actions 42249077771: all debug/release JVM tests and release APK build pass. Compose tests simulate safe insets across 320x480, 412x860, 1000x800 and 640x360; all add/selected tools visible, preview separated, Delete one action and undo restores layer. No UI refinement."
   },
   "last_updated": "2026-11-06T14:51:00Z",
   "last_session_note": "Starting Fix Round 1 queue."
