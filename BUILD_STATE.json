@@ -194,7 +194,7 @@
     "F14"
   ],
   "next_steps": [
-    "Execute UI refinement session (salty-graphics-ui-refinement-prompt.md) as separate task"
+    "Resume fix_round_1 at R9; complete R9-R14 in order before UI refinement."
   ],
   "decisions": [
     {
@@ -288,8 +288,8 @@
       {
         "id": "R8",
         "title": "Theme (dark, light, system)",
-        "status": "in_progress",
-        "notes": "R8 in progress: persisted Dark/Light/System with Dark default, root observes choice instantly, M3 semantic UI colours across screens, dynamic colours retained, safe-drawing root and system-bar contrast. Adding theme restart tests."
+        "status": "done",
+        "notes": "Verified in green Actions 42255375629: Dark default, Light/Dark/System persistence, live semantic theme updates and both system-bar icon contrasts. All debug/release JVM tests and release APK compilation passed. Theme test drives system-state changes through a StateFlow to match observer delivery; direct external snapshot mutation stalled the Robolectric harness."
       },
       {
         "id": "R9",
@@ -332,10 +332,47 @@
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
       "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
-    "known_issues": [],
-    "last_updated": "2026-11-06T16:45:41.666973+00:00",
-    "last_session_note": "R8 diagnostics show synthetic OS-state change stalls before recomposition, while persisted theme StateFlow changes complete. The test now drives both inputs through StateFlow, matching the app observer path; all original live-colour, restart and bar-contrast assertions retained."
+    "known_issues": [
+      "R9-R14 pending: visual ratios, complete text/font workflow, vector editing, font bundles/multi-import, portable project export entry points, and final release remain unfinished. This is a partial checkpoint, not a completed fix round.",
+      "CI currently generates a fresh fallback signing key because release signing secrets were not available to that run. Do not treat its APK artifacts as a stable in-place upgrade. R14 must establish persistent signing and explicitly address compatibility with beta1 before publishing.",
+      "R1-R5 are marked done by inherited state; this run restored their compilation and ran their existing tests but did not re-audit every original acceptance criterion. Final R14 audit must check remaining universal numeric-control coverage, ruler fling/mapping, and untouched-seed migration safety.",
+      "Existing scaffold text/vector/media rendering limitations remain until R10/R11/R13. No claim of complete editor functionality or full .sg portability is made for this checkpoint."
+    ],
+    "last_updated": "2026-11-06T16:52:22.723361+00:00",
+    "last_session_note": "CHECKPOINT, NOT ROUND COMPLETION. R6-R8 implemented and CI-verified this run; inherited R1-R5 done markers retained without redoing them. Resume at R9 (first non-done item). R9-R14 remain pending, not falsely blocked. No new release was published. Existing beta1 release/assets preserved by tag-only publish workflow. Last verified code CI: https://github.com/motionssalt/salty-graphics/actions/runs/42255375629. UI refinement not started.",
+    "verification": {
+      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42255375629",
+      "result": "success",
+      "jvm_test_counts": {
+        "engine:testReleaseUnitTest": {
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine:testDebugUnitTest": {
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app:testReleaseUnitTest": {
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app:testDebugUnitTest": {
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "release_apks": "universal and arm64-v8a, armeabi-v7a, x86_64 built as CI artifacts only; not published",
+      "device_testing": "not performed (per brief)"
+    }
   },
-  "last_updated": "2026-11-06T14:51:00Z",
-  "last_session_note": "Starting Fix Round 1 queue."
+  "last_updated": "2026-11-06T16:52:22.723361+00:00",
+  "last_session_note": "CHECKPOINT, NOT ROUND COMPLETION. R6-R8 implemented and CI-verified this run; inherited R1-R5 done markers retained without redoing them. Resume at R9 (first non-done item). R9-R14 remain pending, not falsely blocked. No new release was published. Existing beta1 release/assets preserved by tag-only publish workflow. Last verified code CI: https://github.com/motionssalt/salty-graphics/actions/runs/42255375629. UI refinement not started."
 }

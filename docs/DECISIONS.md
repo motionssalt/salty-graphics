@@ -46,3 +46,8 @@ Editor Settings opens a page inside the fixed tools pane, never app settings. Ho
 
 ## R8 theme choice
 App settings stores Dark/Light/System in SharedPreferences, defaults Dark, and exposes a StateFlow observed above the navigation host. System mode follows configuration changes; dynamic colour remains enabled on Android 12+. All UI surfaces and text/control colours use Material 3 semantic roles, not fixed dark colours. Document/artwork ARGB colours do not change with the app theme. System bars remain transparent with icon contrast following the selected theme. The activity consumes safeDrawing insets at the common root; descendant inset padding does not double-apply consumed insets.
+
+## Verification checkpoint (not final release)
+R6–R8 were implemented and verified in Actions run 42255375629 (all debug/release JVM tests and release builds). R1–R5 were inherited as done; their missing imports/quarantine enum cases were repaired before advancing. R9–R14 remain pending. No new release tag has been published. UI refinement has not started.
+
+Signing audit: that Actions run used the existing workflow's newly generated fallback keystore, not persistent release secrets. These artifacts must not be described as stable in-place upgrades. Before R14 publishes, persist signing credentials securely and determine whether the beta1 certificate can be retained; never overwrite beta1 assets. The repository contains no keystore or PAT.
