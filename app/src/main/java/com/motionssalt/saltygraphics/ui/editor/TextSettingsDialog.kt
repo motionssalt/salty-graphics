@@ -329,8 +329,8 @@ fun TextSettingsDialog(
             val pathOptions = listOf("None (Flat text)") + candidatePathLayers.map { it.name }
             val selectedPathIndex = candidatePathLayers.indexOfFirst { it.id == textData.followPathLayerId } + 1
             com.motionssalt.saltygraphics.ui.controls.DropdownControl(
-                label = "Path layer", options = pathOptions, selectedIndex = selectedPathIndex,
-                onOptionSelected = { index -> updateData(textData.copy(followPathLayerId = candidatePathLayers.getOrNull(index - 1)?.id)) }
+                label = "Path layer", options = pathOptions, selectedOption = pathOptions[selectedPathIndex],
+                onOptionSelected = { name -> updateData(textData.copy(followPathLayerId = candidatePathLayers.getOrNull(pathOptions.indexOf(name) - 1)?.id)) }
             )
 
             if (textData.followPathLayerId != null) {
