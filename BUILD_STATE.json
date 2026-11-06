@@ -380,5 +380,34 @@
     }
   },
   "last_updated": "2026-11-06T18:32:12.859124+00:00",
-  "last_session_note": "PARTIAL CHECKPOINT, NOT ROUND COMPLETION. Resumed at R11 and completed it with Actions verification 42270618002. Restored inherited failing R10/R12 compilation and tests; isolated Robolectric classes rather than disabling tests. R1-R10/R12 inherited done markers retained, not fully re-audited. Resume at R13 portable .sg assets/history and export/import entry points; then R14 acceptance audit, stable signing and new release. No new release and no UI refinement. See known_issues for inherited gaps requiring R14 audit."
+  "last_session_note": "PARTIAL CHECKPOINT, NOT ROUND COMPLETION. Resumed at R11 and completed it with Actions verification 42270618002. Restored inherited failing R10/R12 compilation and tests; isolated Robolectric classes rather than disabling tests. R1-R10/R12 inherited done markers retained, not fully re-audited. Resume at R13 portable .sg assets/history and export/import entry points; then R14 acceptance audit, stable signing and new release. No new release and no UI refinement. See known_issues for inherited gaps requiring R14 audit.",
+  "fix_round_2": {
+    "status": "in_progress",
+    "queue": [
+      { "id": "S1", "title": "Release versioning and signing (do this first)", "status": "in_progress", "notes": "" },
+      { "id": "S2", "title": "Complete the project export and import (.sg)", "status": "pending", "notes": "" },
+      { "id": "S2b", "title": "Project thumbnails on Home", "status": "pending", "notes": "" },
+      { "id": "S3", "title": "Fix media imports", "status": "pending", "notes": "" },
+      { "id": "S4", "title": "Zoom button and pinch-to-zoom", "status": "pending", "notes": "" },
+      { "id": "S5", "title": "Move layers reliably (canvas drag and trackpad)", "status": "pending", "notes": "" },
+      { "id": "S6", "title": "Layer bounding box (selection box) fix and refinement", "status": "pending", "notes": "" },
+      { "id": "S7", "title": "Scroll-wheel (ruler) slider responsiveness", "status": "pending", "notes": "" },
+      { "id": "S8", "title": "Shape editing applies live (no repeated Apply)", "status": "pending", "notes": "" },
+      { "id": "S9", "title": "Vector editing: adjust existing paths, don't start new ones", "status": "pending", "notes": "" },
+      { "id": "S10", "title": "Blending modes that actually work", "status": "pending", "notes": "" },
+      { "id": "S11", "title": "Re-implement the adjustment layer", "status": "pending", "notes": "" },
+      { "id": "S12", "title": "Blending UI: categories, previews, and masking inside it", "status": "pending", "notes": "" },
+      { "id": "S13", "title": "Undo and Redo always visible", "status": "pending", "notes": "" },
+      { "id": "S14", "title": "History tree: a real branched visual", "status": "pending", "notes": "" },
+      { "id": "S15", "title": "Fonts: preview in own typeface and stay on the font page", "status": "pending", "notes": "" },
+      { "id": "S16", "title": "Save directly to the intended folder (storage scope)", "status": "pending", "notes": "" },
+      { "id": "S17", "title": "Switches must be clearly visible (on and off)", "status": "pending", "notes": "" },
+      { "id": "S18", "title": "Verify, release, and hand off", "status": "pending", "notes": "" }
+    ],
+    "decisions": [],
+    "known_issues": [],
+    "last_updated": "2026-11-06T20:44:00Z",
+    "last_session_note": "Starting fix_round_2. Investigating S1 release versioning and signing."
+  }
 }
+
