@@ -72,7 +72,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    testOptions { unitTests.isIncludeAndroidResources = true }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all { it.forkEvery = 1 }
+    }
 
     buildFeatures {
         compose = true
