@@ -40,7 +40,7 @@ class EditorWorkspaceTest {
                 Box(Modifier.requiredSize(dimensions.first.dp, dimensions.second.dp)
                     .windowInsetsPadding(WindowInsets(left = 10.dp, top = 24.dp, right = 10.dp, bottom = 32.dp))) {
                     EditorWorkspace(preview = { Text("Canvas") }, panel = {
-                        BottomPanel(selected, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+                        BottomPanel(selected, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
                     })
                 }
             }
@@ -63,7 +63,7 @@ class EditorWorkspaceTest {
                 compose.onNodeWithText(it, useUnmergedTree = true).assertIsDisplayed()
             }
             compose.runOnIdle { selected = Layer(type = LayerType.TEXT) }
-            listOf("Edit", "Transform", "Effects", "Blending", "Mask", "Delete").forEach {
+            listOf("Edit", "Transform", "Effects", "Blending & Mask", "Delete").forEach {
                 compose.onNodeWithText(it, useUnmergedTree = true).assertIsDisplayed()
             }
             compose.runOnIdle { selected = null }
@@ -77,7 +77,7 @@ class EditorWorkspaceTest {
         controller.get().setContent {
             MaterialTheme {
                 Box(Modifier.requiredSize(320.dp, 260.dp)) {
-                    BottomPanel(doc.layers.firstOrNull(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {
+                    BottomPanel(doc.layers.firstOrNull(), {}, {}, {}, {}, {}, {}, {}, {}, {}, {
                         val updated = doc.removeLayer(layer.id)
                         tree.recordAction("Delete Layers", updated)
                         doc = updated
