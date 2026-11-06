@@ -93,10 +93,10 @@ class CanvasGestureTest {
             type = LayerType.VECTOR,
             vectorPathData = VectorPathData(
                 points = listOf(
-                    VectorPoint(10f, 20f),
-                    VectorPoint(110f, 20f),
-                    VectorPoint(110f, 170f),
-                    VectorPoint(10f, 170f)
+                    BezierPoint(10f, 20f),
+                    BezierPoint(110f, 20f),
+                    BezierPoint(110f, 170f),
+                    BezierPoint(10f, 170f)
                 )
             )
         )

@@ -18,9 +18,9 @@ class SgRoundTripTest {
     fun testCompleteSgArchiveRoundTrip() {
         // 1. Text, Shape, Vector, Media, Custom Canvas Color
         val vectorPoints = listOf(
-            VectorPoint(x = -50f, y = -50f, outHandleX = -20f, outHandleY = -50f, hasOutHandle = true),
-            VectorPoint(x = 50f, y = -50f, inHandleX = 20f, inHandleY = -50f, hasInHandle = true),
-            VectorPoint(x = 0f, y = 50f)
+            BezierPoint(x = -50f, y = -50f, outHandleX = -20f, outHandleY = -50f, hasOutHandle = true),
+            BezierPoint(x = 50f, y = -50f, inHandleX = 20f, inHandleY = -50f, hasInHandle = true),
+            BezierPoint(x = 0f, y = 50f)
         )
         val vectorPath = VectorPathData(points = vectorPoints, isClosed = true, fillColor = 0xFF00FF00L)
 
@@ -173,7 +173,7 @@ class SgRoundTripTest {
         val outStream = ByteArrayOutputStream()
         val zipOut = ZipOutputStream(outStream)
         zipOut.putNextEntry(ZipEntry("manifest.json"))
-        zipOut.write("{"formatVersion": "1.0.0"}".toByteArray(Charsets.UTF_8))
+        zipOut.write("{\"formatVersion\": \"1.0.0\"}".toByteArray(Charsets.UTF_8))
         zipOut.closeEntry()
         zipOut.finish()
 
@@ -190,10 +190,10 @@ class SgRoundTripTest {
         val outStream = ByteArrayOutputStream()
         val zipOut = ZipOutputStream(outStream)
         zipOut.putNextEntry(ZipEntry("manifest.json"))
-        zipOut.write("{"formatVersion": "2.5.0"}".toByteArray(Charsets.UTF_8))
+        zipOut.write("{\"formatVersion\": \"2.5.0\"}".toByteArray(Charsets.UTF_8))
         zipOut.closeEntry()
         zipOut.putNextEntry(ZipEntry("project.json"))
-        zipOut.write("{"name": "Future Project"}".toByteArray(Charsets.UTF_8))
+        zipOut.write("{\"name\": \"Future Project\"}".toByteArray(Charsets.UTF_8))
         zipOut.closeEntry()
         zipOut.finish()
 
