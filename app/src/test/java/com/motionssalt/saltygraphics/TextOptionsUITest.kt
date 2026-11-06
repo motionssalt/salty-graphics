@@ -17,10 +17,11 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.LooperMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@LooperMode(LooperMode.Mode.PAUSED)
 class TextOptionsUITest {
 
     @get:Rule
@@ -35,12 +36,14 @@ class TextOptionsUITest {
 
             host.get().setContent {
                 MaterialTheme {
+                    androidx.compose.material3.Surface {
                     TextSettingsDialog(
                         initialData = latestTextData,
                         candidatePathLayers = emptyList(),
                         onSave = { latestTextData = it },
                         onDismiss = { dismissed = true }
                     )
+                    }
                 }
             }
 
