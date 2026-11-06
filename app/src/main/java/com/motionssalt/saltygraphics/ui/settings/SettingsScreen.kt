@@ -1,0 +1,308 @@
+package com.motionssalt.saltygraphics.ui.settings
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.motionssalt.saltygraphics.config.SocialConfig
+import com.motionssalt.saltygraphics.data.DeviceInfoProvider
+import com.motionssalt.saltygraphics.data.SettingsManager
+import com.motionssalt.saltygraphics.theme.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    settingsManager: SettingsManager,
+    deviceInfoProvider: DeviceInfoProvider,
+    onNavigateBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val uiScale by settingsManager.uiScale.collectAsState()
+    val useSystemDefault by settingsManager.useSystemDefault.collectAsState()
+
+    var issueText by remember { mutableStateOf("") }
+    val deviceInfo = remember { deviceInfoProvider.getDeviceInfo() }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings", style = MaterialTheme.typography.titleLarge) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = SaltyDarkBackground,
+                    titleContentColor = SaltyTextPrimary,
+                    navigationIconContentColor = SaltyTextPrimary
+                )
+            )
+        },
+        containerColor = SaltyDarkBackground
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // About Section
+            SettingsSectionCard(title = "About Salty Graphics") {
+                Text(
+                    text = "Salty Graphics is a hybrid raster and vector graphic design application built by Victor (solo developer and motion designer, brand MOTIONSALT). Designed for mobile creators with an offline-first GPU render engine and branching action tree history.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SaltyTextSecondary,
+                    lineHeight = 20.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Version: 1.0.0-beta1 | Developer: ${SocialConfig.DEVELOPER_NAME} (${SocialConfig.BRAND_NAME})",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SaltyCyan
+                )
+            }
+
+            // UI Scale Slider
+            SettingsSectionCard(title = "Display & UI Scaling") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Use system default scale",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = SaltyTextPrimary
+                        )
+                        Text(
+                            if (useSystemDefault) "Currently using system display scale" else "Custom scale: ${(uiScale * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = SaltyTextSecondary
+                        )
+                    }
+                    Switch(
+                        checked = useSystemDefault,
+                        onCheckedChange = { settingsManager.setUseSystemDefault(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = SaltyCyan,
+                            checkedTrackColor = SaltySurfaceVariantDark
+                        )
+                    )
+                }
+
+                if (!useSystemDefault) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "UI Scale: ${(uiScale * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SaltyTextPrimary
+                    )
+                    Slider(
+                        value = uiScale,
+                        onValueChange = { settingsManager.setUiScale(it) },
+                        valueRange = 0.75f..1.50f,
+                        steps = 5,
+                        colors = SliderDefaults.colors(
+                            thumbColor = SaltyCyan,
+                            activeTrackColor = SaltyCyan,
+                            inactiveTrackColor = SaltySurfaceVariantDark
+                        )
+                    )
+                }
+            }
+
+            // Report a Problem / Issues
+            SettingsSectionCard(title = "Report a Problem") {
+                Text(
+                    "Describe any issue, unexpected behavior, or suggestion. Submitting generates a diagnostic report shared via the Android share sheet (works 100% offline with zero backend).",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SaltyTextSecondary
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = issueText,
+                    onValueChange = { issueText = it },
+                    placeholder = { Text("Write down issues or feedback here...") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SaltyCyan,
+                        unfocusedBorderColor = SaltyOutlineDark
+                    )
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        val shareIntent = deviceInfoProvider.composeProblemReport(issueText)
+                        val chooser = Intent.createChooser(shareIntent, "Send Problem Report via")
+                        context.startActivity(chooser)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SaltyCyan,
+                        contentColor = SaltyDarkBackground
+                    )
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Share Diagnostic Report", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Social & Contact Links (Section 3.3)
+            SettingsSectionCard(title = "Connect & Support") {
+                SocialLinkItem(
+                    label = "WhatsApp (Direct Contact)",
+                    detail = SocialConfig.WHATSAPP_PHONE,
+                    icon = Icons.Default.Chat,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SocialConfig.WHATSAPP_URL))
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                SocialLinkItem(
+                    label = "Instagram",
+                    detail = SocialConfig.INSTAGRAM_HANDLE,
+                    icon = Icons.Default.CameraAlt,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SocialConfig.INSTAGRAM_URL))
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                SocialLinkItem(
+                    label = "Threads",
+                    detail = SocialConfig.THREADS_HANDLE,
+                    icon = Icons.Default.AlternateEmail,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SocialConfig.THREADS_URL))
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                SocialLinkItem(
+                    label = "X / Twitter",
+                    detail = SocialConfig.X_HANDLE,
+                    icon = Icons.Default.Tag,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SocialConfig.X_URL))
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                SocialLinkItem(
+                    label = "YouTube",
+                    detail = SocialConfig.YOUTUBE_HANDLE,
+                    icon = Icons.Default.PlayCircle,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SocialConfig.YOUTUBE_URL))
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(color = SaltyOutlineDark.copy(alpha = 0.5f))
+                SocialLinkItem(
+                    label = "TikTok",
+                    detail = SocialConfig.TIKTOK_HANDLE,
+                    icon = Icons.Default.Movie,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(SocialConfig.TIKTOK_URL))
+                        context.startActivity(intent)
+                    }
+                )
+            }
+
+            // Device Diagnostics Section
+            SettingsSectionCard(title = "Device Info") {
+                DeviceInfoRow("Device Model", "${deviceInfo.manufacturer} ${deviceInfo.model}")
+                DeviceInfoRow("Android Version", "${deviceInfo.androidVersion} (API ${deviceInfo.sdkInt})")
+                DeviceInfoRow("Supported ABIs", deviceInfo.supportedAbis)
+                DeviceInfoRow("Screen Resolution", deviceInfo.screenSize)
+                DeviceInfoRow("Memory (RAM)", "${deviceInfo.availableRamMB} MB free / ${deviceInfo.totalRamMB} MB total")
+                DeviceInfoRow("GPU Renderer", deviceInfo.gpuRenderer)
+                DeviceInfoRow("Max Texture Limit", "${deviceInfo.maxTextureSize} x ${deviceInfo.maxTextureSize} px")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun SettingsSectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SaltySurfaceDark)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = SaltyCyan
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+fun SocialLinkItem(
+    label: String,
+    detail: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = SaltyTextSecondary, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = SaltyTextPrimary)
+        }
+        Text(detail, style = MaterialTheme.typography.bodyMedium, color = SaltyCyan)
+    }
+}
+
+@Composable
+fun DeviceInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = SaltyTextSecondary)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = SaltyTextPrimary, fontWeight = FontWeight.Medium)
+    }
+}

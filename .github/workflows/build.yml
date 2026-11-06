@@ -1,0 +1,88 @@
+name: Build and Release Salty Graphics APK
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Prepare Signing Keystore
+        run: |
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "Using keystore from GitHub Secrets"
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.jks
+            echo "RELEASE_KEYSTORE_PATH=/tmp/release.jks" >> $GITHUB_ENV
+            echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
+          else
+            echo "Generating fallback release keystore"
+            keytool -genkeypair -v -keystore /tmp/release.jks -alias salty -keyalg RSA -keysize 2048 -validity 10000 -storepass saltygraphics -keypass saltygraphics -dname "CN=SaltyGraphics, OU=MOTIONSALT, O=MOTIONSALT, L=Lagos, S=Lagos, C=NG"
+            echo "RELEASE_KEYSTORE_PATH=/tmp/release.jks" >> $GITHUB_ENV
+            echo "RELEASE_KEYSTORE_PASSWORD=saltygraphics" >> $GITHUB_ENV
+            echo "RELEASE_KEY_ALIAS=salty" >> $GITHUB_ENV
+            echo "RELEASE_KEY_PASSWORD=saltygraphics" >> $GITHUB_ENV
+          fi
+
+      - name: Run Engine Tests
+        run: ./gradlew test --stacktrace
+
+      - name: Build Release APKs
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Rename and Stage APKs
+        run: |
+          mkdir -p release-apks
+          find app/build/outputs/apk/release -name "*.apk" -exec cp {} release-apks/ \;
+          ls -la release-apks/
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: salty-graphics-apks
+          path: release-apks/*.apk
+
+      - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.0.0-beta1' }}
+          name: Salty Graphics Beta ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.0.0-beta1' }}
+          body: |
+            ### Salty Graphics Android Beta Release
+            Built automatically by GitHub Actions CI.
+            
+            **Included APKs:**
+            - Universal APK (runs on all supported devices)
+            - arm64-v8a (optimized for modern 64-bit phones)
+            - armeabi-v7a (for 32-bit devices)
+            - x86_64 (for emulators / Chromebooks)
+            
+            Install directly on your Android phone.
+          files: release-apks/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

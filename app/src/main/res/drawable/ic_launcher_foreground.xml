@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="14"
+        android:translateY="14">
+        <!-- Stylized "S" vector path with cyan gradient tone -->
+        <path
+            android:fillColor="#00E5FF"
+            android:pathData="M52,18 C40,18 32,24 32,34 C32,44 40,48 48,51 C56,54 62,57 62,64 C62,71 55,76 44,76 C35,76 28,72 26,66 L16,72 C20,82 31,88 44,88 C59,88 74,80 74,64 C74,53 66,48 56,44 C48,41 44,38 44,33 C44,27 49,24 55,24 C62,24 67,27 70,32 L78,26 C73,19 64,18 52,18 Z" />
+        <!-- Accent crystal dot / pen tip -->
+        <path
+            android:fillColor="#FFB300"
+            android:pathData="M66,22 L72,28 L66,34 L60,28 Z" />
+        <!-- Grid point handle -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M24,70 L28,70 L28,74 L24,74 Z" />
+    </group>
+</vector>
