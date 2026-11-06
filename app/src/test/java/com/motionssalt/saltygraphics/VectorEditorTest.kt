@@ -63,7 +63,7 @@ class VectorEditorTest {
             compose.runOnIdle{assertTrue(layer.editablePaths[0].points[0].x>xBefore);assertEquals(4,tree.nodes.size)}
             compose.onNodeWithText("Corner/Smooth").performClick()
             handles.performTouchInput{click(Offset(170f,190f))}
-            compose.runOnIdle{assertTrue(layer.editablePaths[0].points[0].hasOutHandle)}
+            compose.runOnIdle{assertTrue("Selected=$selected, tool=$tool, point=${layer.editablePaths[0].points[0]}",layer.editablePaths[0].points[0].hasOutHandle)}
             compose.onNodeWithText("Close path").performScrollTo().performClick()
             compose.runOnIdle{assertTrue(layer.editablePaths[0].isClosed)}
             compose.onNodeWithText("Open path").performClick()

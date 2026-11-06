@@ -7,8 +7,8 @@ object VectorEditing {
     fun movePoint(p: BezierPoint, x: Float, y: Float): BezierPoint {
         require(x.isFinite() && y.isFinite())
         val dx = x - p.x; val dy = y - p.y
-        return p.copy(x = x, y = y, inHandleX = p.inHandleX + dx, inHandleY = p.inHandleY + dy,
-            outHandleX = p.outHandleX + dx, outHandleY = p.outHandleY + dy)
+        return p.copy(x = x, y = y, inHandleX = if(p.hasInHandle) p.inHandleX + dx else x, inHandleY = if(p.hasInHandle) p.inHandleY + dy else y,
+            outHandleX = if(p.hasOutHandle) p.outHandleX + dx else x, outHandleY = if(p.hasOutHandle) p.outHandleY + dy else y)
     }
 
     fun toggleSmooth(p: BezierPoint): BezierPoint = if (p.hasInHandle || p.hasOutHandle) {

@@ -44,6 +44,12 @@ class VectorEditingTest {
         assertEquals(2,layer.editablePaths.size)
         assertTrue(layer.editablePaths.first().samplePath().size>2)
     }
+    @Test fun cornerRemainsCornerAfterFractionalMove() {
+        val corner = BezierPoint(-175.53192f, -79.78723f)
+        val moved = VectorEditing.movePoint(corner,-95.74468f,-26.595743f)
+        assertFalse(moved.hasInHandle); assertFalse(moved.hasOutHandle)
+        assertTrue(VectorEditing.toggleSmooth(moved).hasOutHandle)
+    }
     @Test fun inverseTransformSupportsRotationAndScale() {
         val t=Transform2D(translationX=10f,translationY=20f,scaleX=2f,scaleY=3f,rotationDegrees=90f)
         val (x,y)=VectorEditing.toLocal(-20f,40f,t)

@@ -135,10 +135,10 @@ data class BezierPoint(
     val outHandleY: Float = y
 ) {
     val hasInHandle: Boolean
-        get() = inHandleX != x || inHandleY != y
+        get() = kotlin.math.abs(inHandleX - x) > 0.0001f || kotlin.math.abs(inHandleY - y) > 0.0001f
 
     val hasOutHandle: Boolean
-        get() = outHandleX != x || outHandleY != y
+        get() = kotlin.math.abs(outHandleX - x) > 0.0001f || kotlin.math.abs(outHandleY - y) > 0.0001f
 }
 
 @Serializable

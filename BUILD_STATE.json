@@ -307,7 +307,7 @@
         "id": "R11",
         "title": "Vector creation and editing (reference: Keyflaw's vector tool)",
         "status": "in_progress",
-        "notes": "R11 code review: compact three-column vector creation grid, transformed text-following geometry, shared vector renderer for image export, and separate touch events across Compose frames. Multi-path/tools/SVG tests await CI. R13 and R14 remain pending, no new release. UI refinement not started."
+        "notes": "R11 regression verification found floating-point drift could turn a moved corner into a microscopic smooth point. Preserve collapsed handles exactly and tolerate subpixel numerical noise; added regression and rerunning touch test. R13/R14 pending. No new release or UI refinement."
       },
       {
         "id": "R12",
@@ -338,8 +338,8 @@
       "R1-R5 are marked done by inherited state; this run restored their compilation and ran their existing tests but did not re-audit every original acceptance criterion. Final R14 audit must check remaining universal numeric-control coverage, ruler fling/mapping, and untouched-seed migration safety.",
       "Existing scaffold text/vector/media rendering limitations remain until R10/R11/R13. No claim of complete editor functionality or full .sg portability is made for this checkpoint."
     ],
-    "last_updated": "2026-11-06T18:20:10.326003+00:00",
-    "last_session_note": "R11 code review: compact three-column vector creation grid, transformed text-following geometry, shared vector renderer for image export, and separate touch events across Compose frames. Multi-path/tools/SVG tests await CI. R13 and R14 remain pending, no new release. UI refinement not started.",
+    "last_updated": "2026-11-06T18:25:41.716491+00:00",
+    "last_session_note": "R11 regression verification found floating-point drift could turn a moved corner into a microscopic smooth point. Preserve collapsed handles exactly and tolerate subpixel numerical noise; added regression and rerunning touch test. R13/R14 pending. No new release or UI refinement.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42255375629",
       "result": "success",
