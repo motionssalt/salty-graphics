@@ -194,7 +194,7 @@
     "F14"
   ],
   "next_steps": [
-    "Resume fix_round_1 at R9; complete R9-R14 in order before UI refinement."
+    "Complete R11 vector editing, R13 portable archives, then R14 verification/release."
   ],
   "decisions": [
     {
@@ -301,12 +301,12 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
         "title": "Vector creation and editing (reference: Keyflaw's vector tool)",
-        "status": "pending",
+        "status": "in_progress",
         "notes": ""
       },
       {
@@ -338,8 +338,8 @@
       "R1-R5 are marked done by inherited state; this run restored their compilation and ran their existing tests but did not re-audit every original acceptance criterion. Final R14 audit must check remaining universal numeric-control coverage, ruler fling/mapping, and untouched-seed migration safety.",
       "Existing scaffold text/vector/media rendering limitations remain until R10/R11/R13. No claim of complete editor functionality or full .sg portability is made for this checkpoint."
     ],
-    "last_updated": "2026-11-06T16:52:22.723361+00:00",
-    "last_session_note": "CHECKPOINT, NOT ROUND COMPLETION. R6-R8 implemented and CI-verified this run; inherited R1-R5 done markers retained without redoing them. Resume at R9 (first non-done item). R9-R14 remain pending, not falsely blocked. No new release was published. Existing beta1 release/assets preserved by tag-only publish workflow. Last verified code CI: https://github.com/motionssalt/salty-graphics/actions/runs/42255375629. UI refinement not started.",
+    "last_updated": "2026-11-06T17:47:28.330251+00:00",
+    "last_session_note": "Resumed from existing queue at R11, first non-done item. Preserve inherited R1-R10/R12 markers; verify current CI and implement vector editing before R13. R14 audits inherited acceptance and signing. UI refinement not started.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42255375629",
       "result": "success",
