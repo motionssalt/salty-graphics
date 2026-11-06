@@ -1,0 +1,56 @@
+{
+  "project": "Salty Graphics",
+  "repo": "motionssalt/salty-graphics",
+  "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
+  "status": "in_progress",
+  "current_phase": "F1",
+  "phases": [
+    { "id": "F1", "name": "Repository, CI and delivery", "status": "in_progress", "notes": "Repo created on GitHub; Keyflaw APK downloaded and ready to attach to reference-keyflaw release" },
+    { "id": "F2", "name": "Theme and scaffold", "status": "pending", "notes": "" },
+    { "id": "F3", "name": "Home and Settings, real behaviour", "status": "pending", "notes": "" },
+    { "id": "F4", "name": "New Project screen", "status": "pending", "notes": "" },
+    { "id": "F5", "name": "Keyflaw study", "status": "pending", "notes": "" },
+    { "id": "F6", "name": "Document model and render core", "status": "pending", "notes": "" },
+    { "id": "F7", "name": "Layers", "status": "pending", "notes": "" },
+    { "id": "F8", "name": "Transform, blending and mask", "status": "pending", "notes": "" },
+    { "id": "F9", "name": "Text", "status": "pending", "notes": "" },
+    { "id": "F10", "name": "Command system, undo/redo and the action tree", "status": "pending", "notes": "" },
+    { "id": "F11", "name": "Copy and paste of layer properties", "status": "pending", "notes": "" },
+    { "id": "F12", "name": "Effect engine", "status": "pending", "notes": "" },
+    { "id": "F13", "name": ".sg files, auto-save, import and export", "status": "pending", "notes": "" },
+    { "id": "F14", "name": "Hardening and handoff", "status": "pending", "notes": "" }
+  ],
+  "queue": [
+    { "id": "F1", "title": "Repository, CI and delivery", "status": "in_progress", "notes": "Scaffolding Android app + engine modules and GitHub Actions" },
+    { "id": "F2", "title": "Theme and scaffold", "status": "pending", "notes": "" },
+    { "id": "F3", "title": "Home and Settings, real behaviour", "status": "pending", "notes": "" },
+    { "id": "F4", "title": "New Project screen", "status": "pending", "notes": "" },
+    { "id": "F5", "title": "Keyflaw study", "status": "pending", "notes": "" },
+    { "id": "F6", "title": "Document model and render core", "status": "pending", "notes": "" },
+    { "id": "F7", "title": "Layers", "status": "pending", "notes": "" },
+    { "id": "F8", "title": "Transform, blending and mask", "status": "pending", "notes": "" },
+    { "id": "F9", "title": "Text", "status": "pending", "notes": "" },
+    { "id": "F10", "title": "Command system, undo/redo and the action tree", "status": "pending", "notes": "" },
+    { "id": "F11", "title": "Copy and paste of layer properties", "status": "pending", "notes": "" },
+    { "id": "F12", "title": "Effect engine", "status": "pending", "notes": "" },
+    { "id": "F13", "title": ".sg files, auto-save, import and export", "status": "pending", "notes": "" },
+    { "id": "F14", "title": "Hardening and handoff", "status": "pending", "notes": "" }
+  ],
+  "completed": [],
+  "next_steps": [
+    "Commit scaffold + docs + BUILD_STATE.json and push initial commit to main",
+    "Attach Keyflaw APK to reference-keyflaw GitHub pre-release",
+    "Complete Gradle Android multi-module project (app + engine) with unit tests and GitHub Actions CI for APK builds"
+  ],
+  "decisions": [
+    { "topic": "Architecture", "decision": "Multi-module Gradle setup with :engine (pure Kotlin + OpenGL ES 3.x render core, document model, action tree, effect engine) and :app (Jetpack Compose Material 3 Expressive UI).", "date": "2026-11-06" },
+    { "topic": "Keyflaw reference", "decision": "Downloaded 44MB Keyflaw APK before expiration, staging for reference-keyflaw GitHub pre-release.", "date": "2026-11-06" }
+  ],
+  "known_issues": [],
+  "deployment": {
+    "release_tag": "v1.0.0-beta1",
+    "secrets_expected": ["RELEASE_KEYSTORE_BASE64", "RELEASE_KEYSTORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD"]
+  },
+  "last_updated": "2026-11-06T11:24:00Z",
+  "last_session_note": "Starting F1: Scaffold repository, configure CI with GitHub Actions, upload Keyflaw reference APK"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Salty Graphics",
+  "description": "Hybrid raster and vector graphic design app for Android with GPU render engine and action tree.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
