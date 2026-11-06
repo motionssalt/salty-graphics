@@ -26,16 +26,18 @@ fun EditorWorkspace(
     panel: @Composable () -> Unit
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
-        if (PanelSizing.sideDock(maxWidth.value, maxHeight.value)) {
+        val workspaceWidth = maxWidth.value
+        val workspaceHeight = maxHeight.value
+        if (PanelSizing.sideDock(workspaceWidth, workspaceHeight)) {
             Row(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f).fillMaxHeight().testTag("preview")) { preview() }
-                Surface(Modifier.width(PanelSizing.sideWidth(maxWidth.value).dp).fillMaxHeight().testTag("tools"),
+                Surface(Modifier.width(PanelSizing.sideWidth(workspaceWidth).dp).fillMaxHeight().testTag("tools"),
                     color = MaterialTheme.colorScheme.surfaceContainer) { panel() }
             }
         } else {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f).fillMaxWidth().testTag("preview")) { preview() }
-                Surface(Modifier.height(PanelSizing.bottomHeight(maxHeight.value).dp).fillMaxWidth().testTag("tools"),
+                Surface(Modifier.height(PanelSizing.bottomHeight(workspaceHeight).dp).fillMaxWidth().testTag("tools"),
                     color = MaterialTheme.colorScheme.surfaceContainer) { panel() }
             }
         }
