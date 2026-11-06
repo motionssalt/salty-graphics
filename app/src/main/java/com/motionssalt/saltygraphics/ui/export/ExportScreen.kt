@@ -78,7 +78,7 @@ fun ExportScreen(
     fun renderFullDocumentBitmap(): Bitmap {
         val bitmap = Bitmap.createBitmap(finalWidth, finalHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(android.graphics.Color.BLACK)
+        drawExportBackground(canvas, doc.editorSettings.backgroundColor, selectedFormat == ExportFormat.JPEG)
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         val halfW = finalWidth / 2f
@@ -286,7 +286,12 @@ fun ExportScreen(
                                 val bitmap = renderFullDocumentBitmap()
                                 val cacheFile = File(context.cacheDir, "${doc.name.replace(" ", "_")}.${selectedFormat.extension}")
                                 FileOutputStream(cacheFile).use { fos ->
-                                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+                                    val format = when (selectedFormat) {
+                                        ExportFormat.PNG -> Bitmap.CompressFormat.PNG
+                                        ExportFormat.JPEG -> Bitmap.CompressFormat.JPEG
+                                        ExportFormat.WEBP -> Bitmap.CompressFormat.WEBP
+                                    }
+                                    bitmap.compress(format, exportQualityPercent.toInt(), fos)
                                 }
                                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
                                 val shareIntent = Intent(Intent.ACTION_SEND).apply {

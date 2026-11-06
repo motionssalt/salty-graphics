@@ -52,12 +52,14 @@ fun EditorScreen(
     var isTextSettingsOpen by remember { mutableStateOf(false) }
     var isBlendingOpen by remember { mutableStateOf(false) }
     var isMaskOpen by remember { mutableStateOf(false) }
+    var isProjectSettingsOpen by remember { mutableStateOf(false) }
     var isActionTreeOpen by remember { mutableStateOf(false) }
 
     // Load project and init action tree
     LaunchedEffect(projectId) {
         val loaded = repository.getProject(projectId)
         if (loaded != null) {
+            previewQuality = loaded.editorSettings.defaultPreviewQuality
             projectDocument = loaded
             actionTree = ActionTree(loaded)
         }
@@ -77,8 +79,8 @@ fun EditorScreen(
 
     // Handle nested group Back navigation
     BackHandler {
-        if (isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
-            isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
+        if (isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
+            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
         } else if (activeGroupId != null) {
             activeGroupId = null // Return to parent document
         } else {
@@ -101,8 +103,8 @@ fun EditorScreen(
                 previewQuality = previewQuality,
                 canUndo = tree.canUndo,
                 canRedo = tree.canRedo,
-                showGrid = showGrid,
-                gridSize = gridSize,
+                showGrid = doc.editorSettings.showGrid,
+                gridSize = doc.editorSettings.gridSize,
                 onNavigateBack = {
                     if (activeGroupId != null) {
                         activeGroupId = null
@@ -126,7 +128,7 @@ fun EditorScreen(
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
                 onExportClick = { onNavigateToExport(projectId) },
-                onSettingsClick = onNavigateToSettings,
+                onSettingsClick = { isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isProjectSettingsOpen = true },
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },
                 onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.1f) },
                 onFitToScreen = {
@@ -137,8 +139,8 @@ fun EditorScreen(
                     zoom = 1.0f
                     panOffset = Offset.Zero
                 },
-                onToggleGrid = { showGrid = !showGrid },
-                onGridSizeChange = { gridSize = it }
+                onToggleGrid = { recordAndAutoSave("Toggle grid", doc.copy(editorSettings = doc.editorSettings.copy(showGrid = !doc.editorSettings.showGrid))) },
+                onGridSizeChange = { recordAndAutoSave("Grid size", doc.copy(editorSettings = doc.editorSettings.copy(gridSize = it))) }
             )
         },
         containerColor = SaltyDarkBackground
@@ -156,8 +158,8 @@ fun EditorScreen(
                 selectedLayerIds = selectedLayerIds,
                 zoom = zoom,
                 panOffset = panOffset,
-                showGrid = showGrid,
-                gridSize = gridSize,
+                showGrid = doc.editorSettings.showGrid,
+                gridSize = doc.editorSettings.gridSize,
                 onZoomPanChange = { newZoom, newPan ->
                     zoom = newZoom
                     panOffset = newPan
@@ -251,8 +253,10 @@ fun EditorScreen(
             },
 
             panel = {
-                val pageOpen = isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen
-                if (!pageOpen) {
+                val pageOpen = isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen
+                if (isProjectSettingsOpen) {
+                    ProjectSettingsPage(doc, { recordAndAutoSave("Project settings", it) }, { isProjectSettingsOpen = false })
+                } else if (!pageOpen) {
 
             BottomPanel(
                 selectedLayer = currentSelectedLayer,

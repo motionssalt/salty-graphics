@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -210,7 +212,9 @@ fun ColorPickerDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
+                .safeDrawingPadding()
+                .imePadding()
+                .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
@@ -222,7 +226,7 @@ fun ColorPickerDialog(
                     .wrapContentHeight()
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     // Header with Preview Swatch

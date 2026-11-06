@@ -94,12 +94,17 @@ fun CanvasView(
             val scaledH = canvasH * effectiveZoom
             val topLeft = Offset(center.x - (scaledW / 2f), center.y - (scaledH / 2f))
 
-            // Canvas Background
-            drawRect(
-                color = Color.Black,
-                topLeft = topLeft,
-                size = Size(scaledW, scaledH)
-            )
+            // Checkerboard belongs only to the preview, never to exported pixels.
+            clipRect(topLeft.x, topLeft.y, topLeft.x + scaledW, topLeft.y + scaledH) {
+                val cell = 12.dp.toPx()
+                val cols = (scaledW / cell).toInt().coerceAtMost(2000) + 1
+                val rows = (scaledH / cell).toInt().coerceAtMost(2000) + 1
+                for (row in 0..rows) for (col in 0..cols) {
+                    drawRect(if ((row + col) % 2 == 0) Color.LightGray else Color.Gray,
+                        Offset(topLeft.x + col * cell, topLeft.y + row * cell), Size(cell, cell))
+                }
+                drawRect(safeColor(document.editorSettings.backgroundColor), topLeft, Size(scaledW, scaledH))
+            }
 
             // Optional Gridlines
             if (showGrid && gridSize > 0) {
@@ -108,7 +113,7 @@ fun CanvasView(
                     var x = topLeft.x
                     while (x <= topLeft.x + scaledW) {
                         drawLine(
-                            color = SaltyOutlineDark.copy(alpha = 0.4f),
+                            color = safeColor(document.editorSettings.gridColor),
                             start = Offset(x, topLeft.y),
                             end = Offset(x, topLeft.y + scaledH),
                             strokeWidth = 1f
@@ -118,7 +123,7 @@ fun CanvasView(
                     var y = topLeft.y
                     while (y <= topLeft.y + scaledH) {
                         drawLine(
-                            color = SaltyOutlineDark.copy(alpha = 0.4f),
+                            color = safeColor(document.editorSettings.gridColor),
                             start = Offset(topLeft.x, y),
                             end = Offset(topLeft.x + scaledW, y),
                             strokeWidth = 1f

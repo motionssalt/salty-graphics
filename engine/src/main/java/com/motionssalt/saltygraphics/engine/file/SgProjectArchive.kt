@@ -145,6 +145,9 @@ object SgProjectArchive {
                 id = id,
                 name = name,
                 canvasSize = canvasSize,
+                editorSettings = jsonTree["editorSettings"]?.let {
+                    runCatching { json.decodeFromJsonElement<EditorSettings>(it) }.getOrDefault(EditorSettings())
+                } ?: EditorSettings(),
                 layers = recoveredLayers,
                 selectedLayerIds = selectedIds,
                 activeGroupId = activeGroupId,

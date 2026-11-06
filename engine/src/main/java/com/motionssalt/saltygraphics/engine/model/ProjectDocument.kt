@@ -70,11 +70,22 @@ data class Layer(
 }
 
 @Serializable
+data class EditorSettings(
+    val backgroundColor: Long = 0xFF000000L,
+    val showGrid: Boolean = false,
+    val gridSize: Int = 20,
+    val gridColor: Long = 0x66808080L,
+    val snapEnabled: Boolean = false,
+    val defaultPreviewQuality: com.motionssalt.saltygraphics.engine.render.PreviewQuality = com.motionssalt.saltygraphics.engine.render.PreviewQuality.HIGH
+)
+
+@Serializable
 data class ProjectDocument(
     val id: String = UUID.randomUUID().toString(),
     val name: String = "Untitled Project",
     val canvasSize: CanvasSize = CanvasSize(),
     val layers: List<Layer> = emptyList(),
+    val editorSettings: EditorSettings = EditorSettings(),
     val selectedLayerIds: Set<String> = emptySet(),
     val activeGroupId: String? = null, // When inside a nested group editing screen
     val createdAt: Long = System.currentTimeMillis(),

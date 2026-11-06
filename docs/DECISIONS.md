@@ -40,3 +40,6 @@
 The usable workspace (system bars and toolbar excluded) gives portrait tools 40% height, clamped 260–340dp but never more than 45%. At width >=840dp or width greater than height, tools dock right: 40% width, clamped 280–360dp and capped at 45%. Main grids are three columns and never scroll; subpages scroll vertically inside the same bounds. No resizer or drag handle. Canvas fit is recomputed from its actual viewport and document dimensions, with 6% breathing room. Delete records one history action. Existing tool dialogs are now in-panel pages; numeric/color input dialogs remain dedicated input surfaces.
 
 Releases publish only from new v* tags. Main builds upload APK artifacts but must never overwrite beta1 or any previous release.
+
+## R7 project settings
+Editor Settings opens a page inside the fixed tools pane, never app settings. Home is the sole app-settings entry. EditorSettings is backward-compatible document data (legacy canvas stays black): background ARGB, grid visibility/size/colour, snap preference, default preview quality. Changes use document history. Alpha background is composited over checkerboard only in preview; PNG/WebP get actual alpha; JPEG flattens over white.
