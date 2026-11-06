@@ -84,7 +84,7 @@ object SgProjectArchive {
 
             // 5. Write assets/
             for ((assetName, data) in assetFiles) {
-                val path = if (assetName.startsWith("assets/")) assetName else "assets/"
+                val path = if (assetName.startsWith("assets/")) assetName else "assets/$assetName"
                 zipOut.putNextEntry(ZipEntry(path))
                 zipOut.write(data)
                 zipOut.closeEntry()
@@ -136,6 +136,9 @@ object SgProjectArchive {
             }
         } catch (e: Exception) {
             throw IllegalArgumentException("Corrupted .sg file: cannot read archive contents (${e.message})", e)
+        }
+        if (entryCount == 0) {
+            throw IllegalArgumentException("Corrupted .sg file: archive is empty or invalid format")
         }
 
         // Validate manifest version if present
