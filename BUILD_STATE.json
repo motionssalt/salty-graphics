@@ -307,7 +307,7 @@
         "id": "R11",
         "title": "Vector creation and editing (reference: Keyflaw's vector tool)",
         "status": "in_progress",
-        "notes": "R11 in progress: multi-path model and geometry tests committed; fixed-pane vector pages, live canvas point/handle editing, stroke rendering and basic offline SVG import implemented, awaiting CI and touch regression tests. Baseline repaired and green in Actions 42268003824. UI refinement not started."
+        "notes": "R11 in progress: added touch regression tests for add/move/smooth/remove, multiple paths, one gesture per action, undo/archive reload; native stroke/fill and safe SVG tests. CI verification in progress; R13 and release not started. UI refinement not started."
       },
       {
         "id": "R12",
@@ -338,8 +338,8 @@
       "R1-R5 are marked done by inherited state; this run restored their compilation and ran their existing tests but did not re-audit every original acceptance criterion. Final R14 audit must check remaining universal numeric-control coverage, ruler fling/mapping, and untouched-seed migration safety.",
       "Existing scaffold text/vector/media rendering limitations remain until R10/R11/R13. No claim of complete editor functionality or full .sg portability is made for this checkpoint."
     ],
-    "last_updated": "2026-11-06T18:16:48.584075+00:00",
-    "last_session_note": "R11 in progress: multi-path model and geometry tests committed; fixed-pane vector pages, live canvas point/handle editing, stroke rendering and basic offline SVG import implemented, awaiting CI and touch regression tests. Baseline repaired and green in Actions 42268003824. UI refinement not started.",
+    "last_updated": "2026-11-06T18:17:29.123698+00:00",
+    "last_session_note": "R11 in progress: added touch regression tests for add/move/smooth/remove, multiple paths, one gesture per action, undo/archive reload; native stroke/fill and safe SVG tests. CI verification in progress; R13 and release not started. UI refinement not started.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42255375629",
       "result": "success",
