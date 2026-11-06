@@ -276,6 +276,7 @@ fun LayerRow(
                         LayerType.SHAPE -> Icons.Default.Category
                         LayerType.VECTOR -> Icons.Default.Draw
                         LayerType.GROUP -> Icons.Default.Folder
+                        LayerType.QUARANTINED -> Icons.Default.Warning
                     },
                     contentDescription = null,
                     tint = if (isSelected) SaltyCyan else SaltyTextSecondary,

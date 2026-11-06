@@ -328,12 +328,14 @@
         "notes": ""
       }
     ],
-    "decisions": [],
+    "decisions": [
+      "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets."
+    ],
     "known_issues": [
       "Incoming main Actions run 42243281132 failed; investigating before R6 implementation. Existing workflow overwrites beta1 on each main push; must be tag-only before a successful build."
     ],
-    "last_updated": "2026-11-06T15:52:31.500487+00:00",
-    "last_session_note": "Resumed existing round at R6. Incoming main has failing Actions runs; inspect and repair CI before advancing. R1-R5 retained as recorded, not reimplemented. Preserve beta1: disable main-branch release replacement before subsequent pushes."
+    "last_updated": "2026-11-06T15:52:56.607223+00:00",
+    "last_session_note": "Repaired inherited compile errors: missing controls/background imports and quarantined layer icon/label cases. Release publishing now tag-only to preserve beta1. Waiting for Actions gate before R6."
   },
   "last_updated": "2026-11-06T14:51:00Z",
   "last_session_note": "Starting Fix Round 1 queue."

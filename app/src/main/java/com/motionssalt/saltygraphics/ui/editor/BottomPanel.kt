@@ -83,6 +83,7 @@ fun BottomPanel(
                         LayerType.VECTOR -> "Edit Points"
                         LayerType.GROUP -> "Edit Group"
                         LayerType.ADJUSTMENT -> "Adjustment"
+                        LayerType.QUARANTINED -> "Quarantined"
                     },
                     icon = Icons.Default.Edit,
                     enabled = canEdit,
