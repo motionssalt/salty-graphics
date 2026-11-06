@@ -37,12 +37,18 @@ data class Layer(
     val transform: Transform2D = Transform2D(),
     val shapeData: ShapeData? = null,
     val vectorPathData: VectorPathData? = null,
+    val additionalVectorPaths: List<VectorPathData> = emptyList(),
     val textData: TextLayerData? = null,
     val mediaAssetPath: String? = null,
     val effects: List<EffectInstance> = emptyList(),
     val children: List<Layer> = emptyList(), // For Group layers
     val quarantinedData: QuarantinedLayerData? = null
 ) {
+    val editablePaths: List<VectorPathData> get() = listOfNotNull(vectorPathData) + additionalVectorPaths
+
+    fun withVectorPaths(paths: List<VectorPathData>): Layer = copy(
+        vectorPathData = paths.firstOrNull(), additionalVectorPaths = paths.drop(1))
+
     /**
      * Approximate bounds in local coordinate space (before transform).
      */

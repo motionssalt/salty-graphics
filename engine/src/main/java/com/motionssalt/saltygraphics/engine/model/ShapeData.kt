@@ -149,7 +149,11 @@ data class VectorPathData(
     val strokeWidth: Float = 4f,
     val fillColor: Long = 0x00000000,
     val hasFill: Boolean = false,
-    val hasStroke: Boolean = true
+    val hasStroke: Boolean = true,
+    val strokeCap: VectorCap = VectorCap.BUTT,
+    val strokeJoin: VectorJoin = VectorJoin.MITER,
+    val dashLength: Float = 0f,
+    val dashGap: Float = 8f
 ) {
     /**
      * Approximates path length and samples points along the path for text move-along-path.
@@ -175,3 +179,6 @@ data class VectorPathData(
         return result
     }
 }
+
+@Serializable enum class VectorCap { BUTT, ROUND, SQUARE }
+@Serializable enum class VectorJoin { MITER, ROUND, BEVEL }
