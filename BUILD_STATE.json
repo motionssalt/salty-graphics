@@ -264,14 +264,14 @@
       {
         "id": "R4",
         "title": "The control library (both slider types, color picker, and more)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Implemented unified control library in ui.controls: RulerSlider (scroll wheel with tick marks, center indicator needle, haptics, reset label button, and value pill), ProgressSliderControl, ColorPickerRow with ColorPickerDialog (HSV gradient, hue, alpha, hex input, RGB, presets, and transparent support), ToggleControl, DropdownControl, and SegmentedChipsControl. Integrated SliderStyle (RULER/PROGRESS) and units into ControlDefinition in engine. Auto-generator in EffectSettingsSheet connected. Verified with ControlLibraryValidationTest."
       },
       {
         "id": "R5",
         "title": "Tap-to-edit values with a proper input experience",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Implemented ValueEditorDialog with imePadding floating above keyboard. Shows label, current value, allowed range, and numeric input. Strict validation refuses non-numeric and out-of-range inputs by turning field red, showing allowed range hint, and disabling OK button. Valid input applies immediately. Verified with unit tests covering position, opacity, and font size controls."
       },
       {
         "id": "R6",

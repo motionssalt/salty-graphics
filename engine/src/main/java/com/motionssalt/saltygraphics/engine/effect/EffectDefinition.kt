@@ -3,13 +3,21 @@ package com.motionssalt.saltygraphics.engine.effect
 import kotlinx.serialization.Serializable
 
 @Serializable
+enum class SliderStyle {
+    RULER,
+    PROGRESS
+}
+
+@Serializable
 enum class ControlType {
     TOGGLE,
     SLIDER,
     DROPDOWN,
     COLOR_PICKER,
     PROGRESS_SLIDER,
-    LAYER_SELECTOR
+    LAYER_SELECTOR,
+    SEGMENTED_CHIPS,
+    TEXT_FIELD
 }
 
 @Serializable
@@ -21,10 +29,12 @@ data class ControlDefinition(
     val minValue: Float = 0f,
     val maxValue: Float = 1f,
     val step: Float = 0.01f,
-    val options: List<String> = emptyList(), // For DROPDOWN
-    val defaultColor: Long = 0xFFFFFFFF,    // For COLOR_PICKER
+    val unit: String = "",
+    val sliderStyle: SliderStyle = SliderStyle.RULER,
+    val options: List<String> = emptyList(), // For DROPDOWN and SEGMENTED_CHIPS
+    val defaultColor: Long = 0xFFFFFFFFL,   // For COLOR_PICKER
     val defaultToggle: Boolean = false,     // For TOGGLE
-    val defaultText: String = ""            // For LAYER_SELECTOR (layer id)
+    val defaultText: String = ""            // For LAYER_SELECTOR and TEXT_FIELD
 )
 
 @Serializable
@@ -111,7 +121,9 @@ object EffectRegistry {
                 defaultValue = 0.5f,
                 minValue = 0f,
                 maxValue = 1f,
-                step = 0.01f
+                step = 0.01f,
+                unit = "%",
+                sliderStyle = SliderStyle.RULER
             ),
             ControlDefinition(
                 id = "mode_dropdown",
@@ -123,7 +135,7 @@ object EffectRegistry {
                 id = "tint_color",
                 label = "Tint Color",
                 type = ControlType.COLOR_PICKER,
-                defaultColor = 0xFF00E5FF
+                defaultColor = 0xFF00E5FFL
             ),
             ControlDefinition(
                 id = "progress_sweep",
@@ -131,7 +143,9 @@ object EffectRegistry {
                 type = ControlType.PROGRESS_SLIDER,
                 defaultValue = 0.25f,
                 minValue = 0f,
-                maxValue = 1f
+                maxValue = 1f,
+                unit = "%",
+                sliderStyle = SliderStyle.PROGRESS
             ),
             ControlDefinition(
                 id = "reference_layer",
