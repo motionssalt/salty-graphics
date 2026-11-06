@@ -102,6 +102,23 @@ fun EditorScreen(
         }
     }
 
+    val saveSgLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri: Uri? ->
+        if (uri != null) {
+            coroutineScope.launch {
+                try {
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        repository.exportProjectToStream(projectId, stream)
+                    }
+                    Toast.makeText(context, "Saved .sg project file successfully", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to save project: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     // Handle nested group Back navigation
     BackHandler {
         if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
@@ -166,7 +183,11 @@ fun EditorScreen(
                     panOffset = Offset.Zero
                 },
                 onToggleGrid = { recordAndAutoSave("Toggle grid", doc.copy(editorSettings = doc.editorSettings.copy(showGrid = !doc.editorSettings.showGrid))) },
-                onGridSizeChange = { recordAndAutoSave("Grid size", doc.copy(editorSettings = doc.editorSettings.copy(gridSize = it))) }
+                onGridSizeChange = { recordAndAutoSave("Grid size", doc.copy(editorSettings = doc.editorSettings.copy(gridSize = it))) },
+                onSaveSgClick = {
+                    val name = doc.name.ifBlank { "Project" }.replace(" ", "_")
+                    saveSgLauncher.launch("$name.sg")
+                }
             )
         },
         containerColor = colors.background

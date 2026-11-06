@@ -39,7 +39,8 @@ fun TopPanel(
     onFitToScreen: () -> Unit,
     onReset100Percent: () -> Unit,
     onToggleGrid: () -> Unit,
-    onGridSizeChange: (Int) -> Unit
+    onGridSizeChange: (Int) -> Unit,
+    onSaveSgClick: () -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     var showViewModeMenu by remember { mutableStateOf(false) }

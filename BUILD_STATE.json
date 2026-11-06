@@ -384,30 +384,124 @@
   "fix_round_2": {
     "status": "in_progress",
     "queue": [
-      { "id": "S1", "title": "Release versioning and signing (do this first)", "status": "in_progress", "notes": "Audited v1.0.0-beta1 certificate with apksigner: SHA-256 792b9203d464a07f39bd1347973392a105e91e16caa65eff7b62fc8a95bbf6de, SHA-1 acb788bef9faa808aec48632af42358df47653e4. Root cause: CI fell back to generating a fresh random keystore per run due to missing secrets. Created permanent stable release keystore stored in repository secrets: SHA-256 96:65:26:AF:4F:0A:85:3C:95:AA:8E:16:37:3F:ED:70:9D:58:A8:8D:6B:27:54:6C:63:93:E9:E3:9A:FC:47:85, SHA-1 D9:62:D4:EE:EA:6F:B7:6F:FC:0B:08:80:A2:00:BA:AA:91:14:2B:61. Configured build.yml to enforce secret presence, calculate unique increasing versionCode (100+run_number) and versionName (1.0.<run_number>-beta), and publish a unique pre-release per build without overwriting older releases." },
-      { "id": "S2", "title": "Complete the project export and import (.sg)", "status": "pending", "notes": "" },
-      { "id": "S2b", "title": "Project thumbnails on Home", "status": "pending", "notes": "" },
-      { "id": "S3", "title": "Fix media imports", "status": "pending", "notes": "" },
-      { "id": "S4", "title": "Zoom button and pinch-to-zoom", "status": "pending", "notes": "" },
-      { "id": "S5", "title": "Move layers reliably (canvas drag and trackpad)", "status": "pending", "notes": "" },
-      { "id": "S6", "title": "Layer bounding box (selection box) fix and refinement", "status": "pending", "notes": "" },
-      { "id": "S7", "title": "Scroll-wheel (ruler) slider responsiveness", "status": "pending", "notes": "" },
-      { "id": "S8", "title": "Shape editing applies live (no repeated Apply)", "status": "pending", "notes": "" },
-      { "id": "S9", "title": "Vector editing: adjust existing paths, don't start new ones", "status": "pending", "notes": "" },
-      { "id": "S10", "title": "Blending modes that actually work", "status": "pending", "notes": "" },
-      { "id": "S11", "title": "Re-implement the adjustment layer", "status": "pending", "notes": "" },
-      { "id": "S12", "title": "Blending UI: categories, previews, and masking inside it", "status": "pending", "notes": "" },
-      { "id": "S13", "title": "Undo and Redo always visible", "status": "pending", "notes": "" },
-      { "id": "S14", "title": "History tree: a real branched visual", "status": "pending", "notes": "" },
-      { "id": "S15", "title": "Fonts: preview in own typeface and stay on the font page", "status": "pending", "notes": "" },
-      { "id": "S16", "title": "Save directly to the intended folder (storage scope)", "status": "pending", "notes": "" },
-      { "id": "S17", "title": "Switches must be clearly visible (on and off)", "status": "pending", "notes": "" },
-      { "id": "S18", "title": "Verify, release, and hand off", "status": "pending", "notes": "" }
+      {
+        "id": "S1",
+        "title": "Release versioning and signing (do this first)",
+        "status": "done",
+        "notes": "Root cause: CI generated fresh random keystores per run due to missing secrets. Established permanent stable release keystore stored in repository secrets: SHA-256 96:65:26:AF:4F:0A:85:3C:95:AA:8E:16:37:3F:ED:70:9D:58:A8:8D:6B:27:54:6C:63:93:E9:E3:9A:FC:47:85, SHA-1 D9:62:D4:EE:EA:6F:B7:6F:FC:0B:08:80:A2:00:BA:AA:91:14:2B:61. Configured build.yml with dynamic versionCode (100+run_number) and versionName (1.0.<run_number>-beta), unique release tags without asset collisions, and apksigner verification. Verified via successful release v1.0.47."
+      },
+      {
+        "id": "S2",
+        "title": "Complete the project export and import (.sg)",
+        "status": "done",
+        "notes": "Root cause: .sg project container lacked history action tree serialization, format version gating, embedded media/font asset handling, and export entry points in ExportScreen and Editor. Implemented SgManifest with semantic formatVersion gating (rejects major version > 1 with clear message), ActionTreeSnapshot history serialization, self-contained project assets folder synchronization, duplicate import auto-renaming, and added Save Project (.sg) to ExportScreen, HomeScreen (single & multi-selection), and Editor TopPanel menu. Verified with comprehensive SgRoundTripTest."
+      },
+      {
+        "id": "S2b",
+        "title": "Project thumbnails on Home",
+        "status": "done",
+        "notes": "Root cause: Home project cards rendered a static vector icon placeholder with hardcoded text plural (\"1 layers\"). Implemented ProjectThumbnailRenderer proxy renderer (~512px) off the main thread with transparency checkerboard, layer stack rendering, LRU memory cache, disk cache in thumbnails/, auto-generation on create/edit/import/migration, and duplicate/delete lifecycle handling. Fixed layer plural text to (\"No layers\", \"1 layer\", \"N layers\"). Verified with ProjectRepositoryTest."
+      },
+      {
+        "id": "S3",
+        "title": "Fix media imports",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S4",
+        "title": "Zoom button and pinch-to-zoom",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S5",
+        "title": "Move layers reliably (canvas drag and trackpad)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S6",
+        "title": "Layer bounding box (selection box) fix and refinement",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S7",
+        "title": "Scroll-wheel (ruler) slider responsiveness",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S8",
+        "title": "Shape editing applies live (no repeated Apply)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S9",
+        "title": "Vector editing: adjust existing paths, don't start new ones",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S10",
+        "title": "Blending modes that actually work",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S11",
+        "title": "Re-implement the adjustment layer",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S12",
+        "title": "Blending UI: categories, previews, and masking inside it",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S13",
+        "title": "Undo and Redo always visible",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S14",
+        "title": "History tree: a real branched visual",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S15",
+        "title": "Fonts: preview in own typeface and stay on the font page",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S16",
+        "title": "Save directly to the intended folder (storage scope)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S17",
+        "title": "Switches must be clearly visible (on and off)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "S18",
+        "title": "Verify, release, and hand off",
+        "status": "pending",
+        "notes": ""
+      }
     ],
     "decisions": [],
     "known_issues": [],
-    "last_updated": "2026-11-06T20:44:00Z",
-    "last_session_note": "Starting fix_round_2. Investigating S1 release versioning and signing."
+    "last_updated": "2026-11-06T21:28:00Z",
+    "last_session_note": "Completed S1, S2, and S2b. All tests and changes committed and pushed to CI."
   }
 }
-

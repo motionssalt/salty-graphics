@@ -1,20 +1,17 @@
 package com.motionssalt.saltygraphics.data
 
 import android.content.Context
+import com.motionssalt.saltygraphics.engine.action.ActionTreeSnapshot
 import com.motionssalt.saltygraphics.engine.file.SgProjectArchive
-import com.motionssalt.saltygraphics.engine.model.AspectRatioPreset
 import com.motionssalt.saltygraphics.engine.model.CanvasSize
-import com.motionssalt.saltygraphics.engine.model.Layer
-import com.motionssalt.saltygraphics.engine.model.LayerType
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
-import com.motionssalt.saltygraphics.engine.model.QualityPreset
-import com.motionssalt.saltygraphics.engine.model.ShapeData
-import com.motionssalt.saltygraphics.engine.model.ShapeType
-import com.motionssalt.saltygraphics.engine.model.TextLayerData
+import com.motionssalt.saltygraphics.render.ProjectThumbnailRenderer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -35,8 +32,8 @@ data class ProjectSummary(
 )
 
 class ProjectRepository(private val context: Context) {
-
     private val projectsDir = File(context.filesDir, "projects").apply { mkdirs() }
+    private val thumbnailsDir = File(context.filesDir, "thumbnails").apply { mkdirs() }
     private val indexFile = File(projectsDir, "index.json")
 
     private val _projects = MutableStateFlow<List<ProjectSummary>>(emptyList())
@@ -48,26 +45,55 @@ class ProjectRepository(private val context: Context) {
         encodeDefaults = true
     }
 
+    fun getProjectFile(id: String): File = File(projectsDir, "$id.sg")
+    fun getThumbnailFile(id: String): File = File(thumbnailsDir, "$id.png")
+    fun getAssetsDir(id: String): File = File(projectsDir, "${id}_assets").apply { mkdirs() }
+
+    fun getProjectAssets(id: String): Map<String, ByteArray> {
+        val dir = File(projectsDir, "${id}_assets")
+        if (!dir.exists() || !dir.isDirectory) return emptyMap()
+        val result = mutableMapOf<String, ByteArray>()
+        dir.walkTopDown().filter { it.isFile }.forEach { file ->
+            val relPath = file.relativeTo(dir).path.replace('\', '/')
+            result[relPath] = file.readBytes()
+        }
+        return result
+    }
+
     suspend fun loadProjects() = withContext(Dispatchers.IO) {
         try {
             if (!indexFile.exists()) {
-                // R3: No default sample project on first launch. Friendly empty state shown.
                 _projects.value = emptyList()
                 return@withContext
             }
-
             val content = indexFile.readText()
             val list = json.decodeFromString<List<ProjectSummary>>(content)
-            
+
             // R3 Migration: on upgrade, remove the seeded sample project if it is still unmodified
             val migrated = list.filterNot { it.name == "My First Salty Design" && it.layerCount == 2 }
             if (migrated.size != list.size) {
                 list.filter { it.name == "My First Salty Design" && it.layerCount == 2 }.forEach {
                     try { File(projectsDir, "${it.id}.sg").delete() } catch (_: Throwable) {}
+                    try { File(thumbnailsDir, "${it.id}.png").delete() } catch (_: Throwable) {}
                 }
                 saveIndex(migrated)
             } else {
                 _projects.value = list.sortedByDescending { it.modifiedAt }
+            }
+
+            // S2b: Background check for missing thumbnails on old projects
+            CoroutineScope(Dispatchers.IO).launch {
+                for (proj in _projects.value) {
+                    val thumb = File(thumbnailsDir, "${proj.id}.png")
+                    if (!thumb.exists()) {
+                        try {
+                            val doc = getProject(proj.id)
+                            if (doc != null) {
+                                ProjectThumbnailRenderer.saveThumbnail(context, doc)
+                            }
+                        } catch (_: Throwable) {}
+                    }
+                }
             }
         } catch (e: Throwable) {
             _projects.value = emptyList()
@@ -90,7 +116,15 @@ class ProjectRepository(private val context: Context) {
             canvasSize = canvasSize
         )
         val file = File(projectsDir, "${doc.id}.sg")
-        SgProjectArchive.saveToFile(doc, file)
+        val previewBytes = ProjectThumbnailRenderer.renderToPng(context, doc)
+        File(thumbnailsDir, "${doc.id}.png").writeBytes(previewBytes)
+
+        SgProjectArchive.saveToFile(
+            document = doc,
+            file = file,
+            assetFiles = emptyMap(),
+            previewPng = previewBytes
+        )
 
         val summary = ProjectSummary(
             id = doc.id,
@@ -108,17 +142,34 @@ class ProjectRepository(private val context: Context) {
         val file = File(projectsDir, "$id.sg")
         if (!file.exists()) return@withContext null
         try {
-            val (doc, _) = SgProjectArchive.loadFromFile(file)
-            doc
+            val result = SgProjectArchive.loadFromFile(file)
+            result.document
         } catch (e: Exception) {
             null
         }
     }
 
-    suspend fun saveProject(doc: ProjectDocument) = withContext(Dispatchers.IO) {
+    suspend fun getProjectFull(id: String): SgProjectArchive.loadFromFile? = null
+
+    suspend fun saveProject(doc: ProjectDocument, historySnapshot: ActionTreeSnapshot? = null) = withContext(Dispatchers.IO) {
         try {
             val file = File(projectsDir, "${doc.id}.sg")
-            SgProjectArchive.saveToFile(doc, file)
+            val assets = getProjectAssets(doc.id)
+            val previewBytes = try {
+                val thumbFile = ProjectThumbnailRenderer.saveThumbnail(context, doc)
+                thumbFile.readBytes()
+            } catch (_: Throwable) {
+                null
+            }
+
+            SgProjectArchive.saveToFile(
+                document = doc,
+                file = file,
+                assetFiles = assets,
+                historySnapshot = historySnapshot,
+                previewPng = previewBytes
+            )
+
             val updated = _projects.value.map {
                 if (it.id == doc.id) {
                     it.copy(
@@ -143,8 +194,25 @@ class ProjectRepository(private val context: Context) {
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis()
         )
+
+        // Duplicate asset folder
+        val srcAssets = File(projectsDir, "${id}_assets")
+        val dstAssets = File(projectsDir, "${newId}_assets")
+        if (srcAssets.exists()) {
+            srcAssets.copyRecursively(dstAssets, overwrite = true)
+        }
+
+        // Duplicate thumbnail
+        ProjectThumbnailRenderer.duplicateThumbnail(context, id, newId)
+        val previewBytes = File(thumbnailsDir, "$newId.png").let { if (it.exists()) it.readBytes() else null }
+
         val file = File(projectsDir, "$newId.sg")
-        SgProjectArchive.saveToFile(duplicatedDoc, file)
+        SgProjectArchive.saveToFile(
+            document = duplicatedDoc,
+            file = file,
+            assetFiles = getProjectAssets(newId),
+            previewPng = previewBytes
+        )
 
         val summary = ProjectSummary(
             id = duplicatedDoc.id,
@@ -165,17 +233,67 @@ class ProjectRepository(private val context: Context) {
 
     suspend fun deleteProjects(ids: Set<String>) = withContext(Dispatchers.IO) {
         for (id in ids) {
-            File(projectsDir, "$id.sg").delete()
+            try { File(projectsDir, "$id.sg").delete() } catch (_: Throwable) {}
+            try { File(projectsDir, "${id}_assets").deleteRecursively() } catch (_: Throwable) {}
+            ProjectThumbnailRenderer.deleteThumbnail(context, id)
         }
         saveIndex(_projects.value.filter { it.id !in ids })
     }
 
     suspend fun importProject(inputStream: InputStream): ProjectDocument = withContext(Dispatchers.IO) {
-        val (importedDoc, assets) = SgProjectArchive.importFromStream(inputStream)
+        val result = SgProjectArchive.importFromStream(inputStream)
+        val importedDoc = result.document
+        val assets = result.assets
+
         val newId = UUID.randomUUID().toString()
-        val doc = importedDoc.copy(id = newId, updatedAt = System.currentTimeMillis())
+
+        // S2: Importing the same project twice creates a copy with a new name, not an overwrite
+        val existingNames = _projects.value.map { it.name.lowercase().trim() }
+        val baseName = importedDoc.name.ifBlank { "Imported Project" }
+        val uniqueName = if (existingNames.contains(baseName.lowercase().trim())) {
+            var copyNum = 1
+            var candidate = "$baseName (Copy $copyNum)"
+            while (existingNames.contains(candidate.lowercase().trim())) {
+                copyNum++
+                candidate = "$baseName (Copy $copyNum)"
+            }
+            candidate
+        } else {
+            baseName
+        }
+
+        val doc = importedDoc.copy(
+            id = newId,
+            name = uniqueName,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
+
+        // Extract assets to assets folder
+        if (assets.isNotEmpty()) {
+            val assetsDir = getAssetsDir(newId)
+            for ((relPath, data) in assets) {
+                val assetFile = File(assetsDir, relPath)
+                assetFile.parentFile?.mkdirs()
+                assetFile.writeBytes(data)
+            }
+        }
+
+        // Save preview thumbnail
+        if (result.previewPng != null && result.previewPng.isNotEmpty()) {
+            File(thumbnailsDir, "$newId.png").writeBytes(result.previewPng)
+        } else {
+            ProjectThumbnailRenderer.saveThumbnail(context, doc)
+        }
+
         val file = File(projectsDir, "$newId.sg")
-        SgProjectArchive.saveToFile(doc, file, assets)
+        SgProjectArchive.saveToFile(
+            document = doc,
+            file = file,
+            assetFiles = assets,
+            historySnapshot = result.historySnapshot,
+            previewPng = result.previewPng
+        )
 
         val summary = ProjectSummary(
             id = doc.id,

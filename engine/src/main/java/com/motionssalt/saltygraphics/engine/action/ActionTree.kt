@@ -56,6 +56,13 @@ data class ActionNode(
 /**
  * Tree-based action and history manager.
  */
+@Serializable
+data class ActionTreeSnapshot(
+    val rootNodeId: String = "root",
+    val currentNodeId: String = "root",
+    val nodes: Map<String, ActionNode> = emptyMap()
+)
+
 class ActionTree(
     initialDocument: ProjectDocument
 ) {
@@ -170,4 +177,32 @@ class ActionTree(
         }
         return path
     }
+
+    fun toSnapshot(): ActionTreeSnapshot {
+        return ActionTreeSnapshot(
+            rootNodeId = rootNodeId,
+            currentNodeId = currentNodeId,
+            nodes = _nodes.toMap()
+        )
+    }
+
+    companion object {
+        fun fromSnapshot(snapshot: ActionTreeSnapshot, fallbackDocument: ProjectDocument): ActionTree {
+            val tree = ActionTree(fallbackDocument)
+            if (snapshot.nodes.isNotEmpty()) {
+                tree._nodes.clear()
+                tree._nodes.putAll(snapshot.nodes)
+                tree.rootNodeId = snapshot.rootNodeId
+                tree.currentNodeId = snapshot.currentNodeId
+                for ((id, node) in snapshot.nodes) {
+                    node.snapshot?.let { tree.documentStates[id] = it }
+                }
+                if (!tree.documentStates.containsKey(tree.currentNodeId)) {
+                    tree.documentStates[tree.currentNodeId] = fallbackDocument
+                }
+            }
+            return tree
+        }
+    }
+
 }

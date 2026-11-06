@@ -1,5 +1,6 @@
 package com.motionssalt.saltygraphics.engine.file
 
+import com.motionssalt.saltygraphics.engine.action.ActionTreeSnapshot
 import com.motionssalt.saltygraphics.engine.model.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -13,12 +14,26 @@ import java.util.zip.ZipOutputStream
 @Serializable
 data class SgManifest(
     val formatVersion: String = "1.0.0",
-    val appVersion: String = "1.0.0-beta1",
+    val appVersion: String = "1.0.0",
     val appName: String = "Salty Graphics",
     val author: String = "MOTIONSALT",
     val createdAt: Long = System.currentTimeMillis(),
     val modifiedAt: Long = System.currentTimeMillis()
 )
+
+data class SgImportResult(
+    val document: ProjectDocument,
+    val assets: Map<String, ByteArray> = emptyMap(),
+    val manifest: SgManifest = SgManifest(),
+    val historySnapshot: ActionTreeSnapshot? = null,
+    val previewPng: ByteArray? = null
+) {
+    operator fun component1(): ProjectDocument = document
+    operator fun component2(): Map<String, ByteArray> = assets
+    operator fun component3(): SgManifest = manifest
+    operator fun component4(): ActionTreeSnapshot? = historySnapshot
+    operator fun component5(): ByteArray? = previewPng
+}
 
 object SgProjectArchive {
     private val json = Json {
@@ -33,58 +48,111 @@ object SgProjectArchive {
     fun exportToStream(
         document: ProjectDocument,
         outputStream: OutputStream,
-        assetFiles: Map<String, ByteArray> = emptyMap()
+        assetFiles: Map<String, ByteArray> = emptyMap(),
+        historySnapshot: ActionTreeSnapshot? = null,
+        previewPng: ByteArray? = null
     ) {
         val zipOut = ZipOutputStream(BufferedOutputStream(outputStream))
-
-        // 1. Write manifest.json
-        val manifest = SgManifest(
-            createdAt = document.createdAt,
-            modifiedAt = System.currentTimeMillis()
-        )
-        val manifestBytes = json.encodeToString(manifest).toByteArray(Charsets.UTF_8)
-        zipOut.putNextEntry(ZipEntry("manifest.json"))
-        zipOut.write(manifestBytes)
-        zipOut.closeEntry()
-
-        // 2. Write project.json
-        val projectBytes = json.encodeToString(document).toByteArray(Charsets.UTF_8)
-        zipOut.putNextEntry(ZipEntry("project.json"))
-        zipOut.write(projectBytes)
-        zipOut.closeEntry()
-
-        // 3. Write assets/
-        for ((assetName, data) in assetFiles) {
-            zipOut.putNextEntry(ZipEntry("assets/$assetName"))
-            zipOut.write(data)
+        try {
+            // 1. Write manifest.json
+            val manifest = SgManifest(
+                createdAt = document.createdAt,
+                modifiedAt = System.currentTimeMillis()
+            )
+            val manifestBytes = json.encodeToString(manifest).toByteArray(Charsets.UTF_8)
+            zipOut.putNextEntry(ZipEntry("manifest.json"))
+            zipOut.write(manifestBytes)
             zipOut.closeEntry()
-        }
 
-        zipOut.finish()
-        zipOut.flush()
+            // 2. Write project.json
+            val projectBytes = json.encodeToString(document).toByteArray(Charsets.UTF_8)
+            zipOut.putNextEntry(ZipEntry("project.json"))
+            zipOut.write(projectBytes)
+            zipOut.closeEntry()
+
+            // 3. Write history.json if available
+            if (historySnapshot != null) {
+                val historyBytes = json.encodeToString(historySnapshot).toByteArray(Charsets.UTF_8)
+                zipOut.putNextEntry(ZipEntry("history.json"))
+                zipOut.write(historyBytes)
+                zipOut.closeEntry()
+            }
+
+            // 4. Write preview.png if available
+            if (previewPng != null && previewPng.isNotEmpty()) {
+                zipOut.putNextEntry(ZipEntry("preview.png"))
+                zipOut.write(previewPng)
+                zipOut.closeEntry()
+            }
+
+            // 5. Write assets/
+            for ((assetName, data) in assetFiles) {
+                val path = if (assetName.startsWith("assets/")) assetName else "assets/"
+                zipOut.putNextEntry(ZipEntry(path))
+                zipOut.write(data)
+                zipOut.closeEntry()
+            }
+
+            zipOut.finish()
+            zipOut.flush()
+        } catch (e: Exception) {
+            throw IOException("Failed to export .sg project archive: ${e.message}", e)
+        }
     }
 
     /**
-     * Reads a .sg ZIP container stream and returns the reconstructed ProjectDocument and asset map.
+     * Reads a .sg ZIP container stream and returns SgImportResult.
      * Guaranteed crash-proof: individual corrupted layers are quarantined rather than failing the document.
      */
-    fun importFromStream(inputStream: InputStream): Pair<ProjectDocument, Map<String, ByteArray>> {
-        val zipIn = ZipInputStream(BufferedInputStream(inputStream))
+    fun importFromStream(inputStream: InputStream): SgImportResult {
         var projectJson: String? = null
+        var manifestJson: String? = null
+        var historyJson: String? = null
+        var previewPng: ByteArray? = null
         val assets = mutableMapOf<String, ByteArray>()
 
-        var entry = zipIn.nextEntry
-        while (entry != null) {
-            val name = entry.name
-            if (name == "project.json") {
-                val bytes = zipIn.readBytes()
-                projectJson = String(bytes, Charsets.UTF_8)
-            } else if (name.startsWith("assets/") && !entry.isDirectory) {
-                val assetKey = name.removePrefix("assets/")
-                assets[assetKey] = zipIn.readBytes()
+        try {
+            val zipIn = ZipInputStream(BufferedInputStream(inputStream))
+            var entry = zipIn.nextEntry
+            while (entry != null) {
+                val name = entry.name
+                when {
+                    name == "manifest.json" -> {
+                        manifestJson = String(zipIn.readBytes(), Charsets.UTF_8)
+                    }
+                    name == "project.json" -> {
+                        projectJson = String(zipIn.readBytes(), Charsets.UTF_8)
+                    }
+                    name == "history.json" -> {
+                        historyJson = String(zipIn.readBytes(), Charsets.UTF_8)
+                    }
+                    name == "preview.png" -> {
+                        previewPng = zipIn.readBytes()
+                    }
+                    name.startsWith("assets/") && !entry.isDirectory -> {
+                        val assetKey = name.removePrefix("assets/")
+                        assets[assetKey] = zipIn.readBytes()
+                    }
+                }
+                zipIn.closeEntry()
+                entry = zipIn.nextEntry
             }
-            zipIn.closeEntry()
-            entry = zipIn.nextEntry
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Corrupted .sg file: cannot read archive contents (${e.message})", e)
+        }
+
+        // Validate manifest version if present
+        val manifest = manifestJson?.let {
+            try {
+                json.decodeFromString<SgManifest>(it)
+            } catch (_: Exception) {
+                null
+            }
+        } ?: SgManifest()
+
+        val majorVersion = manifest.formatVersion.split('.').firstOrNull()?.toIntOrNull() ?: 1
+        if (majorVersion > 1) {
+            throw IllegalArgumentException("Unsupported .sg format version '${manifest.formatVersion}'. This project was created with a newer version of Salty Graphics. Please update the app.")
         }
 
         if (projectJson == null) {
@@ -97,7 +165,21 @@ object SgProjectArchive {
             recoverProjectDocument(projectJson, e)
         }
 
-        return Pair(document, assets)
+        val historySnapshot = historyJson?.let {
+            try {
+                json.decodeFromString<ActionTreeSnapshot>(it)
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        return SgImportResult(
+            document = document,
+            assets = assets,
+            manifest = manifest,
+            historySnapshot = historySnapshot,
+            previewPng = previewPng
+        )
     }
 
     /**
@@ -112,7 +194,6 @@ object SgProjectArchive {
             val canvasSize = jsonTree["canvasSize"]?.let {
                 runCatching { json.decodeFromJsonElement<CanvasSize>(it) }.getOrNull()
             } ?: CanvasSize()
-
             val rawLayers = jsonTree["layers"]?.jsonArray ?: emptyList()
             val recoveredLayers = rawLayers.mapIndexed { index, layerElement ->
                 try {
@@ -134,11 +215,9 @@ object SgProjectArchive {
                     )
                 }
             }
-
             val selectedIds = jsonTree["selectedLayerIds"]?.let {
                 runCatching { json.decodeFromJsonElement<Set<String>>(it) }.getOrNull()
             } ?: emptySet()
-
             val activeGroupId = jsonTree["activeGroupId"]?.jsonPrimitive?.contentOrNull
 
             ProjectDocument(
@@ -174,16 +253,28 @@ object SgProjectArchive {
     /**
      * Saves project to local file (e.g. for auto-save).
      */
-    fun saveToFile(document: ProjectDocument, file: File, assetFiles: Map<String, ByteArray> = emptyMap()) {
+    fun saveToFile(
+        document: ProjectDocument,
+        file: File,
+        assetFiles: Map<String, ByteArray> = emptyMap(),
+        historySnapshot: ActionTreeSnapshot? = null,
+        previewPng: ByteArray? = null
+    ) {
         FileOutputStream(file).use { fos ->
-            exportToStream(document, fos, assetFiles)
+            exportToStream(
+                document = document,
+                outputStream = fos,
+                assetFiles = assetFiles,
+                historySnapshot = historySnapshot,
+                previewPng = previewPng
+            )
         }
     }
 
     /**
      * Loads project from local file.
      */
-    fun loadFromFile(file: File): Pair<ProjectDocument, Map<String, ByteArray>> {
+    fun loadFromFile(file: File): SgImportResult {
         FileInputStream(file).use { fis ->
             return importFromStream(fis)
         }

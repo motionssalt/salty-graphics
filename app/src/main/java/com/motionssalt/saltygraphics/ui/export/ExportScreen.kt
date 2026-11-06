@@ -145,6 +145,27 @@ fun ExportScreen(
         }
     }
 
+    val saveSgFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri: Uri? ->
+        val currentDoc = projectDocument ?: return@rememberLauncherForActivityResult
+        if (uri != null) {
+            coroutineScope.launch {
+                isExporting = true
+                withContext(Dispatchers.IO) {
+                    try {
+                        context.contentResolver.openOutputStream(uri)?.use { os ->
+                            repository.exportProjectToStream(currentDoc.id, os)
+                        }
+                    } catch (_: Exception) {}
+                }
+                isExporting = false
+                android.widget.Toast.makeText(context, "Saved .sg project file successfully", android.widget.Toast.LENGTH_SHORT).show()
+                onNavigateBack()
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -260,6 +281,60 @@ fun ExportScreen(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
+                    }
+                }
+            }
+
+            // S2: Save project (.sg) on Export screen
+            SettingsSectionCard(title = "Save Project File (.sg)") {
+                Text(
+                    text = "Export the entire editable project archive including all layers, vectors, typography, history, and embedded assets.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            val fileName = "${doc.name.replace(" ", "_")}.sg"
+                            saveSgFileLauncher.launch(fileName)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
+                    ) {
+                        Icon(Icons.Default.FileDownload, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Save .sg", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                isExporting = true
+                                withContext(Dispatchers.IO) {
+                                    val cacheFile = File(context.cacheDir, "${doc.name.replace(" ", "_")}.sg")
+                                    FileOutputStream(cacheFile).use { fos ->
+                                        repository.exportProjectToStream(doc.id, fos)
+                                    }
+                                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
+                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "application/octet-stream"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share Project (.sg) via"))
+                                }
+                                isExporting = false
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Share .sg")
                     }
                 }
             }

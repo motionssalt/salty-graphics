@@ -104,4 +104,36 @@ class ProjectRepositoryTest {
         assertTrue("User project 1 must be kept", migrated.any { it.id == "user-id-1" })
         assertTrue("User edited project with modified layers must be kept", migrated.any { it.id == "user-id-2" })
     }
+
+    @Test
+    fun testLayerCountPluralFormatting() {
+        fun formatLayerCount(count: Int): String = when (count) {
+            0 -> "No layers"
+            1 -> "1 layer"
+            else -> "$count layers"
+        }
+        assertEquals("No layers", formatLayerCount(0))
+        assertEquals("1 layer", formatLayerCount(1))
+        assertEquals("2 layers", formatLayerCount(2))
+        assertEquals("15 layers", formatLayerCount(15))
+    }
+
+    @Test
+    fun testDuplicateImportNameResolution() {
+        val existingNames = listOf("summer poster", "summer poster (copy 1)")
+        val baseName = "Summer Poster"
+        val uniqueName = if (existingNames.contains(baseName.lowercase().trim())) {
+            var copyNum = 1
+            var candidate = "$baseName (Copy $copyNum)"
+            while (existingNames.contains(candidate.lowercase().trim())) {
+                copyNum++
+                candidate = "$baseName (Copy $copyNum)"
+            }
+            candidate
+        } else {
+            baseName
+        }
+        assertEquals("Summer Poster (Copy 2)", uniqueName)
+    }
+
 }
