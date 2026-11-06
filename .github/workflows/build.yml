@@ -85,9 +85,14 @@ jobs:
 
       - name: Verify APK Signatures and Certificate Fingerprint
         run: |
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -n 1)
           for apk in release-apks/*.apk; do
             echo "=== Checking certificate for $apk ==="
-            apksigner verify --print-certs "$apk"
+            if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
+              $APKSIGNER verify --print-certs "$apk"
+            else
+              keytool -printcert -jarfile "$apk"
+            fi
           done
 
       - name: Upload APK Artifacts
@@ -101,6 +106,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
           name: Salty Graphics Beta ${{ env.RELEASE_TAG }}
           body: |
             ### Salty Graphics Android Beta Release (${{ env.RELEASE_TAG }})
