@@ -31,9 +31,9 @@ import kotlin.system.measureTimeMillis
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ProjectLoadingRegressionTest {
     @get:Rule val compose=createEmptyComposeRule()
-    private val context get()=RuntimeEnvironment.getApplication<android.app.Application>()
+    private val context get()=RuntimeEnvironment.getApplication()
 
-    @Test fun missingCorruptAndHalfWrittenProjectsFinishWithRecoverableErrorsAndSafeModeKeepsHealthyLayers() = runBlocking {
+    @Test fun missingCorruptAndHalfWrittenProjectsFinishWithRecoverableErrorsAndSafeModeKeepsHealthyLayers() = runBlocking<Unit> {
         val repo=ProjectRepository(context,ProjectLoader(2000))
         val doc=repo.createProject("Load fixture",CanvasSize(256,256))
         val healthy=Layer(id="healthy",name="Healthy",shapeData=ShapeData())
@@ -53,7 +53,7 @@ class ProjectLoadingRegressionTest {
         assertFalse(repo.isProjectLoading(doc.id))
     }
 
-    @Test fun corruptSerializedLayerIsQuarantinedWithoutLosingHealthySibling() = runBlocking {
+    @Test fun corruptSerializedLayerIsQuarantinedWithoutLosingHealthySibling() = runBlocking<Unit> {
         val repo=ProjectRepository(context,ProjectLoader(2000))
         val doc=repo.createProject("Bad layer",CanvasSize(256,256))
         ZipOutputStream(repo.getProjectFile(doc.id).outputStream()).use {zip->
@@ -67,7 +67,7 @@ class ProjectLoadingRegressionTest {
         assertEquals(LayerType.QUARANTINED,loaded.result.document.layers.last().type)
     }
 
-    @Test fun autosaveWaitsForLoadAndBlockedThumbnailNeverBlocksForegroundReader() = runBlocking {
+    @Test fun autosaveWaitsForLoadAndBlockedThumbnailNeverBlocksForegroundReader() = runBlocking<Unit> {
         val decodeStarted=CountDownLatch(1);val allowDecode=CountDownLatch(1)
         val thumbStarted=CountDownLatch(1);val allowThumbnail=CountDownLatch(1)
         val repo=ProjectRepository(context,ProjectLoader(1500),
@@ -94,7 +94,7 @@ class ProjectLoadingRegressionTest {
         } finally {allowDecode.countDown();allowThumbnail.countDown()}
     }
 
-    @Test fun slowAssetTimeoutDoesNotStickSpinnerOrAcceptLateLoadedResult() = runBlocking {
+    @Test fun slowAssetTimeoutDoesNotStickSpinnerOrAcceptLateLoadedResult() = runBlocking<Unit> {
         val release=CountDownLatch(1)
         val repo=ProjectRepository(context,ProjectLoader(200),decodeMedia={_,_,_->
             while(release.count>0) {try {release.await(20,TimeUnit.MILLISECONDS)}catch(_:InterruptedException){}}
