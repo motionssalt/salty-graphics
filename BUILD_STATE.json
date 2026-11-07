@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_3/T29",
+  "current_phase": "fix_round_4/V1",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -722,5 +722,134 @@
       "release": "v1.0.58",
       "device_testing": "not performed, as requested"
     }
+  },
+  "fix_round_4": {
+    "status": "in_progress",
+    "queue": [
+      {
+        "id": "V1",
+        "title": "Projects disappear when leaving them (CRITICAL, data loss)",
+        "status": "in_progress",
+        "notes": "Pending root cause investigation and fault-injection test suite."
+      },
+      {
+        "id": "V2",
+        "title": "Layer-panel order must match canvas stacking order",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V3",
+        "title": "History action identity, clean tree, branching bug, and lost settings",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V4",
+        "title": "One shared control engine used everywhere (including home-screen switches)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V5",
+        "title": "Remove haptic feedback from scroll controls",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V6",
+        "title": "Preview quality: one shared state, correct labels, real effect",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V7",
+        "title": "The universal Fill control must open and respond",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V8",
+        "title": "Border & Shadow panel must exist and be easy to find",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V9",
+        "title": "Layer panel: one grab handle, long-press and drag to reorder",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V10",
+        "title": "Layer-content thumbnails in the layer panel",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V11",
+        "title": "Select All and Select None as one icon toggle",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V12",
+        "title": "Fade objects that are outside the canvas",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V13",
+        "title": "Canvas lock toggle in the top row",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V14",
+        "title": "Gray as the default canvas color",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V15",
+        "title": "Optional grid-line snapping with transient feedback",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V16",
+        "title": "Multiline text and justification",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V17",
+        "title": "Dedicated text-editing box with automatic wrapping",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V18",
+        "title": "Photoshop-inspired mobile vector-editing controls",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V19",
+        "title": "Contextual toasts for important operations",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "V20",
+        "title": "Verify, release, and hand off",
+        "status": "pending",
+        "notes": ""
+      }
+    ],
+    "decisions": [],
+    "known_issues": [],
+    "last_updated": "2026-11-07T16:55:00.000Z",
+    "last_session_note": "Starting fix_round_4: 20 open items from Victor's beta testing. Initialized queue, starting V1 project persistence root-cause investigation and fault-injection test suite."
   }
 }
