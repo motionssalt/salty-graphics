@@ -24,11 +24,11 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[34],qualifiers="w412dp-h860dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class SelectionPanelRegressionTest {
+abstract class SelectionPanelFixture {
     @get:Rule val compose=createEmptyComposeRule()
     private val context get()=RuntimeEnvironment.getApplication()
 
-    private fun withEditor(check: () -> Unit) {
+    protected fun withEditor(check: () -> Unit) {
         val repo=ProjectRepository(context)
         val doc=runBlocking {
             val project=repo.createProject("Selection fixture",CanvasSize(1000,1000))
@@ -45,18 +45,21 @@ class SelectionPanelRegressionTest {
         } finally {host.pause().stop().destroy()}
     }
 
-    private fun tapArtwork(x: Float,y: Float=0f) {
+    protected fun tapArtwork(x: Float,y: Float=0f) {
         val node=compose.onNodeWithTag("editor_canvas")
         val size=node.fetchSemanticsNode().size
         val fit=minOf(size.width/1000f,size.height/1000f)*.94f
         node.performTouchInput {click(Offset(size.width/2f+x*fit,size.height/2f+y*fit))}
     }
 
-    private fun selection(count: Int) {
+    protected fun selection(count: Int) {
         compose.onNodeWithTag("editor_canvas").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
             if(count==0) "No layers selected" else "$count layers selected"))
     }
 
+}
+
+class TransformPanelSelectionRegressionTest : SelectionPanelFixture() {
     @Test fun transformSurvivesLayerAndOutsideTapsAndEmptyTapShowsNoSelectionTools() = withEditor {
         tapArtwork(-240f)
         compose.onNodeWithText("Transform",useUnmergedTree=true).performClick()
@@ -76,6 +79,9 @@ class SelectionPanelRegressionTest {
         compose.onNodeWithText("Transform",useUnmergedTree=true).assertIsDisplayed()
     }
 
+}
+
+class SelectNoneRegressionTest : SelectionPanelFixture() {
     @Test fun selectNoneAndEmptyTapLeaveNoStaleSelectionAndCreationToolsWork() = withEditor {
         tapArtwork(-240f)
         selection(1)
@@ -93,6 +99,9 @@ class SelectionPanelRegressionTest {
         compose.onNodeWithTag("tools").assertIsDisplayed()
     }
 
+}
+
+class IncompatibleSelectionPanelRegressionTest : SelectionPanelFixture() {
     @Test fun incompatibleSelectionLeavesTextPageForToolsRatherThanAnEmptyPane() = withEditor {
         compose.onNodeWithText("Text",useUnmergedTree=true).performClick()
         // Text creation opens its settings. Select through the real drawer so the
