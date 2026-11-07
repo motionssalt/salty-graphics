@@ -34,12 +34,14 @@ class SelectionHistoryRegressionTest : SelectionPanelFixture() {
             selection(0)
             compose.onNodeWithContentDescription("Close Layers").performClick()
             compose.onNodeWithContentDescription("Action Tree History").performClick()
+            compose.onNodeWithContentDescription("Fit tree").performClick()
             compose.onNodeWithTag("history_node_$fork").assertIsSelected()
             compose.onNodeWithTag("history_node_$otherBranch").assertIsNotSelected()
             compose.onNodeWithText("Rename right").assertExists()
             // Only intentional tree interaction may navigate to an alternate branch.
             compose.onNodeWithTag("history_node_$otherBranch").performClick()
             compose.onNodeWithContentDescription("Action Tree History").performClick()
+            compose.onNodeWithContentDescription("Fit tree").performClick()
             compose.onNodeWithTag("history_node_$otherBranch").assertIsSelected()
         }
     }

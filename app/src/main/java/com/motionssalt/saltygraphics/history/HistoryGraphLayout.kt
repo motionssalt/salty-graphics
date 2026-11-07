@@ -44,8 +44,7 @@ object HistoryGraphCalculator {
         // 1. Identify Main Path (from currentNode back to root)
         val mainPathSet = mutableSetOf<String>()
         var curr: ActionNode? = allNodes[currentNodeId]
-        while (curr != null) {
-            mainPathSet.add(curr.id)
+        while (curr != null && mainPathSet.add(curr.id)) {
             curr = curr.parentId?.let { allNodes[it] }
         }
 
@@ -89,9 +88,13 @@ object HistoryGraphCalculator {
 
             // Process children: main path child first, then side branches
             val sortedChildren = node.childrenIds.sortedByDescending { mainPathSet.contains(it) }
+            var continuationAssigned = false
             for (childId in sortedChildren) {
                 if (!mainPathSet.contains(childId) && !laneAssignment.containsKey(childId)) {
-                    laneAssignment[childId] = nextLane++
+                    // Continue a retained straight branch in the same lane. Only
+                    // actual forks allocate another lane, not every action.
+                    laneAssignment[childId] = if (lane > 0 && !continuationAssigned) lane else nextLane++
+                    continuationAssigned = true
                 }
                 queue.add(childId)
             }

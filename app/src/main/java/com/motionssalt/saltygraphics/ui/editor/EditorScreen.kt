@@ -41,6 +41,7 @@ fun EditorScreen(
 
     var projectDocument by remember { mutableStateOf<ProjectDocument?>(null) }
     var actionTree by remember { mutableStateOf<ActionTree?>(null) }
+    var historyVersion by remember { mutableIntStateOf(0) }
 
     var selectedLayerIds by remember { mutableStateOf(setOf<String>()) }
     var activeGroupId by remember { mutableStateOf(initialGroupId) }
@@ -88,12 +89,15 @@ fun EditorScreen(
     }
 
     val doc = projectDocument
-    val tree = actionTree
+    // The engine tree is intentionally not Compose-dependent. A pointer change
+    // must invalidate the UI even when two history nodes have equal documents.
+    val tree = remember(actionTree, historyVersion) { actionTree }
 
     fun recordAndAutoSave(description: String, newDoc: ProjectDocument) {
         val treeRef = actionTree ?: return
         treeRef.recordAction(description, newDoc)
-        projectDocument = newDoc
+        historyVersion++
+        projectDocument = treeRef.currentDocument
         val snapshot=treeRef.toSnapshot()
         coroutineScope.launch {
             try {repository.saveProject(newDoc,snapshot)}
@@ -101,6 +105,21 @@ fun EditorScreen(
             catch(e:Exception) {
                 com.motionssalt.saltygraphics.data.LocalDiagnostics.record(context,"autosave failed ${e.javaClass.simpleName}")
                 Toast.makeText(context,"Could not save project. Your changes are still open; retry saving before leaving.",Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun restoreHistoryDocument(restored: ProjectDocument) {
+        projectDocument = restored
+        selectedLayerIds = selectedLayerIds.filter { restored.findLayerById(it) != null }.toSet()
+        historyVersion++
+        val snapshot = actionTree?.toSnapshot()
+        coroutineScope.launch {
+            try { repository.saveProject(restored, snapshot) }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
+                com.motionssalt.saltygraphics.data.LocalDiagnostics.record(context, "history save failed ${e.javaClass.simpleName}")
+                Toast.makeText(context, "Could not save history. Your project is still open.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -215,14 +234,12 @@ fun EditorScreen(
                 onPreviewQualityClick = { previewQuality = previewQuality.next() },
                 onUndoClick = {
                     if (tree.undo()) {
-                        projectDocument = tree.currentDocument
-                        coroutineScope.launch { repository.saveProject(tree.currentDocument) }
+                        restoreHistoryDocument(tree.currentDocument)
                     }
                 },
                 onRedoClick = {
                     if (tree.redo()) {
-                        projectDocument = tree.currentDocument
-                        coroutineScope.launch { repository.saveProject(tree.currentDocument) }
+                        restoreHistoryDocument(tree.currentDocument)
                     }
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
@@ -575,8 +592,7 @@ fun EditorScreen(
             onJumpToNode = { nodeId ->
                 val restored = tree.jumpTo(nodeId)
                 if (restored != null) {
-                    projectDocument = restored
-                    coroutineScope.launch { repository.saveProject(restored) }
+                    restoreHistoryDocument(restored)
                 }
             },
             onDismiss = { isActionTreeOpen = false }

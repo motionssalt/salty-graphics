@@ -60,7 +60,8 @@ data class ActionNode(
 data class ActionTreeSnapshot(
     val rootNodeId: String = "root",
     val currentNodeId: String = "root",
-    val nodes: Map<String, ActionNode> = emptyMap()
+    val nodes: Map<String, ActionNode> = emptyMap(),
+    val preferredChildren: Map<String, String> = emptyMap()
 )
 
 class ActionTree(
@@ -74,6 +75,7 @@ class ActionTree(
 
     // Cached states for each node
     private val documentStates = mutableMapOf<String, ProjectDocument>()
+    private val preferredChildren = mutableMapOf<String, String>()
 
     // Legacy .sg documents may contain selection, but it is UI state, never history.
     private fun documentState(document: ProjectDocument) = document.copy(selectedLayerIds = emptySet())
@@ -124,6 +126,7 @@ class ActionTree(
         // Update parent's children list
         if (parent != null) {
             _nodes[parent.id] = parent.copy(childrenIds = parent.childrenIds + newNodeId)
+            preferredChildren[parent.id] = newNodeId
         }
 
         currentNodeId = newNodeId
@@ -136,18 +139,21 @@ class ActionTree(
     fun undo(): Boolean {
         val current = _nodes[currentNodeId] ?: return false
         val parentId = current.parentId ?: return false
+        preferredChildren[parentId] = current.id
         currentNodeId = parentId
         return true
     }
 
     /**
-     * Redoes to the most recently added child branch.
+     * Redoes along the most recently active child branch (including explicit jumps).
      */
     fun redo(): Boolean {
         val current = _nodes[currentNodeId] ?: return false
         if (current.childrenIds.isEmpty()) return false
-        // Pick the latest branch child
-        val nextId = current.childrenIds.last()
+        val nextId = preferredChildren[current.id]?.takeIf { it in current.childrenIds }
+            ?: current.childrenIds.last()
+        if (nextId !in _nodes) return false
+        preferredChildren[current.id] = nextId
         currentNodeId = nextId
         return true
     }
@@ -164,6 +170,15 @@ class ActionTree(
      */
     fun jumpTo(nodeId: String): ProjectDocument? {
         val targetNode = _nodes[nodeId] ?: return null
+        // Remember the entire visited path, not merely the target's direct parent.
+        val visited = mutableSetOf<String>()
+        var child = targetNode
+        while (visited.add(child.id)) {
+            val parentId = child.parentId ?: break
+            val parent = _nodes[parentId] ?: break
+            if (child.id in parent.childrenIds) preferredChildren[parentId] = child.id
+            child = parent
+        }
         currentNodeId = nodeId
         return documentStates[nodeId] ?: targetNode.snapshot
     }
@@ -181,7 +196,8 @@ class ActionTree(
     fun getCurrentBranchPath(): List<ActionNode> {
         val path = mutableListOf<ActionNode>()
         var curr: ActionNode? = _nodes[currentNodeId]
-        while (curr != null) {
+        val visited = mutableSetOf<String>()
+        while (curr != null && visited.add(curr.id)) {
             path.add(0, curr)
             curr = curr.parentId?.let { _nodes[it] }
         }
@@ -192,7 +208,8 @@ class ActionTree(
         return ActionTreeSnapshot(
             rootNodeId = rootNodeId,
             currentNodeId = currentNodeId,
-            nodes = _nodes.toMap()
+            nodes = _nodes.toMap(),
+            preferredChildren = preferredChildren.toMap()
         )
     }
 
@@ -206,6 +223,9 @@ class ActionTree(
                 })
                 tree.rootNodeId = snapshot.rootNodeId
                 tree.currentNodeId = snapshot.currentNodeId
+                tree.preferredChildren.putAll(snapshot.preferredChildren.filter { (parent, child) ->
+                    child in (tree._nodes[parent]?.childrenIds ?: emptyList())
+                })
                 for ((id, node) in tree._nodes) {
                     node.snapshot?.let { tree.documentStates[id] = it }
                 }
