@@ -686,7 +686,7 @@
       "Restored tag-only release publishing: inherited workflow published a release on every main push, conflicting with frequent checkpoints and T29 gated handoff. Main continues testing/building signed APK artifacts; new releases only from explicit v* tags after acceptance. Existing releases and signing secrets untouched."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-07T07:29:46.924942+00:00",
-    "last_session_note": "T1 implementation checkpoint: fresh stable gesture callbacks, current-document transform-only commands, opposite-anchor resize/rotation geometry, measured selection bounds, combined selection overlay, constant-size contrast handles and multi-touch rollback. Added 10,000-drag engine fuzz plus native Robolectric gesture regressions. Await Actions; T1 not marked done."
+    "last_updated": "2026-11-07T07:35:23.966165+00:00",
+    "last_session_note": "T1 verification iteration: first Actions run 42351511628 confirmed all nine real handle gestures preserve layers and create one action, and both variants of 10,000-drag fuzz pass. Native cancellation regression exposed synthetic consumed-up events being committed; fixed cancellation rollback and rerunning full CI. No tests disabled; not advancing queue before green."
   }
 }

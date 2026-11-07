@@ -195,12 +195,15 @@ fun CanvasView(
                             val event=awaitPointerEvent()
                             val pressed=event.changes.filter { it.pressed }
                             if(pressed.isEmpty()) {
+                                // Android cancellation synthesizes consumed up changes. They are not a release/commit.
+                                val cancelled=event.changes.any { it.isConsumed }
+                                if(cancelled && transform!=start) preview(start)
                                 // A tap is selection, not a transform/history command.
-                                if(!multiTouch && transform!=start) {
+                                if(!cancelled && !multiTouch && transform!=start) {
                                     val batch=values(transform)
                                     if(commitTransforms!=null) commitTransforms!!.invoke(batch)
                                     else batch.forEach { (id,t) -> (commitTransform ?: updateTransform).invoke(id,t) }
-                                } else if(!multiTouch && handle==SelectionHandle.NONE && dragDistance<touchSlop) selectLayer(null)
+                                } else if(!cancelled && !multiTouch && handle==SelectionHandle.NONE && dragDistance<touchSlop) selectLayer(null)
                                 finished=true
                                 break
                             }
