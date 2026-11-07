@@ -94,6 +94,7 @@ class SelectNoneRegressionTest : SelectionPanelFixture() {
         selection(0)
         compose.onNodeWithContentDescription("Close Layers").performClick()
         compose.onNodeWithText("Shape",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("Rounded Rect",useUnmergedTree=true).performClick()
         selection(1)
         tapArtwork(0f,350f)
         selection(0)

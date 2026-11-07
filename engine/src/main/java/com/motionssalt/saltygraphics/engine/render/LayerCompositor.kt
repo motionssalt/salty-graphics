@@ -152,18 +152,19 @@ object LayerCompositor {
         width: Int,
         height: Int,
         document: ProjectDocument? = null,
-        mediaResolver: ((String) -> Bitmap?)? = null
+        mediaResolver: ((String) -> Bitmap?)? = null,
+        forceVisible: Boolean = false
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
-        if (!layer.isVisible) return bitmap
+        if (!layer.isVisible && !forceVisible) return bitmap
 
         // Group layers composite their children recursively
         if (layer.type == LayerType.GROUP) {
             for (child in layer.children) {
-                if (!child.isVisible) continue
-                val childBmp = renderLayerContent(child, width, height, document, mediaResolver)
+                if (!child.isVisible && !forceVisible) continue
+                val childBmp = renderLayerContent(child, width, height, document, mediaResolver, forceVisible)
                 val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     alpha = (child.opacity * 255).roundToInt().coerceIn(0, 255)
                     applyLayerBlendMode(this, child.blendMode)
@@ -444,7 +445,7 @@ object LayerCompositor {
                         val maskSourceId = layer.effectiveMaskSourceLayerId
                         val maskLayer = if (maskSourceId != null) document.findLayerById(maskSourceId) else null
                         if (maskLayer != null) {
-                            val maskBmp = renderLayerContent(maskLayer, width, height, document, mediaResolver)
+                            val maskBmp = renderLayerContent(maskLayer, width, height, document, mediaResolver, forceVisible = true)
                             val maskPx = IntArray(width * height)
                             maskBmp.getPixels(maskPx, 0, width, 0, 0, width, height)
                             applyMask(adjustedBackdrop, maskPx, layer.effectiveMaskType, layer.effectiveMaskInverted, width, height)
@@ -466,7 +467,7 @@ object LayerCompositor {
                 val maskSourceId = layer.effectiveMaskSourceLayerId
                 val maskLayer = if (maskSourceId != null) document.findLayerById(maskSourceId) else null
                 if (maskLayer != null) {
-                    val maskBmp = renderLayerContent(maskLayer, width, height, document, mediaResolver)
+                    val maskBmp = renderLayerContent(maskLayer, width, height, document, mediaResolver, forceVisible = true)
                     val maskPx = IntArray(width * height)
                     maskBmp.getPixels(maskPx, 0, width, 0, 0, width, height)
                     applyMask(layerPixels, maskPx, layer.effectiveMaskType, layer.effectiveMaskInverted, width, height)
