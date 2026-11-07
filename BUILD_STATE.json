@@ -682,7 +682,9 @@
         "notes": ""
       }
     ],
-    "decisions": [],
+    "decisions": [
+      "Restored tag-only release publishing: inherited workflow published a release on every main push, conflicting with frequent checkpoints and T29 gated handoff. Main continues testing/building signed APK artifacts; new releases only from explicit v* tags after acceptance. Existing releases and signing secrets untouched."
+    ],
     "known_issues": [],
     "last_updated": "2026-11-07T07:27:00.955870+00:00",
     "last_session_note": "Resumed existing T1 (queue already initialized). Root cause found: pointerInput(Unit) remembers initial onUpdate/onCommit callbacks capturing the old editor document; using handles after adding layers restores the obsolete layer list. Will use fresh callbacks plus current-document transform-only boundary and regression gestures."
