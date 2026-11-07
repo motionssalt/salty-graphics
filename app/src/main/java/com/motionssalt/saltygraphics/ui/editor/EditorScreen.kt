@@ -183,6 +183,19 @@ fun EditorScreen(
 
     val currentSelectedLayer = doc.findLayerById(selectedLayerIds.firstOrNull() ?: "")
 
+    // A fixed pane must always have content. Requested pages are not eligible without
+    // their target, and stale requests must not resurrect when a later layer is selected.
+    LaunchedEffect(currentSelectedLayer?.id, currentSelectedLayer?.type) {
+        if (currentSelectedLayer == null) {
+            isTransformPanelOpen = false; isEffectsSheetOpen = false
+            isBlendingOpen = false; isMaskOpen = false
+        }
+        if (currentSelectedLayer?.shapeData == null) isShapeSettingsOpen = false
+        if (currentSelectedLayer?.textData == null) isTextSettingsOpen = false
+        if (currentSelectedLayer?.type != LayerType.VECTOR) isVectorSettingsOpen = false
+        vectorDraft = null; vectorPointIndex = null
+    }
+
     Scaffold(
         topBar = {
             TopPanel(
@@ -308,6 +321,7 @@ fun EditorScreen(
                         onSelectAll = {
                             selectedLayerIds = doc.activeLayers.map { it.id }.toSet()
                         },
+                        onSelectNone = { selectedLayerIds = emptySet() },
                         onToggleVisibility = { id ->
                             val updated = doc.updateLayer(id) { it.copy(isVisible = !it.isVisible) }
                             recordAndAutoSave("Toggle Visibility", updated)
@@ -367,7 +381,13 @@ fun EditorScreen(
             },
 
             panel = {
-                val pageOpen = isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen
+                // Derive eligibility in this composition (not just in the effect above)
+                // so no blank frame occurs on deselection or an incompatible layer tap.
+                val pageOpen = isVectorMenuOpen || isProjectSettingsOpen ||
+                    (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) ||
+                    (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) ||
+                    (isTextSettingsOpen && currentSelectedLayer?.textData != null) ||
+                    (currentSelectedLayer != null && (isTransformPanelOpen || isEffectsSheetOpen || isBlendingOpen))
                 if (isVectorMenuOpen) {
                     VectorCreationPage(onChoose = { choice ->
                         if (choice == "Import SVG") svgLauncher.launch(arrayOf("image/svg+xml", "text/xml", "application/xml", "application/octet-stream"))

@@ -523,13 +523,13 @@
         "id": "T3",
         "title": "Bottom control panel must stay open during transform editing",
         "status": "in_progress",
-        "notes": ""
+        "notes": "Root cause: pageOpen included stale layer-page request flags even when the selected layer was null or incompatible; this suppressed BottomPanel while the requested page also rendered nothing. Effective page eligibility is now derived synchronously; incompatible requests are cleared on selection changes. Real EditorScreen gesture tests cover same-layer, another layer and empty canvas during Transform plus incompatible text-to-shape selection. Awaiting Actions verification; not done yet."
       },
       {
         "id": "T4",
         "title": "Clearing the layer selection",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Related T3 fix restores no-selection tools immediately. Existing CanvasView already deselects on empty tap without a history command; added explicit accessible Select None in layer toolbar and real-editor tests exercising both deselection paths and creating shapes/adjustments afterwards. Awaiting Actions verification; not done yet."
       },
       {
         "id": "T5",
@@ -695,8 +695,8 @@
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T08:34:57.023154+00:00",
-    "last_session_note": "Resumed existing round: T1/T2 remain verified done; inspecting T3 fixed-panel page eligibility and related selection/history wiring. No UI refinement, preview or release.",
+    "last_updated": "2026-11-07T08:38:28.895161+00:00",
+    "last_session_note": "T3/T4 related fixed-pane/selection implementation and real editor regression tests pushed for Actions verification. Do not advance until green. T1/T2 unchanged; no new release, no UI refinement.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42353088901",
       "commit": "aea7d95b",

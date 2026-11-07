@@ -27,6 +27,8 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import kotlinx.coroutines.CancellationException
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
@@ -116,6 +118,7 @@ fun CanvasView(
         modifier = modifier
             .fillMaxSize()
             .testTag("editor_canvas")
+            .semantics { stateDescription = if (selectedLayerIds.isEmpty()) "No layers selected" else "${selectedLayerIds.size} layers selected" }
             .clipToBounds()
             .onSizeChanged { viewport = it }
             .background(colors.background)

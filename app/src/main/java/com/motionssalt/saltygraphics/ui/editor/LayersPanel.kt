@@ -40,7 +40,8 @@ fun LayersPanel(
     onPasteProperties: (PasteMode) -> Unit,
     onMoveLayer: (fromIndex: Int, toIndex: Int) -> Unit,
     onEnterGroup: (String) -> Unit,
-    onClosePanel: () -> Unit
+    onClosePanel: () -> Unit,
+    onSelectNone: () -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     var layerToRename by remember { mutableStateOf<Layer?>(null) }
@@ -84,6 +85,10 @@ fun LayersPanel(
             ) {
                 TextButton(onClick = onSelectAll) {
                     Text("Select All", style = MaterialTheme.typography.labelSmall, color = colors.onSurface)
+                }
+
+                IconButton(onClick = onSelectNone, enabled = selectedLayerIds.isNotEmpty()) {
+                    Icon(Icons.Default.Deselect, contentDescription = "Select None")
                 }
 
                 IconButton(
