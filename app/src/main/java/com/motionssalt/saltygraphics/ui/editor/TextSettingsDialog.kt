@@ -454,21 +454,24 @@ fun FontSelectionPage(
             modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Search Bar & Import Button
+            var isSearchDialogOpen by remember { mutableStateOf(false) }
+
+            // Search Bar & Import Button (T25: Dedicated search dialog button with IME insets)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search fonts...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    singleLine = true,
+                OutlinedButton(
+                    onClick = { isSearchDialogOpen = true },
                     modifier = Modifier.weight(1f).height(50.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
-                )
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.onSurface)
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = "Search", tint = colors.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (searchQuery.isBlank()) "Search fonts..." else searchQuery, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
 
                 Button(
                     onClick = {
@@ -481,6 +484,92 @@ fun FontSelectionPage(
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Import", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            if (isSearchDialogOpen) {
+                androidx.compose.ui.window.Dialog(
+                    onDismissRequest = { isSearchDialogOpen = false },
+                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .safeDrawingPadding()
+                            .imePadding()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = colors.surface),
+                            border = CardDefaults.outlinedCardBorder(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 420.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Search Fonts", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.primary)
+                                    IconButton(onClick = { isSearchDialogOpen = false }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.onSurfaceVariant)
+                                    }
+                                }
+
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    placeholder = { Text("Type font name...") },
+                                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                    trailingIcon = {
+                                        if (searchQuery.isNotEmpty()) {
+                                            IconButton(onClick = { searchQuery = "" }) {
+                                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                            }
+                                        }
+                                    },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
+                                )
+
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    items(filteredFonts, key = { "dlg_${it.id}" }) { font ->
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = colors.surfaceVariant,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    onSelectFont(font)
+                                                    isSearchDialogOpen = false
+                                                }
+                                                .padding(vertical = 8.dp, horizontal = 10.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(font.displayName, fontWeight = FontWeight.Medium)
+                                                Text(font.styleName, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

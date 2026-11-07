@@ -66,6 +66,7 @@ fun EditorScreen(
     var isProjectSettingsOpen by remember { mutableStateOf(false) }
     var isVectorMenuOpen by remember { mutableStateOf(false) }
     var isVectorSettingsOpen by remember { mutableStateOf(false) }
+    var isShapePickerOpen by remember { mutableStateOf(false) }
     var vectorTool by remember { mutableStateOf(VectorTool.SELECT) }
     var vectorPathIndex by remember { mutableIntStateOf(0) }
     var vectorPointIndex by remember { mutableStateOf<Int?>(null) }
@@ -390,7 +391,65 @@ fun EditorScreen(
                         onEnterGroup = { groupId ->
                             activeGroupId = groupId
                         },
-                        onClosePanel = { isLayersPanelOpen = false }
+                        onClosePanel = { isLayersPanelOpen = false },
+                        onDuplicateLayer = { id ->
+                            val target = doc.findLayerById(id)
+                            if (target != null) {
+                                val dup = target.copy(
+                                    id = java.util.UUID.randomUUID().toString(),
+                                    name = "${target.name} Copy"
+                                )
+                                val currentList = doc.activeLayers
+                                val idx = currentList.indexOfFirst { it.id == id }
+                                val updatedList = currentList.toMutableList()
+                                if (idx >= 0) updatedList.add(idx + 1, dup) else updatedList.add(dup)
+                                val updated = if (activeGroupId == null) {
+                                    doc.copy(layers = updatedList)
+                                } else {
+                                    doc.updateLayer(activeGroupId!!) { it.copy(children = updatedList) }
+                                }
+                                selectedLayerIds = setOf(dup.id)
+                                recordAndAutoSave("Duplicate Layer", updated)
+                            }
+                        },
+                        onGroupSelected = {
+                            if (selectedLayerIds.size > 1) {
+                                val selectedLayers = doc.activeLayers.filter { selectedLayerIds.contains(it.id) }
+                                val group = Layer(
+                                    name = "Group ${doc.layers.count { it.type == LayerType.GROUP } + 1}",
+                                    type = LayerType.GROUP,
+                                    children = selectedLayers
+                                )
+                                var remaining = doc.activeLayers.filterNot { selectedLayerIds.contains(it.id) }.toMutableList()
+                                remaining.add(0, group)
+                                val updated = if (activeGroupId == null) {
+                                    doc.copy(layers = remaining)
+                                } else {
+                                    doc.updateLayer(activeGroupId!!) { it.copy(children = remaining) }
+                                }
+                                selectedLayerIds = setOf(group.id)
+                                recordAndAutoSave("Group Layers", updated)
+                            }
+                        },
+                        onUngroupSelected = {
+                            val firstId = selectedLayerIds.firstOrNull()
+                            val group = if (firstId != null) doc.findLayerById(firstId) else null
+                            if (group != null && group.type == LayerType.GROUP) {
+                                val currentList = doc.activeLayers.toMutableList()
+                                val gIdx = currentList.indexOfFirst { it.id == firstId }
+                                if (gIdx >= 0) {
+                                    currentList.removeAt(gIdx)
+                                    currentList.addAll(gIdx, group.children)
+                                    val updated = if (activeGroupId == null) {
+                                        doc.copy(layers = currentList)
+                                    } else {
+                                        doc.updateLayer(activeGroupId!!) { it.copy(children = currentList) }
+                                    }
+                                    selectedLayerIds = group.children.map { it.id }.toSet()
+                                    recordAndAutoSave("Ungroup Layers", updated)
+                                }
+                            }
+                        }
                     )
                 }
             }
@@ -457,13 +516,7 @@ fun EditorScreen(
                     selectedLayerIds = setOf(newLayer.id)
                 },
                 onAddShape = {
-                    val newLayer = Layer(
-                        name = "Shape Layer ${doc.layers.size + 1}",
-                        type = LayerType.SHAPE,
-                        shapeData = ShapeData()
-                    )
-                    recordAndAutoSave("Add Shape Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
+                    isShapePickerOpen = true
                 },
                 onAddVector = { isVectorMenuOpen = true },
                 onEditLayer = {
@@ -478,6 +531,32 @@ fun EditorScreen(
                 onOpenTransform = { isTransformPanelOpen = true },
                 onOpenEffects = { isEffectsSheetOpen = true },
                 onOpenBlending = { isBlendingOpen = true },
+                onOpenFill = {
+                    if (currentSelectedLayer != null) {
+                        isShapeSettingsOpen = false
+                        isTextSettingsOpen = false
+                    }
+                },
+                onDuplicate = {
+                    val target = currentSelectedLayer
+                    if (target != null) {
+                        val dup = target.copy(
+                            id = java.util.UUID.randomUUID().toString(),
+                            name = "${target.name} Copy"
+                        )
+                        val currentList = doc.activeLayers
+                        val idx = currentList.indexOfFirst { it.id == target.id }
+                        val updatedList = currentList.toMutableList()
+                        if (idx >= 0) updatedList.add(idx + 1, dup) else updatedList.add(dup)
+                        val updated = if (activeGroupId == null) {
+                            doc.copy(layers = updatedList)
+                        } else {
+                            doc.updateLayer(activeGroupId!!) { it.copy(children = updatedList) }
+                        }
+                        selectedLayerIds = setOf(dup.id)
+                        recordAndAutoSave("Duplicate Layer", updated)
+                    }
+                },
                 onDelete = {
                     val updated = selectedLayerIds.fold(doc) { d, id -> d.removeLayer(id) }
                     selectedLayerIds = emptySet()
@@ -592,6 +671,21 @@ fun EditorScreen(
         )
     }
 
+    if (isShapePickerOpen) {
+        ShapePickerDialog(
+            onSelectShape = { chosenShape ->
+                val newLayer = Layer(
+                    name = "${chosenShape.type.displayName} Layer ${doc.layers.size + 1}",
+                    type = LayerType.SHAPE,
+                    shapeData = chosenShape
+                )
+                recordAndAutoSave("Add ${chosenShape.type.displayName}", doc.addLayer(newLayer, activeGroupId))
+                selectedLayerIds = setOf(newLayer.id)
+                isShapeSettingsOpen = true
+            },
+            onDismiss = { isShapePickerOpen = false }
+        )
+    }
 
             }
         )

@@ -9,8 +9,20 @@ import java.util.UUID
 enum class PasteMode(val displayName: String) {
     TRANSFORM_ONLY("Transform only"),
     EFFECTS_ONLY("Effects only"),
-    BOTH("Both (Transform & Effects)")
+    BOTH("Both (Transform & Effects)"),
+    SELECTIVE("Selective Properties")
 }
+
+data class SelectivePasteProperties(
+    val transform: Boolean = true,
+    val effects: Boolean = true,
+    val fill: Boolean = true,
+    val stroke: Boolean = true,
+    val shadow: Boolean = true,
+    val blendMode: Boolean = true,
+    val opacity: Boolean = true,
+    val mask: Boolean = true
+)
 
 /**
  * Global clipboard: holds copied layer properties and survives jumps across history branches.
@@ -19,19 +31,30 @@ object GlobalClipboard {
     var copiedLayer: Layer? = null
         private set
 
+    var copiedLayers: List<Layer> = emptyList()
+        private set
+
     fun copy(layer: Layer) {
         copiedLayer = layer
+        copiedLayers = listOf(layer)
     }
 
-    fun hasContent(): Boolean = copiedLayer != null
+    fun copyMultiple(layers: List<Layer>) {
+        copiedLayers = layers
+        copiedLayer = if (layers.size == 1) layers.first() else null
+    }
+
+    fun hasContent(): Boolean = copiedLayer != null || copiedLayers.isNotEmpty()
+    fun isMultiple(): Boolean = copiedLayers.size > 1
 
     fun clear() {
         copiedLayer = null
+        copiedLayers = emptyList()
     }
 
     /**
-     * Applies copied properties to a target layer according to PasteMode.
-     * Pasting REPLACES target's existing values as per section 3.9.
+     * Applies copied properties to a target layer according to PasteMode or SelectivePasteProperties.
+     * Pasting REPLACES target's existing values as per section 3.9 and T24.
      */
     fun applyTo(target: Layer, mode: PasteMode): Layer {
         val source = copiedLayer ?: return target
@@ -39,7 +62,25 @@ object GlobalClipboard {
             PasteMode.TRANSFORM_ONLY -> target.copy(transform = source.transform)
             PasteMode.EFFECTS_ONLY -> target.copy(effects = source.effects)
             PasteMode.BOTH -> target.copy(transform = source.transform, effects = source.effects)
+            PasteMode.SELECTIVE -> applySelective(target, source, SelectivePasteProperties())
         }
+    }
+
+    fun applySelective(target: Layer, source: Layer, props: SelectivePasteProperties): Layer {
+        var result = target
+        if (props.transform) result = result.copy(transform = source.transform)
+        if (props.effects) result = result.copy(effects = source.effects)
+        if (props.fill) result = result.copy(fillData = source.effectiveFill)
+        if (props.stroke) result = result.copy(strokeData = source.effectiveStroke)
+        if (props.shadow) result = result.copy(shadowData = source.effectiveShadow)
+        if (props.blendMode) result = result.copy(blendMode = source.blendMode)
+        if (props.opacity) result = result.copy(opacity = source.opacity)
+        if (props.mask) result = result.copy(
+            maskType = source.effectiveMaskType,
+            maskSourceLayerId = source.effectiveMaskSourceLayerId,
+            isMaskInverted = source.effectiveMaskInverted
+        )
+        return result
     }
 }
 

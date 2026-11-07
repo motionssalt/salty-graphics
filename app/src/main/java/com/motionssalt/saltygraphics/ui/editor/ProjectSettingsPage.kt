@@ -18,8 +18,13 @@ fun ProjectSettingsPage(document: ProjectDocument, onChange: (ProjectDocument) -
         ToggleControl("Gridlines", settings.showGrid, { update(settings.copy(showGrid = it)) })
         RulerSlider("Grid size", settings.gridSize.toFloat(), { update(settings.copy(gridSize = it.toInt())) },
             1f, 1024f, 20f, 1f, "px")
+        ToggleControl("Square grid cells", settings.isSquareGrid, { update(settings.copy(isSquareGrid = it)) })
         ColorPickerRow("Grid colour", settings.gridColor, { update(settings.copy(gridColor = it)) })
         ToggleControl("Snap", settings.snapEnabled, { update(settings.copy(snapEnabled = it)) })
+        if (settings.snapEnabled) {
+            RulerSlider("Snap tolerance", settings.snapTolerancePx, { update(settings.copy(snapTolerancePx = it)) },
+                2f, 32f, 8f, 1f, "px")
+        }
         val qualityOptions = listOf(PreviewQuality.QUARTER, PreviewQuality.HALF, PreviewQuality.THREE_QUARTERS, PreviewQuality.FULL)
         DropdownControl("Default preview quality", qualityOptions.map { it.displayName },
             settings.defaultPreviewQuality.displayName, { selectedName ->

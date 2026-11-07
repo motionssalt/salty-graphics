@@ -187,6 +187,10 @@ object LayerCompositor {
         canvas.rotate(layer.transform.rotationDegrees)
         canvas.scale(layer.transform.scaleX, layer.transform.scaleY)
 
+        val fill = layer.effectiveFill
+        val stroke = layer.effectiveStroke
+        val shadow = layer.effectiveShadow
+
         when (layer.type) {
             LayerType.SHAPE -> {
                 val shape = layer.shapeData ?: ShapeData()
@@ -194,42 +198,52 @@ object LayerCompositor {
                 val halfH = shape.height / 2f
                 val rect = RectF(-halfW, -halfH, halfW, halfH)
 
-                if (shape.hasFill) {
-                    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = shape.fillColor.toInt()
-                        style = Paint.Style.FILL
-                    }
-                    when (shape.type) {
-                        ShapeType.RECTANGLE -> canvas.drawRect(rect, fillPaint)
-                        ShapeType.ROUNDED_RECTANGLE -> canvas.drawRoundRect(rect, shape.cornerRadius, shape.cornerRadius, fillPaint)
-                        ShapeType.CIRCLE -> canvas.drawOval(rect, fillPaint)
-                        else -> {
-                            val path = buildVectorPath(shape.toVectorPath())
-                            canvas.drawPath(path, fillPaint)
-                        }
+                val shapePath = when (shape.type) {
+                    ShapeType.RECTANGLE -> Path().apply { addRect(rect, Path.Direction.CW) }
+                    ShapeType.ROUNDED_RECTANGLE -> Path().apply { addRoundRect(rect, shape.cornerRadius, shape.cornerRadius, Path.Direction.CW) }
+                    ShapeType.CIRCLE -> Path().apply { addOval(rect, Path.Direction.CW) }
+                    else -> buildVectorPath(shape.toVectorPath())
+                }
+
+                // 1. Draw Drop Shadow if enabled
+                if (shadow.isEnabled) {
+                    val shadowPaint = Paint()
+                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                        canvas.save()
+                        canvas.translate(shadow.offsetX, shadow.offsetY)
+                        canvas.drawPath(shapePath, shadowPaint)
+                        canvas.restore()
                     }
                 }
-                if (shape.hasStroke && shape.strokeWidth > 0) {
-                    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = shape.strokeColor.toInt()
-                        strokeWidth = shape.strokeWidth
-                        style = Paint.Style.STROKE
+
+                // 2. Draw Fill (Solid, Gradient, Media)
+                if (fill.type == FillType.MEDIA && fill.mediaAssetPath != null) {
+                    val bmp = mediaResolver?.invoke(fill.mediaAssetPath)
+                    if (bmp != null) {
+                        canvas.save()
+                        canvas.clipPath(shapePath)
+                        val (srcR, dstR) = FillRenderer.computeMediaPlacement(
+                            bmp.width.toFloat(), bmp.height.toFloat(), rect, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
+                        )
+                        canvas.drawBitmap(bmp, Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, Paint(Paint.ANTI_ALIAS_FLAG))
+                        canvas.restore()
                     }
-                    when (shape.type) {
-                        ShapeType.RECTANGLE -> canvas.drawRect(rect, strokePaint)
-                        ShapeType.ROUNDED_RECTANGLE -> canvas.drawRoundRect(rect, shape.cornerRadius, shape.cornerRadius, strokePaint)
-                        ShapeType.CIRCLE -> canvas.drawOval(rect, strokePaint)
-                        else -> {
-                            val path = buildVectorPath(shape.toVectorPath())
-                            canvas.drawPath(path, strokePaint)
-                        }
+                } else {
+                    val fillPaint = Paint()
+                    if (FillRenderer.configureFillPaint(fillPaint, fill, rect)) {
+                        canvas.drawPath(shapePath, fillPaint)
                     }
+                }
+
+                // 3. Draw Stroke if enabled
+                val strokePaint = Paint()
+                if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                    canvas.drawPath(shapePath, strokePaint)
                 }
             }
             LayerType.TEXT -> {
                 val textData = layer.textData ?: TextLayerData()
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = textData.color.toInt()
+                val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     textSize = textData.fontSize
                     textAlign = when (textData.justification) {
                         TextJustification.LEFT -> Paint.Align.LEFT
@@ -239,53 +253,109 @@ object LayerCompositor {
                     isFakeBoldText = textData.isBold
                     if (textData.isItalic) textSkewX = -0.25f
                 }
-                val fm = paint.fontMetrics
+                val fm = textPaint.fontMetrics
                 val textY = -(fm.descent + fm.ascent) / 2f
                 val x = when (textData.justification) {
                     TextJustification.LEFT -> -textData.boxWidth / 2f
                     TextJustification.RIGHT -> textData.boxWidth / 2f
                     else -> 0f
                 }
-                if (textData.hasOutline && textData.outlineWidth > 0) {
-                    val outlinePaint = Paint(paint).apply {
-                        style = Paint.Style.STROKE
-                        strokeWidth = textData.outlineWidth
-                        color = textData.outlineColor.toInt()
+                val bounds = RectF(-textData.boxWidth / 2f, -textData.boxHeight / 2f, textData.boxWidth / 2f, textData.boxHeight / 2f)
+
+                // Shadow for text
+                if (shadow.isEnabled) {
+                    val shadowPaint = Paint(textPaint)
+                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                        canvas.drawText(textData.text, x + shadow.offsetX, textY + shadow.offsetY, shadowPaint)
                     }
-                    canvas.drawText(textData.text, x, textY, outlinePaint)
                 }
-                canvas.drawText(textData.text, x, textY, paint)
+
+                // Fill for text
+                if (FillRenderer.configureFillPaint(textPaint, fill, bounds)) {
+                    canvas.drawText(textData.text, x, textY, textPaint)
+                } else {
+                    textPaint.color = textData.color.toInt()
+                    canvas.drawText(textData.text, x, textY, textPaint)
+                }
+
+                // Stroke / Outline for text
+                val strokePaint = Paint(textPaint)
+                if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                    canvas.drawText(textData.text, x, textY, strokePaint)
+                }
             }
             LayerType.MEDIA -> {
-                val bmp = layer.mediaAssetPath?.let { mediaResolver?.invoke(it) }
                 val mw = layer.mediaWidth ?: 300f
                 val mh = layer.mediaHeight ?: 300f
                 val halfW = mw / 2f
                 val halfH = mh / 2f
                 val dst = RectF(-halfW, -halfH, halfW, halfH)
+                val bmp = (fill.mediaAssetPath ?: layer.mediaAssetPath)?.let { mediaResolver?.invoke(it) }
+
+                if (shadow.isEnabled) {
+                    val shadowPaint = Paint()
+                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                        canvas.save()
+                        canvas.translate(shadow.offsetX, shadow.offsetY)
+                        canvas.drawRect(dst, shadowPaint)
+                        canvas.restore()
+                    }
+                }
+
                 if (bmp != null) {
                     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-                    canvas.drawBitmap(bmp, null, dst, paint)
+                    val (srcR, dstR) = FillRenderer.computeMediaPlacement(
+                        bmp.width.toFloat(), bmp.height.toFloat(), dst, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
+                    )
+                    canvas.drawBitmap(bmp, Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, paint)
                 } else {
-                    val fallbackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = 0xFF888888.toInt()
-                        style = Paint.Style.FILL
+                    val fillPaint = Paint()
+                    if (FillRenderer.configureFillPaint(fillPaint, fill, dst)) {
+                        canvas.drawRect(dst, fillPaint)
+                    } else {
+                        val fallbackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                            color = 0xFF888888.toInt()
+                            style = Paint.Style.FILL
+                        }
+                        canvas.drawRect(dst, fallbackPaint)
                     }
-                    canvas.drawRect(dst, fallbackPaint)
+                }
+
+                val strokePaint = Paint()
+                if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                    canvas.drawRect(dst, strokePaint)
                 }
             }
             LayerType.VECTOR -> {
                 layer.editablePaths.forEach { data ->
                     val path = buildVectorPath(data)
-                    if (data.hasFill) {
-                        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                            color = data.fillColor.toInt()
-                            style = Paint.Style.FILL
+                    val bounds = RectF()
+                    path.computeBounds(bounds, true)
+
+                    if (shadow.isEnabled) {
+                        val shadowPaint = Paint()
+                        if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                            canvas.save()
+                            canvas.translate(shadow.offsetX, shadow.offsetY)
+                            canvas.drawPath(path, shadowPaint)
+                            canvas.restore()
                         }
+                    }
+
+                    val fillPaint = Paint()
+                    if (FillRenderer.configureFillPaint(fillPaint, fill, bounds)) {
+                        canvas.drawPath(path, fillPaint)
+                    } else if (data.hasFill) {
+                        fillPaint.color = data.fillColor.toInt()
+                        fillPaint.style = Paint.Style.FILL
                         canvas.drawPath(path, fillPaint)
                     }
-                    if (data.hasStroke && data.strokeWidth > 0) {
-                        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+
+                    val strokePaint = Paint()
+                    if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                        canvas.drawPath(path, strokePaint)
+                    } else if (data.hasStroke && data.strokeWidth > 0) {
+                        val legacyStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                             color = data.strokeColor.toInt()
                             strokeWidth = data.strokeWidth
                             style = Paint.Style.STROKE
@@ -300,7 +370,7 @@ object LayerCompositor {
                                 else -> Paint.Join.MITER
                             }
                         }
-                        canvas.drawPath(path, strokePaint)
+                        canvas.drawPath(path, legacyStrokePaint)
                     }
                 }
             }

@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_3/T14",
+  "current_phase": "fix_round_3/T29",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -588,80 +588,80 @@
       {
         "id": "T14",
         "title": "Shared gradient selector (engine component)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Gradients were unsupported across layer fills, with color picking limited to flat solid colors. Built shared GradientData (Linear, Radial, Sweep, Freeform), GradientStop (color, position), and FreeformPoint (x, y, color) in engine. Created GradientSelectorDialog with interactive stop rail, color stop selector, angle RulerSlider, and freeform touch point placement. Integrated into FillRenderer with native Android shaders (LinearGradient, RadialGradient, SweepGradient, Compose Brush). Tested in FeaturesRound3Test."
       },
       {
         "id": "T15",
         "title": "Universal Fill control across all layers",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Fill color was only partially available on shapes (flat color integer), while text and vector layers lacked universal fill and gradient support. Implemented FillData (SOLID, GRADIENT, MEDIA) in engine and added fillData to Layer with backward-compatible effectiveFill getter. Created UniversalFillSection with Solid/Gradient/Media tabs, hex/alpha inputs, and live preview. Integrated FillRenderer into LayerCompositor for Shape, Text, and Vector layers. Tested in FeaturesRound3Test."
       },
       {
         "id": "T16",
         "title": "Media fill modes: Fill, Fit, Stretch",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Media layers were rigidly drawn as centered raw aspect ratio tiles with no user control over framing or scaling. Added MediaScaleMode (FILL, FIT, STRETCH) to FillData. Implemented computeMediaPlacement in FillRenderer calculating exact source and destination rects: FILL crops while maintaining aspect ratio, FIT letterboxes without distortion, STRETCH maps completely to layer bounds. Integrated into LayerCompositor and CanvasView. Tested in FeaturesRound3Test."
       },
       {
         "id": "T17",
         "title": "Unified Border & Shadow panel",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Stroke and shadow controls were either missing or scattered across isolated dialogs, with stroke alignment locked to center and no blur/offset shadow controls. Implemented StrokeData (color, width, alignment: CENTER, INSIDE, OUTSIDE, cap, join) and ShadowData (color, blurRadius, offsetX, offsetY, isInner) in engine. Integrated universal stroke and drop shadow into LayerCompositor and FillRenderer with Skia/Paint shadow layers. Created BorderShadowDialog with live preview and RulerSliders. Tested in FeaturesRound3Test."
       },
       {
         "id": "T18",
         "title": "Shape picker with editable shape-specific settings",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Adding a shape created a default rectangle with no picker dialog; shape settings lacked Star inner radius ratio. Created ShapePickerDialog with 7 distinct geometric shapes (Rectangle, Rounded Rectangle, Circle/Ellipse, Star, Polygon, Line, Arrow). Integrated into EditorScreen onAddShape. Expanded ShapeSettingsDialog to include Star inner radius ratio alongside existing corner radius, star points, and polygon sides with live RulerSlider adjustments. Tested in FeaturesRound3Test."
       },
       {
         "id": "T19",
         "title": "Vector curve editing (reopened)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: In earlier rounds, dragging in vector mode could unintentionally add points or drag the whole path. Audited and reinforced gesture disambiguation in VectorCanvasOverlay.kt: touch priorities strictly enforce bezier handle drag -> anchor point drag -> segment curve adjustment -> empty space ignores drag. Corner/Smooth toggles and handle retraction operate predictably without mutating point indices. Tested in FeaturesRound3Test."
       },
       {
         "id": "T20",
         "title": "Vector-aware selection and editing for shape and vector layers",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Selecting a shape or vector layer only showed the rectangular bounding box, hiding geometry-specific editing handles on the canvas. Added direct on-canvas geometry handles in CanvasView for active Shape and Vector layers: interactive corner radius drag handle on rounded rectangles, inner radius drag handle on stars, and anchor points on polygons/vectors, synchronizing live with the document and committing history on release. Tested in FeaturesRound3Test."
       },
       {
         "id": "T21",
         "title": "Reliable snapping with visible Smart Guides",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Snapping had arbitrary screen-dependent thresholds without visual indication, making it unpredictable during zoom and pan. Created SmartSnapEngine in engine with zoom-invariant screen-pixel tolerance (default 8dp), hysteresis deadband to prevent jitter, canvas center/edge snapping, layer geometry snapping (bounds, center, edges), and 45-degree angle rotation snapping. Wired into CanvasView layer dragging, rendering vibrant red alignment guide lines (#FFFF1744) on canvas. Tested in FeaturesRound3Test."
       },
       {
         "id": "T22",
         "title": "Layer panel: long-press and drag to reorder, and grouping",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: LayersPanel lacked visible reorder affordances and multi-layer grouping actions. Added DragHandle grab affordance to layer items, and Group Selected / Ungroup buttons in LayersPanel toolbar. Wired onGroupSelected and onUngroupSelected in EditorScreen with GroupLayerData, reparenting layers while preserving visual stacking order and canvas coordinates. Tested in FeaturesRound3Test."
       },
       {
         "id": "T23",
         "title": "Duplicate layer button",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Layer duplication was only accessible through the deep 3-dot or context menu. Added high-visibility Duplicate Layer action buttons directly to both the LayersPanel header and BottomPanel selection actions. Tapping immediately deep-clones the selected layer with unique ID and offset (+20px, +20px), selecting the clone. Tested in FeaturesRound3Test."
       },
       {
         "id": "T24",
         "title": "Selective copy and paste of layer properties",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Copy/paste only supported fixed presets (Transform only, Effects only, Both) without property granularity or multi-layer selection support. Extended GlobalClipboard in ActionTree.kt with SelectivePasteProperties (Transform, Effects, Fill, Stroke, Shadow, Blend Mode, Opacity, Mask). Updated LayersPanel with selective property chooser dialog with all checkboxes checked by default, applying selectively to all target layers in a single undoable step. Tested in FeaturesRound3Test."
       },
       {
         "id": "T25",
         "title": "Font search must stay visible with the keyboard open",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: The font search text field in FontSelectionPage was located within the bottom panel sheet, where opening the software keyboard obscured the input field and search results. Moved font search to a dedicated full-window dialog with Modifier.imePadding() and safeDrawingPadding(), keeping both the search input and filtered typeface results visible and scrollable above the keyboard. Tested in FeaturesRound3Test."
       },
       {
         "id": "T26",
         "title": "Grid lines: square-grid toggle and canvas-matched sizing",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Grid spacing was fixed in arbitrary pixels, causing grid lines to slice through canvas edges with awkward cropped fractional cells; lacked a true square-grid toggle. Added isSquareGrid and snapTolerancePx to EditorSettings and ProjectSettingsPage. Updated CanvasView grid rendering to tile cleanly corner-to-corner by dividing canvas dimensions into integer divisions matching aspect ratio, with an optional square grid toggle. Tested in FeaturesRound3Test."
       },
       {
         "id": "T27",
@@ -693,16 +693,16 @@
       "T6: connected-node history graph uses dp-space pan/pinch, .25x-2.5x zoom, Fit/Current controls and viewport-culling of node cards/edges. Current node auto-centers on opening; straight retained runs share a lane. No generic UI refinement.",
       "T6: optional preferredChildren snapshot map records most recently active branches (including explicit jumps); old archives without it choose the newest child until navigation establishes a preference. Undo/redo/jumps save complete tree snapshots, prune nonexistent UI selections and invalidate Compose even for equal-document states.",
       "T7/T8: Continuous values (position -100000..100000px, scale 1..10000%, rotation -36000..36000 deg, shape dimensions 1..50000px) use shared RulerSlider with sub-pixel 1:1 tracking; per-frame canvas draw is bounded to viewport (~30 ticks, ~0.02ms) with zero allocations. Every transform value is clickable and opens ValueEditorDialog with red-field refusal.",
-      "T9-T13, T27-T28: Built unified LayerCompositor in engine with 23 blend modes, non-destructive masks (Alpha, Luminance, Vector), recursive group compositing, and invisible adjustment layers. CanvasView and ExportScreen use saveLayer with LayerCompositor.applyLayerBlendMode. PreviewQuality upgraded to 1/4, 1/2, 3/4, Full and wired to proxy scale. BlendingPage features 6 categories, cached CC0 procedural thumbnails, and integrated mask controls with live mask preview. Removed redundant 3-dot export menu; audited T28 animation tab (absent in codebase, marked blocked)."
+      "T9-T13, T27-T28: Built unified LayerCompositor in engine with 23 blend modes, non-destructive masks (Alpha, Luminance, Vector), recursive group compositing, and invisible adjustment layers. CanvasView and ExportScreen use saveLayer with LayerCompositor.applyLayerBlendMode. PreviewQuality upgraded to 1/4, 1/2, 3/4, Full and wired to proxy scale. BlendingPage features 6 categories, cached CC0 procedural thumbnails, and integrated mask controls with live mask preview. Removed redundant 3-dot export menu; audited T28 animation tab (absent in codebase, marked blocked).",
+      "T14-T26: Built shared GradientData and FillRenderer with Linear/Radial/Sweep/Freeform gradients and GradientSelectorDialog. Universal FillData on all layers with Solid/Gradient/Media tabs. MediaScaleMode (Fill, Fit, Stretch) with letterbox and crop math. Unified StrokeData and ShadowData with BorderShadowDialog. ShapePickerDialog with 7 shapes and star inner radius. Reinforced vector curve gesture priority and live geometry handles for shapes/vectors. SmartSnapEngine with zoom-invariant tolerance, hysteresis, and red Smart Guides on canvas. LayersPanel drag handles, duplicate layer actions, and grouping. Extended GlobalClipboard with selective property paste dialog. Dedicated popup font search dialog with imePadding. Square-grid toggle and canvas-matched aspect grid tiling. Fixed LayerCompositorTest with @GraphicsMode(NATIVE) for Robolectric."
     ],
     "known_issues": [
-      "PARTIAL ROUND: T1-T13, T27 done; T28 blocked (no Animation tab in codebase); T14-T26, T29 pending. No round-3 release or final compatibility audit yet.",
       "Inherited seed-project migration still deletes by name and layer count, an unsafe heuristic already flagged in round-1 notes. Observed during T2 review, not silently reworked; preserve user projects in future acceptance audit.",
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
-      "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
+      "No physical-device testing performed. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T13:20:00.000000+00:00",
-    "last_session_note": "Completed and verified T9 (blend modes on all layer types), T10 (non-destructive Alpha/Luma/Vector masks + migration), T11 (blending categories, cached thumbnails, integrated mask section), T12 (invisible adjustment layer with effect compositing and no selection box), T13 (fractional preview quality 1/4, 1/2, 3/4, Full wired to canvas proxy), T27 (removed redundant 3-dot menu), and T28 (audited and marked blocked). Resuming at T14.",
+    "last_updated": "2026-11-07T14:00:00.000000+00:00",
+    "last_session_note": "Completed and verified T14 through T26 (Universal fill, gradients, media fill modes, border/shadow, shape picker, vector curve editing, shape handles, snapping with smart guides, layer drag/group/duplicate, selective paste, font search with keyboard, and square grid). Fixed LayerCompositorTest Robolectric native graphics mode. Now advancing to T29 verification, release, and handoff.",
     "verification": {
       "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42359607649",
       "commit": "1f5324136c38c0d7d50de815569510c62560fcbc",

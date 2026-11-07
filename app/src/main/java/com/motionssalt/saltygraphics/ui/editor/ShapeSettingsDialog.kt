@@ -98,7 +98,7 @@ fun ShapeSettingsDialog(
                 )
             }
 
-            // Star Points
+            // Star Points & Inner Radius Ratio
             if (shape.type == ShapeType.STAR) {
                 RulerSlider(
                     label = "Star Points",
@@ -114,6 +114,22 @@ fun ShapeSettingsDialog(
                     defaultValue = 5f,
                     step = 1f,
                     unit = ""
+                )
+
+                RulerSlider(
+                    label = "Inner Radius Ratio",
+                    value = shape.starInnerRadiusRatio * 100f,
+                    onValueChange = {
+                        val updated = shape.copy(starInnerRadiusRatio = (it / 100f).coerceIn(0.1f, 0.95f))
+                        shape = updated
+                        onShapeChange(updated)
+                    },
+                    onValueChangeFinished = { onShapeCommit(shape) },
+                    minValue = 10f,
+                    maxValue = 95f,
+                    defaultValue = 50f,
+                    step = 1f,
+                    unit = "%"
                 )
             }
         }

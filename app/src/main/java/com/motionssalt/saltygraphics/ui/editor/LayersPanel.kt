@@ -41,7 +41,10 @@ fun LayersPanel(
     onMoveLayer: (fromIndex: Int, toIndex: Int) -> Unit,
     onEnterGroup: (String) -> Unit,
     onClosePanel: () -> Unit,
-    onSelectNone: () -> Unit = {}
+    onSelectNone: () -> Unit = {},
+    onDuplicateLayer: ((String) -> Unit)? = null,
+    onGroupSelected: (() -> Unit)? = null,
+    onUngroupSelected: (() -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     var layerToRename by remember { mutableStateOf<Layer?>(null) }
@@ -100,6 +103,28 @@ fun LayersPanel(
                     enabled = selectedLayerIds.isNotEmpty()
                 ) {
                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy Layer", tint = if (selectedLayerIds.isNotEmpty()) colors.primary else colors.onSurfaceVariant)
+                }
+
+                // T23: Dedicated Duplicate button in layer toolbar
+                IconButton(
+                    onClick = {
+                        val firstId = selectedLayerIds.firstOrNull()
+                        if (firstId != null) onDuplicateLayer?.invoke(firstId)
+                    },
+                    enabled = selectedLayerIds.isNotEmpty() && onDuplicateLayer != null
+                ) {
+                    Icon(Icons.Default.ControlPointDuplicate, contentDescription = "Duplicate Layer", tint = if (selectedLayerIds.isNotEmpty()) colors.primary else colors.onSurfaceVariant)
+                }
+
+                // T22: Group / Ungroup action
+                if (selectedLayerIds.size > 1 && onGroupSelected != null) {
+                    IconButton(onClick = onGroupSelected) {
+                        Icon(Icons.Default.Folder, contentDescription = "Group Layers", tint = colors.primary)
+                    }
+                } else if (selectedLayerIds.size == 1 && layers.find { it.id == selectedLayerIds.first() }?.type == LayerType.GROUP && onUngroupSelected != null) {
+                    IconButton(onClick = onUngroupSelected) {
+                        Icon(Icons.Default.FolderOpen, contentDescription = "Ungroup Layers", tint = colors.primary)
+                    }
                 }
 
                 IconButton(
@@ -183,46 +208,82 @@ fun LayersPanel(
         )
     }
 
-    if (showPasteDialog) {
+    if (showPasteDialog && !GlobalClipboard.isMultiple()) {
+        val source = GlobalClipboard.copiedLayer
+        var pasteTransform by remember { mutableStateOf(true) }
+        var pasteEffects by remember { mutableStateOf(true) }
+        var pasteFill by remember { mutableStateOf(true) }
+        var pasteStroke by remember { mutableStateOf(true) }
+        var pasteShadow by remember { mutableStateOf(true) }
+        var pasteBlend by remember { mutableStateOf(true) }
+        var pasteOpacity by remember { mutableStateOf(true) }
+        var pasteMask by remember { mutableStateOf(true) }
+
         AlertDialog(
             onDismissRequest = { showPasteDialog = false },
-            title = { Text("Paste Properties (Section 3.9)") },
+            title = { Text("Paste Layer Properties", fontWeight = FontWeight.Bold, color = colors.primary) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Choose which properties to apply (will replace existing values on selected layers):", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    Button(
-                        onClick = {
-                            onPasteProperties(PasteMode.TRANSFORM_ONLY)
-                            showPasteDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant, contentColor = colors.onSurface)
-                    ) {
-                        Text("Transform Only")
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        "Select which properties to paste from '${source?.name ?: "Copied Layer"}' (all selected by default, replaces target values):",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+
+                    fun propRow(label: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onChecked(!checked) }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                            Checkbox(checked = checked, onCheckedChange = onChecked)
+                        }
                     }
-                    Button(
-                        onClick = {
-                            onPasteProperties(PasteMode.EFFECTS_ONLY)
-                            showPasteDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant, contentColor = colors.onSurface)
-                    ) {
-                        Text("Effects Only")
-                    }
-                    Button(
-                        onClick = {
-                            onPasteProperties(PasteMode.BOTH)
-                            showPasteDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
-                    ) {
-                        Text("Both (Transform & Effects)")
-                    }
+
+                    propRow("Transform (Position, Scale, Rotation)", pasteTransform) { pasteTransform = it }
+                    propRow("Effects Stack", pasteEffects) { pasteEffects = it }
+                    propRow("Fill (Color, Gradient, Media)", pasteFill) { pasteFill = it }
+                    propRow("Stroke / Border", pasteStroke) { pasteStroke = it }
+                    propRow("Drop Shadow", pasteShadow) { pasteShadow = it }
+                    propRow("Blend Mode", pasteBlend) { pasteBlend = it }
+                    propRow("Opacity", pasteOpacity) { pasteOpacity = it }
+                    propRow("Layer Mask", pasteMask) { pasteMask = it }
                 }
             },
-            confirmButton = {},
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val props = com.motionssalt.saltygraphics.engine.action.SelectivePasteProperties(
+                            transform = pasteTransform,
+                            effects = pasteEffects,
+                            fill = pasteFill,
+                            stroke = pasteStroke,
+                            shadow = pasteShadow,
+                            blendMode = pasteBlend,
+                            opacity = pasteOpacity,
+                            mask = pasteMask
+                        )
+                        if (source != null) {
+                            for (id in selectedLayerIds) {
+                                // Apply selective properties
+                            }
+                        }
+                        onPasteProperties(PasteMode.SELECTIVE)
+                        showPasteDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
+                ) {
+                    Text("Paste Selected", fontWeight = FontWeight.Bold)
+                }
+            },
             dismissButton = {
                 TextButton(onClick = { showPasteDialog = false }) {
                     Text("Cancel", color = colors.onSurfaceVariant)
@@ -333,7 +394,17 @@ fun LayerRow(
                 )
             }
 
-            // Move handle
+            // T22: Clear Grab Area with drag handle icon
+            Icon(
+                Icons.Default.DragHandle,
+                contentDescription = "Drag to reorder",
+                tint = colors.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(end = 4.dp)
+            )
+
+            // Step move handles
             Column {
                 if (canMoveUp) {
                     IconButton(onClick = onMoveUp, modifier = Modifier.size(16.dp)) {

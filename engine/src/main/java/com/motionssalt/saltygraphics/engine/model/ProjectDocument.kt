@@ -47,8 +47,70 @@ data class Layer(
     val mediaHeight: Float? = null,
     val effects: List<EffectInstance> = emptyList(),
     val children: List<Layer> = emptyList(), // For Group layers
-    val quarantinedData: QuarantinedLayerData? = null
+    val quarantinedData: QuarantinedLayerData? = null,
+    val fillData: FillData? = null,
+    val strokeData: StrokeData? = null,
+    val shadowData: ShadowData? = null
 ) {
+    /**
+     * Universal Fill resolution with backward-compatibility for legacy layer-specific fills.
+     */
+    val effectiveFill: FillData
+        get() = fillData ?: when (type) {
+            LayerType.SHAPE -> FillData(
+                type = FillType.SOLID,
+                solidColor = shapeData?.fillColor ?: 0xFF00E5FFL,
+                solidOpacity = if (shapeData?.hasFill == false) 0f else 1f
+            )
+            LayerType.TEXT -> FillData(
+                type = FillType.SOLID,
+                solidColor = textData?.color ?: 0xFFFFFFFFL,
+                solidOpacity = 1f
+            )
+            LayerType.VECTOR -> FillData(
+                type = FillType.SOLID,
+                solidColor = vectorPathData?.fillColor ?: 0x00000000L,
+                solidOpacity = if (vectorPathData?.hasFill == true) 1f else 0f
+            )
+            LayerType.MEDIA -> FillData(
+                type = FillType.MEDIA,
+                mediaAssetPath = mediaAssetPath,
+                mediaScaleMode = MediaScaleMode.FILL
+            )
+            else -> FillData()
+        }
+
+    /**
+     * Universal Stroke resolution with backward-compatibility for legacy shape/vector/text strokes.
+     */
+    val effectiveStroke: StrokeData
+        get() = strokeData ?: when (type) {
+            LayerType.SHAPE -> StrokeData(
+                isEnabled = shapeData?.hasStroke == true,
+                color = shapeData?.strokeColor ?: 0xFFFFFFFFL,
+                width = shapeData?.strokeWidth ?: 4f
+            )
+            LayerType.VECTOR -> StrokeData(
+                isEnabled = vectorPathData?.hasStroke == true,
+                color = vectorPathData?.strokeColor ?: 0xFFFFFFFFL,
+                width = vectorPathData?.strokeWidth ?: 4f,
+                cap = vectorPathData?.strokeCap ?: VectorCap.ROUND,
+                join = vectorPathData?.strokeJoin ?: VectorJoin.ROUND,
+                isDashed = (vectorPathData?.dashLength ?: 0f) > 0f,
+                dashLength = vectorPathData?.dashLength ?: 12f,
+                dashGap = vectorPathData?.dashGap ?: 8f
+            )
+            LayerType.TEXT -> StrokeData(
+                isEnabled = textData?.hasOutline == true,
+                color = textData?.outlineColor ?: 0xFF000000L,
+                width = textData?.outlineWidth ?: 2f
+            )
+            else -> StrokeData()
+        }
+
+    val effectiveShadow: ShadowData
+        get() = shadowData ?: ShadowData()
+
     val effectiveMaskType: MaskType
         get() = when {
             maskType != MaskType.NONE -> maskType
@@ -123,7 +185,9 @@ data class EditorSettings(
     val showGrid: Boolean = false,
     val gridSize: Int = 20,
     val gridColor: Long = 0x66808080L,
+    val isSquareGrid: Boolean = false, // When false (default), grid matches canvas aspect ratio so last row/col is not cropped (T26)
     val snapEnabled: Boolean = false,
+    val snapTolerancePx: Float = 8f,
     val defaultPreviewQuality: com.motionssalt.saltygraphics.engine.render.PreviewQuality = com.motionssalt.saltygraphics.engine.render.PreviewQuality.HIGH
 )
 

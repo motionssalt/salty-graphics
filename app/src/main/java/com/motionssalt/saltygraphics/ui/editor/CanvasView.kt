@@ -104,6 +104,7 @@ fun CanvasView(
     // Active rotating angle pill readout
     var rotatingAnglePill by remember { mutableStateOf<String?>(null) }
     var rotatingPillPosition by remember { mutableStateOf<Offset?>(null) }
+    var activeSmartGuides by remember { mutableStateOf<List<SmartGuideLine>>(emptyList()) }
 
     // Use rememberUpdatedState to avoid gesture coroutine teardown on rapid zoom/pan changes
     val currentZoom by rememberUpdatedState(zoom)
@@ -242,7 +243,40 @@ fun CanvasView(
                             if(handle==SelectionHandle.NONE) {
                                 if(dragDistance>=touchSlop) {changeZoomPan(currentZoom,currentPan+delta);change.consume()}
                             } else if(bounds!=null && dragDistance>=touchSlop) {
-                                transform=SelectionGeometry.drag(start,bounds,handle,downPoint,documentPoint(change.position))
+                                var rawTransform = SelectionGeometry.drag(start,bounds,handle,downPoint,documentPoint(change.position))
+                                
+                                // T21: Smart Guides & Snapping
+                                if (activeDoc.editorSettings.snapEnabled) {
+                                    if (handle == SelectionHandle.BODY) {
+                                        val otherLayersList = activeDoc.activeLayers
+                                            .filter { it.id != targetId && it.isVisible && it.type != LayerType.ADJUSTMENT }
+                                            .map { (selectionBounds(context, activeDoc, it) ?: SelectionBounds(-100f, -100f, 100f, 100f)) to it.transform }
+                                        val snapRes = SmartSnapEngine.snapTranslation(
+                                            targetBounds = bounds,
+                                            targetTransform = rawTransform,
+                                            otherLayers = otherLayersList,
+                                            canvasWidth = activeDoc.canvasSize.width.toFloat(),
+                                            canvasHeight = activeDoc.canvasSize.height.toFloat(),
+                                            effectiveZoom = effZoom,
+                                            tolerancePx = activeDoc.editorSettings.snapTolerancePx
+                                        )
+                                        rawTransform = snapRes.snappedTransform
+                                        activeSmartGuides = snapRes.activeGuides
+                                    } else if (handle == SelectionHandle.ROTATE) {
+                                        val otherAngles = activeDoc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
+                                        val (snappedDeg, didSnap) = SmartSnapEngine.snapRotation(rawTransform.rotationDegrees, otherAngles)
+                                        if (didSnap) {
+                                            rawTransform = rawTransform.copy(rotationDegrees = snappedDeg)
+                                        }
+                                        activeSmartGuides = emptyList()
+                                    } else {
+                                        activeSmartGuides = emptyList()
+                                    }
+                                } else {
+                                    activeSmartGuides = emptyList()
+                                }
+
+                                transform = rawTransform
                                 preview(transform);change.consume()
                                 if(handle==SelectionHandle.ROTATE) {
                                     rotatingAnglePill="${transform.rotationDegrees.roundToInt()}°"
@@ -253,7 +287,7 @@ fun CanvasView(
                         }
                     } finally {
                         if(!finished && transform!=start) preview(start)
-                        rotatingAnglePill=null;rotatingPillPosition=null
+                        rotatingAnglePill=null;rotatingPillPosition=null;activeSmartGuides=emptyList()
                     }
                 }
             }
@@ -284,29 +318,40 @@ fun CanvasView(
                 drawRect(safeColor(document.editorSettings.backgroundColor), topLeft, Size(scaledW, scaledH))
             }
 
-            // Gridlines
+            // Gridlines (T26: Square toggle and canvas-matched aspect ratio)
             if (showGrid && gridSize > 0) {
-                val gridSpacing = gridSize * effectiveZoom
-                if (gridSpacing > 4f) {
-                    var x = topLeft.x
-                    while (x <= topLeft.x + scaledW) {
-                        drawLine(
-                            color = safeColor(document.editorSettings.gridColor),
-                            start = Offset(x, topLeft.y),
-                            end = Offset(x, topLeft.y + scaledH),
-                            strokeWidth = 1f
-                        )
-                        x += gridSpacing
+                val gridColor = safeColor(document.editorSettings.gridColor)
+                if (document.editorSettings.isSquareGrid) {
+                    // Square grid mode: equal-sized cells
+                    val cellPx = gridSize * effectiveZoom
+                    if (cellPx > 4f) {
+                        var x = topLeft.x
+                        while (x <= topLeft.x + scaledW + 0.1f) {
+                            drawLine(color = gridColor, start = Offset(x, topLeft.y), end = Offset(x, topLeft.y + scaledH), strokeWidth = 1f)
+                            x += cellPx
+                        }
+                        var y = topLeft.y
+                        while (y <= topLeft.y + scaledH + 0.1f) {
+                            drawLine(color = gridColor, start = Offset(topLeft.x, y), end = Offset(topLeft.x + scaledW, y), strokeWidth = 1f)
+                            y += cellPx
+                        }
                     }
-                    var y = topLeft.y
-                    while (y <= topLeft.y + scaledH) {
-                        drawLine(
-                            color = safeColor(document.editorSettings.gridColor),
-                            start = Offset(topLeft.x, y),
-                            end = Offset(topLeft.x + scaledW, y),
-                            strokeWidth = 1f
-                        )
-                        y += gridSpacing
+                } else {
+                    // Default mode: match grid's aspect ratio to the canvas so lines wrap corner to corner
+                    // and final row/column is never cropped!
+                    val cols = maxOf(1, (canvasW / gridSize).roundToInt())
+                    val rows = maxOf(1, (canvasH / gridSize).roundToInt())
+                    val colSpacing = scaledW / cols
+                    val rowSpacing = scaledH / rows
+                    if (colSpacing > 2f && rowSpacing > 2f) {
+                        for (c in 0..cols) {
+                            val x = topLeft.x + c * colSpacing
+                            drawLine(color = gridColor, start = Offset(x, topLeft.y), end = Offset(x, topLeft.y + scaledH), strokeWidth = 1f)
+                        }
+                        for (r in 0..rows) {
+                            val y = topLeft.y + r * rowSpacing
+                            drawLine(color = gridColor, start = Offset(topLeft.x, y), end = Offset(topLeft.x + scaledW, y), strokeWidth = 1f)
+                        }
                     }
                 }
             }
@@ -562,6 +607,52 @@ fun CanvasView(
                         drawLine(Color.White,Offset(0f,-halfH),rotate,1.dp.toPx())
                         drawCircle(Color.Black,6.dp.toPx(),rotate)
                         drawCircle(Color.White,4.dp.toPx(),rotate)
+
+                        // T20: Vector-aware / Shape-specific live geometry handles
+                        if (selectedLayer.type == LayerType.SHAPE && selectedLayer.shapeData != null) {
+                            val shape = selectedLayer.shapeData
+                            if (shape.type == ShapeType.ROUNDED_RECTANGLE) {
+                                // Corner radius handle inside top-left corner
+                                val rOffset = min(shape.cornerRadius * t.scaleX * effectiveZoom, min(halfW, halfH) * 0.8f)
+                                val crCenter = Offset(-halfW + rOffset, -halfH + rOffset)
+                                drawCircle(Color.Black, 6.dp.toPx(), crCenter)
+                                drawCircle(Color(0xFF00E5FF), 4.5.dp.toPx(), crCenter)
+                            } else if (shape.type == ShapeType.STAR) {
+                                // Star inner radius handle
+                                val innerR = halfH * shape.starInnerRadiusRatio
+                                val innerOffset = Offset(0f, -innerR)
+                                drawCircle(Color.Black, 6.dp.toPx(), innerOffset)
+                                drawCircle(Color(0xFFFFB300), 4.5.dp.toPx(), innerOffset)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Visible Red Smart Guides (T21: Figma/Illustrator style snap indicators)
+            if (activeSmartGuides.isNotEmpty()) {
+                activeSmartGuides.forEach { guide ->
+                    val redColor = Color(0xFFFF1744) // Bright crisp alignment red
+                    if (guide.orientation == GuideOrientation.VERTICAL) {
+                        val sx = center.x + guide.position * effectiveZoom
+                        val sy1 = center.y + guide.start * effectiveZoom
+                        val sy2 = center.y + guide.end * effectiveZoom
+                        drawLine(
+                            color = redColor,
+                            start = Offset(sx, sy1),
+                            end = Offset(sx, sy2),
+                            strokeWidth = 1.5.dp.toPx()
+                        )
+                    } else {
+                        val sy = center.y + guide.position * effectiveZoom
+                        val sx1 = center.x + guide.start * effectiveZoom
+                        val sx2 = center.x + guide.end * effectiveZoom
+                        drawLine(
+                            color = redColor,
+                            start = Offset(sx1, sy),
+                            end = Offset(sx2, sy),
+                            strokeWidth = 1.5.dp.toPx()
+                        )
                     }
                 }
             }
