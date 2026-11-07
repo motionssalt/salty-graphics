@@ -505,7 +505,7 @@
     "last_session_note": "Fix round 2 complete (S1 through S18). All root causes identified, fixed, and verified with unit and UI tests. APK release signed with permanent release key."
   },
   "fix_round_3": {
-    "status": "in_progress",
+    "status": "complete",
     "queue": [
       {
         "id": "T1",
@@ -678,8 +678,8 @@
       {
         "id": "T29",
         "title": "Verify, release, and hand off",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Verified all 184+ JVM tests passing in GitHub Actions (Run 42384073718). LayerCompositor fixed to render hidden mask source layers with forceVisible=true; SelectionPanelRegressionTest aligned with ShapePicker interaction. Released v1.0.58 with universal and ABI-split APKs signed with stable release keystore."
       }
     ],
     "decisions": [
@@ -694,18 +694,19 @@
       "T6: optional preferredChildren snapshot map records most recently active branches (including explicit jumps); old archives without it choose the newest child until navigation establishes a preference. Undo/redo/jumps save complete tree snapshots, prune nonexistent UI selections and invalidate Compose even for equal-document states.",
       "T7/T8: Continuous values (position -100000..100000px, scale 1..10000%, rotation -36000..36000 deg, shape dimensions 1..50000px) use shared RulerSlider with sub-pixel 1:1 tracking; per-frame canvas draw is bounded to viewport (~30 ticks, ~0.02ms) with zero allocations. Every transform value is clickable and opens ValueEditorDialog with red-field refusal.",
       "T9-T13, T27-T28: Built unified LayerCompositor in engine with 23 blend modes, non-destructive masks (Alpha, Luminance, Vector), recursive group compositing, and invisible adjustment layers. CanvasView and ExportScreen use saveLayer with LayerCompositor.applyLayerBlendMode. PreviewQuality upgraded to 1/4, 1/2, 3/4, Full and wired to proxy scale. BlendingPage features 6 categories, cached CC0 procedural thumbnails, and integrated mask controls with live mask preview. Removed redundant 3-dot export menu; audited T28 animation tab (absent in codebase, marked blocked).",
-      "T14-T26: Built shared GradientData and FillRenderer with Linear/Radial/Sweep/Freeform gradients and GradientSelectorDialog. Universal FillData on all layers with Solid/Gradient/Media tabs. MediaScaleMode (Fill, Fit, Stretch) with letterbox and crop math. Unified StrokeData and ShadowData with BorderShadowDialog. ShapePickerDialog with 7 shapes and star inner radius. Reinforced vector curve gesture priority and live geometry handles for shapes/vectors. SmartSnapEngine with zoom-invariant tolerance, hysteresis, and red Smart Guides on canvas. LayersPanel drag handles, duplicate layer actions, and grouping. Extended GlobalClipboard with selective property paste dialog. Dedicated popup font search dialog with imePadding. Square-grid toggle and canvas-matched aspect grid tiling. Fixed LayerCompositorTest with @GraphicsMode(NATIVE) for Robolectric."
+      "T14-T26: Built shared GradientData and FillRenderer with Linear/Radial/Sweep/Freeform gradients and GradientSelectorDialog. Universal FillData on all layers with Solid/Gradient/Media tabs. MediaScaleMode (Fill, Fit, Stretch) with letterbox and crop math. Unified StrokeData and ShadowData with BorderShadowDialog. ShapePickerDialog with 7 shapes and star inner radius. Reinforced vector curve gesture priority and live geometry handles for shapes/vectors. SmartSnapEngine with zoom-invariant tolerance, hysteresis, and red Smart Guides on canvas. LayersPanel drag handles, duplicate layer actions, and grouping. Extended GlobalClipboard with selective property paste dialog. Dedicated popup font search dialog with imePadding. Square-grid toggle and canvas-matched aspect grid tiling. Fixed LayerCompositorTest with @GraphicsMode(NATIVE) for Robolectric.",
+      "T29: Fixed LayerCompositor hidden mask source rendering with forceVisible=true; aligned SelectionPanelRegressionTest with ShapePicker; published signed v1.0.58 release with universal and ABI-specific APKs."
     ],
     "known_issues": [
       "Inherited seed-project migration still deletes by name and layer count, an unsafe heuristic already flagged in round-1 notes. Observed during T2 review, not silently reworked; preserve user projects in future acceptance audit.",
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T14:00:00.000000+00:00",
-    "last_session_note": "Completed and verified T14 through T26 (Universal fill, gradients, media fill modes, border/shadow, shape picker, vector curve editing, shape handles, snapping with smart guides, layer drag/group/duplicate, selective paste, font search with keyboard, and square grid). Fixed LayerCompositorTest Robolectric native graphics mode. Now advancing to T29 verification, release, and handoff.",
+    "last_updated": "2026-11-07T15:10:00.000000+00:00",
+    "last_session_note": "Fix round 3 complete. All T1-T27 completed and verified, T28 blocked per instructions (no animation tab exists), T29 release v1.0.58 published via GitHub Actions. All 184 tests green across debug/release variants. Zero UI refinement performed.",
     "verification": {
-      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42359607649",
-      "commit": "1f5324136c38c0d7d50de815569510c62560fcbc",
+      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42384073718",
+      "commit": "662e08d6df7796539ac886104e0d938c159c19e4",
       "conclusion": "success",
       "tests": {
         "app_debug": 54,
@@ -718,7 +719,7 @@
         "skipped": 0
       },
       "release_apks": "Universal, arm64-v8a, armeabi-v7a and x86_64 artifacts assembled and signature verified. Stable signing secrets untouched.",
-      "release": "Not published: T29 pending. Existing releases and reference-keyflaw untouched.",
+      "release": "v1.0.58",
       "device_testing": "not performed, as requested"
     }
   }

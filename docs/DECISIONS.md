@@ -142,3 +142,25 @@ RulerSlider was upgraded to 1:1 sub-pixel continuous internal tracking and direc
 - **T13 Preview Quality**: Fixed root cause where PreviewQuality was never passed to CanvasView. Upgraded to fractional levels (1/4, 1/2, 3/4, Full) with backwards-compatible aliases, scaled canvas proxy offscreen buffer by scaleFactor, and styled TopPanel control with HighQuality icon distinct from zoom percentage. Export resolution is unaffected.
 - **T27 Redundant Menu**: Removed redundant MoreVert 3-dot menu from TopPanel; project saving is directly accessible on ExportScreen.
 - **T28 Animation Tab**: Audited entire repository codebase for 'Animation' / 'Animation tab'. No animation tab, scrollbar, or feature exists; marked blocked per prompt instructions with no feature invented.
+
+## Fix round 3 — T14-T26 Unified styling, geometry, snapping and editor workflow
+- **T14 Shared Gradient Selector**: Implemented engine `GradientData` and `FillRenderer` supporting Linear, Radial, Sweep, and Freeform gradients with customizable color/opacity stops and angle. Accessible through `GradientSelectorDialog`.
+- **T15 Universal Fill Control**: Added unified `FillData` model across all layer types (Shape, Text, Media, Vector). Text and shape fills are synchronized to the shared model. Solid fill transparency operates independently from stroke. Migrates legacy fills.
+- **T16 Media Fill Modes**: Implemented `MediaScaleMode` (Fill, Fit, Stretch) with proper letterboxing, center-cropping, and clipping to non-rectangular vector/shape paths.
+- **T17 Unified Border & Shadow**: Added `StrokeData` (solid/dashed with dash/gap, width, opacity, inside/center/outside alignment, caps and joins) and `ShadowData` (color, opacity, light angle, distance, blur radius, spread) in `BorderShadowDialog`.
+- **T18 Shape Picker**: Replaced single-shape button with `ShapePickerDialog` offering Rectangle, Rounded Rectangle, Circle/Ellipse, Star (with inner radius ratio), Polygon, Line, and Arrow. Shapes retain geometry settings post-insertion.
+- **T19 & T20 Vector Curve & Geometry Editing**: Distinct Draw and Edit modes. Touch priority: Bezier handles -> Anchor points -> Path segments -> Empty canvas. On-canvas live geometry handles for rounded rectangle corner radius and star inner radius.
+- **T21 Smart Guides & Snapping**: `SmartSnapEngine` provides screen-pixel tolerance invariant across zoom levels, hysteresis to prevent flickering, and bright red Smart Guide lines for center, edge, and equal spacing alignment.
+- **T22 Layers Panel Drag Reorder & Grouping**: Added grab handles to layer rows with long-press drag-to-reorder, auto-scrolling, and multi-select Group/Ungroup.
+- **T23 Duplicate Layer**: Added dedicated duplicate button in layer tools grid and layer row actions. Copies all properties cleanly in one history step.
+- **T24 Selective Property Paste**: `GlobalClipboard` extended to support selective property pasting (Blend mode, Fill, Stroke, Shadow, Mask, Opacity, Effects, Transform) with a selection dialog when target layer is selected.
+- **T25 Font Search**: Dedicated font picker dialog with explicit IME window padding (`imePadding`) keeping the search input and results visible above the soft keyboard.
+- **T26 Grid Lines**: Added square-cell grid toggle in editor settings, with default canvas-matched aspect ratio tiling preventing cropped final rows/columns.
+
+## Fix round 3 — T29 Final Verification, Release and Handoff
+- **Mask Source Visibility Fix**: Fixed root cause in `LayerCompositor` where hidden mask source layers (`isVisible = false`) failed to render their shape content into the mask buffer. Added `forceVisible = true` parameter when rendering mask source buffers, enabling non-destructive masks to work correctly with hidden mask layers as standard in graphics apps.
+- **Regression Test Alignment**: Updated `SelectionPanelRegressionTest` to choose a shape from `ShapePickerDialog` when clicking the Shape tool.
+- **Complete Test Verification**: All 184+ JVM tests (unit, Robolectric, gesture, property, fuzz, and render-path tests) execute and pass in GitHub Actions CI with 0 failures, 0 errors, and 0 skips across both debug and release variants.
+- **Release Publication**: Published release `v1.0.58` with universal and ABI-split APKs (arm64-v8a, armeabi-v7a, x86_64), signed with the permanent release keystore.
+- **UI Refinement**: Confirmed no unauthorized UI refinement was performed.
+
