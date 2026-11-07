@@ -1,4 +1,9 @@
-package com.motionssalt.saltygraphics.engine
+package com.motionssalt.saltygraphics
+
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import com.motionssalt.saltygraphics.engine.render.LayerCompositor
+import com.motionssalt.saltygraphics.engine.model.*
 
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -9,6 +14,7 @@ import com.motionssalt.saltygraphics.engine.render.LayerCompositor
 import org.junit.Assert.*
 import org.junit.Test
 
+@RunWith(RobolectricTestRunner::class)
 class LayerCompositorTest {
 
     private fun sampleBackdrop(): Bitmap {
@@ -23,20 +29,19 @@ class LayerCompositorTest {
 
     @Test
     fun testAll23BlendModesProduceDistinctOutputAgainstBackdrop() {
-        val baseColor = 0xFF0000FFL // Blue
-        val blendColor = 0xFFFFFF00L // Yellow
+        val baseColor = 0xFF668099L // Midtone slate
+        val blendColor = 0xFFB34DCCL // Midtone purple
 
         var differentCount = 0
         for (mode in BlendMode.entries) {
             val blended = BlendMath.blendColor(mode, baseColor, blendColor, opacity = 1f)
             if (mode == BlendMode.NORMAL) {
-                // In Normal mode, yellow fully replaces blue
                 val r = (blended shr 16) and 0xFF
                 val g = (blended shr 8) and 0xFF
                 val b = blended and 0xFF
-                assertEquals("Normal mode red component", 255L, r)
-                assertEquals("Normal mode green component", 255L, g)
-                assertEquals("Normal mode blue component", 0L, b)
+                assertEquals("Normal mode red component", 0xB3L, r)
+                assertEquals("Normal mode green component", 0x4DL, g)
+                assertEquals("Normal mode blue component", 0xCCL, b)
             } else {
                 // In non-normal modes, blending with backdrop must alter output
                 if (blended != BlendMath.blendColor(BlendMode.NORMAL, baseColor, blendColor, opacity = 1f)) {
