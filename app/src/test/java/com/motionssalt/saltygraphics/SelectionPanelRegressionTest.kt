@@ -9,6 +9,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import com.motionssalt.saltygraphics.data.ProjectRepository
 import com.motionssalt.saltygraphics.engine.model.*
+import com.motionssalt.saltygraphics.engine.action.ActionTree
 import com.motionssalt.saltygraphics.ui.editor.EditorScreen
 import kotlinx.coroutines.runBlocking
 import org.junit.*
@@ -28,14 +29,17 @@ abstract class SelectionPanelFixture {
     @get:Rule val compose=createEmptyComposeRule()
     private val context get()=RuntimeEnvironment.getApplication()
 
-    protected fun withEditor(check: () -> Unit) {
+    protected fun withEditor(historySetup: (ProjectDocument) -> ActionTree? = { null }, check: () -> Unit) {
         val repo=ProjectRepository(context)
         val doc=runBlocking {
             val project=repo.createProject("Selection fixture",CanvasSize(1000,1000))
             project.copy(layers=listOf(
                 Layer(id="left",name="Left shape",shapeData=ShapeData(width=160f,height=160f),transform=Transform2D(translationX=-240f)),
                 Layer(id="right",name="Right shape",shapeData=ShapeData(width=160f,height=160f),transform=Transform2D(translationX=240f))))
-                .also { repo.saveProject(it) }
+                .let { fixture ->
+                    val history = historySetup(fixture)
+                    (history?.currentDocument ?: fixture).also { repo.saveProject(it, history?.toSnapshot()) }
+                }
         }
         val host=Robolectric.buildActivity(ComponentActivity::class.java).setup()
         try {

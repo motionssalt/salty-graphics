@@ -534,8 +534,8 @@
       {
         "id": "T5",
         "title": "Layer taps must not jump to another action-tree branch",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Audit: current canvas/drawer callbacks already store selection in Compose UI state and never call jumpTo. The inherited T1 stale-callback bug could replay an obsolete document on a gesture, making state appear to jump branches; direct tap-to-jump was not reproduced after T1. Remaining structural weakness: legacy document selection still entered ActionTree snapshots and selection-only document commands could create a branch. History now strips selection from initial/recorded/restored states and refuses selection/timestamp-only commands without moving the pointer. Adds 4,000 selection-command regression checks, legacy-snapshot migration tests, and real EditorScreen repeated canvas/drawer taps with an archived fork; only explicit tree-node interaction changes the current node. Awaiting Actions; not done yet."
       },
       {
         "id": "T6",
@@ -695,8 +695,8 @@
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T09:00:34.819131+00:00",
-    "last_session_note": "T3/T4 verified done in Actions 42357187092, 170 tests all pass plus signed APK artifacts. T5 next. No new release until T29; no UI refinement.",
+    "last_updated": "2026-11-07T09:04:52.067117+00:00",
+    "last_session_note": "T3/T4 verified green. T5 history selection-boundary hardening plus real-editor branch regressions pushed for verification. Do not advance to T6 before green; no release or UI refinement.",
     "verification": {
       "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42357187092",
       "commit": "718085bc6b2051b9a3bc204990eee041af169645",

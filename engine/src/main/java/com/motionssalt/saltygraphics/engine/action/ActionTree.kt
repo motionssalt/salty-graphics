@@ -75,17 +75,21 @@ class ActionTree(
     // Cached states for each node
     private val documentStates = mutableMapOf<String, ProjectDocument>()
 
+    // Legacy .sg documents may contain selection, but it is UI state, never history.
+    private fun documentState(document: ProjectDocument) = document.copy(selectedLayerIds = emptySet())
+
     init {
+        val initialState = documentState(initialDocument)
         val root = ActionNode(
             id = "root",
             description = "Initial Project",
             parentId = null,
-            snapshot = initialDocument
+            snapshot = initialState
         )
         rootNodeId = root.id
         currentNodeId = root.id
         _nodes[root.id] = root
-        documentStates[root.id] = initialDocument
+        documentStates[root.id] = initialState
     }
 
     val currentDocument: ProjectDocument
@@ -96,6 +100,12 @@ class ActionTree(
      * If currentNode is not a leaf (e.g. after undo), creates a new branch!
      */
     fun recordAction(description: String, newDocument: ProjectDocument): ActionNode {
+        val state = documentState(newDocument)
+        // Refuse selection-only/timestamp-only commands even if a future caller
+        // accidentally routes a layer tap through the document command boundary.
+        if (state.copy(updatedAt = currentDocument.updatedAt) == currentDocument) {
+            return _nodes.getValue(currentNodeId)
+        }
         val newNodeId = UUID.randomUUID().toString()
         val parent = _nodes[currentNodeId]
 
@@ -105,11 +115,11 @@ class ActionTree(
             parentId = currentNodeId,
             childrenIds = emptyList(),
             timestamp = System.currentTimeMillis(),
-            snapshot = newDocument
+            snapshot = state
         )
 
         _nodes[newNodeId] = newNode
-        documentStates[newNodeId] = newDocument
+        documentStates[newNodeId] = state
 
         // Update parent's children list
         if (parent != null) {
@@ -191,14 +201,16 @@ class ActionTree(
             val tree = ActionTree(fallbackDocument)
             if (snapshot.nodes.isNotEmpty()) {
                 tree._nodes.clear()
-                tree._nodes.putAll(snapshot.nodes)
+                tree._nodes.putAll(snapshot.nodes.mapValues { (_, node) ->
+                    node.copy(snapshot = node.snapshot?.let { tree.documentState(it) })
+                })
                 tree.rootNodeId = snapshot.rootNodeId
                 tree.currentNodeId = snapshot.currentNodeId
-                for ((id, node) in snapshot.nodes) {
+                for ((id, node) in tree._nodes) {
                     node.snapshot?.let { tree.documentStates[id] = it }
                 }
                 if (!tree.documentStates.containsKey(tree.currentNodeId)) {
-                    tree.documentStates[tree.currentNodeId] = fallbackDocument
+                    tree.documentStates[tree.currentNodeId] = tree.documentState(fallbackDocument)
                 }
             }
             return tree
