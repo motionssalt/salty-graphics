@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_3/T5",
+  "current_phase": "fix_round_3/T6",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,7 +194,7 @@
     "F14"
   ],
   "next_steps": [
-    "Resume fix_round_3 at T5; read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
+    "Resume fix_round_3 at T6; read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
     "Finish and verify each remaining ordered item through T28; then T29 full compatibility audit and new uniquely tagged stable-signed APK release.",
     "Do not start UI refinement or build a web frontend/preview."
   ],
@@ -534,8 +534,8 @@
       {
         "id": "T5",
         "title": "Layer taps must not jump to another action-tree branch",
-        "status": "in_progress",
-        "notes": "Audit: current canvas/drawer callbacks already store selection in Compose UI state and never call jumpTo. The inherited T1 stale-callback bug could replay an obsolete document on a gesture, making state appear to jump branches; direct tap-to-jump was not reproduced after T1. Remaining structural weakness: legacy document selection still entered ActionTree snapshots and selection-only document commands could create a branch. History now strips selection from initial/recorded/restored states and refuses selection/timestamp-only commands without moving the pointer. Adds 4,000 selection-command regression checks, legacy-snapshot migration tests, and real EditorScreen repeated canvas/drawer taps with an archived fork; only explicit tree-node interaction changes the current node. Awaiting Actions; not done yet."
+        "status": "done",
+        "notes": "Audit: current canvas/drawer callbacks already store selection in Compose UI state and never call jumpTo. The inherited T1 stale-callback bug could replay an obsolete document on a gesture, making state appear to jump branches; direct tap-to-jump was not reproduced after T1. Remaining structural weakness: legacy document selection still entered ActionTree snapshots and selection-only document commands could create a branch. History now strips selection from initial/recorded/restored states and refuses selection/timestamp-only commands without moving the pointer. Adds 4,000 selection-command regression checks, legacy-snapshot migration tests, and real EditorScreen repeated canvas/drawer taps with an archived fork; only explicit tree-node interaction changes the current node. Verified Actions 42358256458 at b002b95: app 50 + engine 38 tests per debug/release variant (176 executions), zero failures/errors/skips. Stable-signed universal/per-ABI APK artifacts assembled and signature verified. No physical-device testing. Direct tap-to-jump was not reproduced after inherited T1; this is regression proof and structural prevention, not a fabricated new diagnosis."
       },
       {
         "id": "T6",
@@ -690,22 +690,22 @@
       "T2: writes use unique temp siblings, fsync and atomic rename with no non-atomic fallback. Essential autosave is independent of thumbnail generation; media cache misses in preview decode asynchronously. Stable signing secrets/reference release untouched."
     ],
     "known_issues": [
-      "PARTIAL ROUND: T1-T4 verified done; T5-T29 remain pending. No round-3 release yet.",
+      "PARTIAL ROUND: T1-T5 verified done; T6-T29 remain pending. No round-3 release yet.",
       "Inherited seed-project migration still deletes by name and layer count, an unsafe heuristic already flagged in round-1 notes. Observed during T2 review, not silently reworked; preserve user projects in future acceptance audit.",
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T09:04:52.067117+00:00",
-    "last_session_note": "T3/T4 verified green. T5 history selection-boundary hardening plus real-editor branch regressions pushed for verification. Do not advance to T6 before green; no release or UI refinement.",
+    "last_updated": "2026-11-07T09:18:13.683153+00:00",
+    "last_session_note": "T1-T5 verified done. T5 Actions 42358256458 passed all 176 tests and signed APK builds. Resume T6 branched zoomable history tree. No round-3 release, phone testing, frontend or UI refinement.",
     "verification": {
-      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42357187092",
-      "commit": "718085bc6b2051b9a3bc204990eee041af169645",
+      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42358256458",
+      "commit": "b002b9560234e1b500138ed98af39d4a50dcebdd",
       "tests": {
-        "app_debug": 49,
-        "app_release": 49,
-        "engine_debug": 36,
-        "engine_release": 36,
-        "total": 170,
+        "app_debug": 50,
+        "app_release": 50,
+        "engine_debug": 38,
+        "engine_release": 38,
+        "total": 176,
         "failures": 0,
         "errors": 0,
         "skipped": 0
