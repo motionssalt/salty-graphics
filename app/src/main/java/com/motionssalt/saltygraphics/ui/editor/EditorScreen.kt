@@ -278,6 +278,7 @@ fun EditorScreen(
                 selectedLayerIds = selectedLayerIds,
                 zoom = zoom,
                 panOffset = panOffset,
+                previewQuality = previewQuality,
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
                 onZoomPanChange = { newZoom, newPan ->
@@ -561,20 +562,30 @@ fun EditorScreen(
     }
 
     if (isBlendingOpen && currentSelectedLayer != null) {
-        val selIdx = doc.activeLayers.indexOfFirst { it.id == currentSelectedLayer.id }
-        val underlying = if (selIdx > 0) doc.activeLayers.subList(0, selIdx) else emptyList()
+        val otherLayers = doc.activeLayers.filter { it.id != currentSelectedLayer.id }
         BlendingPage(
             currentBlendMode = currentSelectedLayer.blendMode,
             currentOpacity = currentSelectedLayer.opacity,
-            currentMaskMode = currentSelectedLayer.maskMode,
-            affectsLayerIds = currentSelectedLayer.affectsLayerIds,
-            allUnderlyingLayers = underlying,
+            currentMaskType = currentSelectedLayer.effectiveMaskType,
+            currentMaskSourceLayerId = currentSelectedLayer.effectiveMaskSourceLayerId,
+            isMaskInverted = currentSelectedLayer.effectiveMaskInverted,
+            allAvailableLayers = otherLayers,
             onBlendChange = { mode, op ->
                 val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(blendMode = mode, opacity = op) }
                 recordAndAutoSave("Update Blending", updated)
             },
-            onMaskChange = { maskMode, affectsIds ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(maskMode = maskMode, affectsLayerIds = affectsIds) }
+            onMaskChange = { maskType, sourceId, isInverted ->
+                val updated = doc.updateLayer(currentSelectedLayer.id) {
+                    it.copy(
+                        maskType = maskType,
+                        maskSourceLayerId = sourceId,
+                        isMaskInverted = isInverted,
+                        maskMode = if (maskType != com.motionssalt.saltygraphics.engine.model.MaskType.NONE) {
+                            if (isInverted) com.motionssalt.saltygraphics.engine.model.MaskMode.OUT_MASK else com.motionssalt.saltygraphics.engine.model.MaskMode.IN_MASK
+                        } else com.motionssalt.saltygraphics.engine.model.MaskMode.NONE,
+                        affectsLayerIds = listOfNotNull(sourceId)
+                    )
+                }
                 recordAndAutoSave("Update Mask", updated)
             },
             onBack = { isBlendingOpen = false }

@@ -1,0 +1,12 @@
+Representative Development Image for Blend Mode Thumbnails
+=============================================================
+
+The representative development image used for rendering blend mode thumbnails in the Blending UI
+is procedurally generated in code by BlendThumbnailCache.
+
+It composites a high-contrast radial/circular highlight (bright yellow #FFFF00) over a dual-tone
+linear gradient backdrop (blue #3366FF to orange #FF6633), exercising all dark, light, contrast,
+inversion, and component blending equations across both high and low dynamic range color components.
+
+License: Creative Commons Zero (CC0 1.0 Universal) / Public Domain Dedication.
+Dedicated to the public domain without copyright restrictions.

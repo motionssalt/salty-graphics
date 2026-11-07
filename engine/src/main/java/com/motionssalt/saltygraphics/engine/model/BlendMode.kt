@@ -65,3 +65,11 @@ enum class MaskMode(val displayName: String) {
     IN_MASK("In-Mask (Show inside)"),
     OUT_MASK("Out-Mask (Show outside)")
 }
+
+@Serializable
+enum class MaskType(val displayName: String) {
+    NONE("None"),
+    ALPHA("Alpha"),
+    LUMINANCE("Luminance"),
+    VECTOR("Vector")
+}

@@ -9,10 +9,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,12 +32,14 @@ import androidx.compose.ui.unit.sp
 import com.motionssalt.saltygraphics.engine.model.BlendCategory
 import com.motionssalt.saltygraphics.engine.model.BlendMode
 import com.motionssalt.saltygraphics.engine.model.Layer
-import com.motionssalt.saltygraphics.engine.model.MaskMode
+import com.motionssalt.saltygraphics.engine.model.MaskType
 import com.motionssalt.saltygraphics.engine.render.BlendMath
+import com.motionssalt.saltygraphics.engine.render.LayerCompositor
 import com.motionssalt.saltygraphics.theme.*
+import com.motionssalt.saltygraphics.ui.controls.SaltySwitch
 
 object BlendThumbnailCache {
-    private val cache = LruCache<BlendMode, Bitmap>(25)
+    private val cache = LruCache<BlendMode, Bitmap>(30)
 
     fun getThumbnail(mode: BlendMode): Bitmap {
         cache.get(mode)?.let { return it }
@@ -40,9 +47,8 @@ object BlendThumbnailCache {
         // Render representative sample: gradient base + tinted circle blend layer
         val size = 64
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
 
-        // Base gradient colors
+        // Base gradient colors (Blue to Orange)
         val topColor = 0xFF3366FFL
         val bottomColor = 0xFFFF6633L
 
@@ -77,23 +83,51 @@ object BlendThumbnailCache {
 fun BlendingPage(
     currentBlendMode: BlendMode,
     currentOpacity: Float,
-    currentMaskMode: MaskMode,
-    affectsLayerIds: List<String>,
-    allUnderlyingLayers: List<Layer>,
+    currentMaskType: MaskType,
+    currentMaskSourceLayerId: String?,
+    isMaskInverted: Boolean,
+    allAvailableLayers: List<Layer>,
     onBlendChange: (BlendMode, Float) -> Unit,
-    onMaskChange: (MaskMode, List<String>) -> Unit,
+    onMaskChange: (MaskType, String?, Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     var selectedCategory by remember { mutableStateOf<BlendCategory?>(null) }
     var activeBlendMode by remember(currentBlendMode) { mutableStateOf(currentBlendMode) }
     var activeOpacity by remember(currentOpacity) { mutableFloatStateOf(currentOpacity) }
-    var activeMaskMode by remember(currentMaskMode) { mutableStateOf(currentMaskMode) }
-    var activeAffectsIds by remember(affectsLayerIds) { mutableStateOf(affectsLayerIds.toSet()) }
+    var activeMaskType by remember(currentMaskType) { mutableStateOf(currentMaskType) }
+    var activeSourceId by remember(currentMaskSourceLayerId) {
+        mutableStateOf(currentMaskSourceLayerId ?: allAvailableLayers.firstOrNull()?.id)
+    }
+    var activeInverted by remember(isMaskInverted) { mutableStateOf(isMaskInverted) }
+    var isSourceDropdownOpen by remember { mutableStateOf(false) }
 
     val displayedModes = remember(selectedCategory) {
         if (selectedCategory == null) BlendMode.entries
         else BlendMode.byCategory(selectedCategory!!)
+    }
+
+    val selectedSourceLayer = remember(activeSourceId, allAvailableLayers) {
+        allAvailableLayers.find { it.id == activeSourceId }
+    }
+
+    // Mask preview thumbnail
+    val maskPreview = remember(selectedSourceLayer, activeMaskType, activeInverted) {
+        if (selectedSourceLayer != null && activeMaskType != MaskType.NONE) {
+            val bmp = LayerCompositor.renderLayerContent(selectedSourceLayer, 64, 64)
+            if (activeInverted) {
+                // Invert preview pixels
+                val px = IntArray(64 * 64)
+                bmp.getPixels(px, 0, 64, 0, 0, 64, 64)
+                for (i in px.indices) {
+                    val p = px[i]
+                    val a = 255 - ((p ushr 24) and 0xFF)
+                    px[i] = (a shl 24) or (p and 0x00FFFFFF)
+                }
+                bmp.setPixels(px, 0, 64, 0, 0, 64, 64)
+            }
+            bmp
+        } else null
     }
 
     PanelPage(title = "Blending & Mask", onBack = onBack, scrollable = true) {
@@ -101,11 +135,12 @@ fun BlendingPage(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Opacity Slider
+            // 1. Opacity Slider
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Opacity", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
                     Text("${(activeOpacity * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium, color = colors.primary, fontWeight = FontWeight.Bold)
@@ -123,14 +158,14 @@ fun BlendingPage(
 
             HorizontalDivider(color = colors.outline.copy(alpha = 0.3f))
 
-            // Blend Categories (S12: Category Tabs/Chips)
+            // 2. Blend Mode Categories (Tabs)
             Text("Blend Mode Categories", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-            Row(
+            LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 val categories = listOf(null) + BlendCategory.entries
-                categories.forEach { cat ->
+                items(categories) { cat ->
                     val isCatSelected = selectedCategory == cat
                     val catName = cat?.displayName ?: "All"
                     FilterChip(
@@ -141,7 +176,7 @@ fun BlendingPage(
                 }
             }
 
-            // Grid of Blend Modes with Live Thumbnails
+            // 3. Grid of Blend Modes with Live Thumbnails
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(85.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
@@ -193,52 +228,130 @@ fun BlendingPage(
 
             HorizontalDivider(color = colors.outline.copy(alpha = 0.3f))
 
-            // S12: Masking Section (integrated into blending)
-            Text("Masking", style = MaterialTheme.typography.titleSmall, color = colors.primary)
-            Text("Apply this layer as a clipping mask over underlying layers.", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            // 4. Non-Destructive Masking Section (T10 & T11)
+            Text("Layer Masking", style = MaterialTheme.typography.titleSmall, color = colors.primary)
+            Text(
+                "Non-destructive compositing mask applied while blend mode is active.",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant
+            )
 
+            // Mask Type Chips
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                MaskMode.entries.forEach { mode ->
-                    val isModeSelected = activeMaskMode == mode
+                MaskType.entries.forEach { type ->
+                    val isSelected = activeMaskType == type
                     FilterChip(
-                        selected = isModeSelected,
+                        selected = isSelected,
                         onClick = {
-                            activeMaskMode = mode
-                            onMaskChange(mode, activeAffectsIds.toList())
+                            activeMaskType = type
+                            onMaskChange(type, activeSourceId, activeInverted)
                         },
-                        label = { Text(mode.displayName, style = MaterialTheme.typography.labelSmall) }
+                        label = { Text(type.displayName, style = MaterialTheme.typography.labelSmall) }
                     )
                 }
             }
 
-            if (activeMaskMode != MaskMode.NONE && allUnderlyingLayers.isNotEmpty()) {
-                Text("Layers affected by mask:", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    allUnderlyingLayers.forEach { layer ->
-                        val isChecked = activeAffectsIds.contains(layer.id)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable {
-                                    activeAffectsIds = if (isChecked) activeAffectsIds - layer.id else activeAffectsIds + layer.id
-                                    onMaskChange(activeMaskMode, activeAffectsIds.toList())
-                                }
-                                .padding(vertical = 4.dp, horizontal = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+            if (activeMaskType != MaskType.NONE) {
+                // Source Layer Selector
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Mask Source Layer:", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { isSourceDropdownOpen = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Checkbox(
-                                checked = isChecked,
-                                onCheckedChange = { checked ->
-                                    activeAffectsIds = if (checked) activeAffectsIds + layer.id else activeAffectsIds - layer.id
-                                    onMaskChange(activeMaskMode, activeAffectsIds.toList())
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = selectedSourceLayer?.name ?: "Select a mask layer",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colors.onSurface
+                                )
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Layer")
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = isSourceDropdownOpen,
+                            onDismissRequest = { isSourceDropdownOpen = false }
+                        ) {
+                            if (allAvailableLayers.isEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text("No other layers in project") },
+                                    onClick = { isSourceDropdownOpen = false }
+                                )
+                            } else {
+                                allAvailableLayers.forEach { layer ->
+                                    DropdownMenuItem(
+                                        text = { Text("${layer.name} (${layer.type.displayName})") },
+                                        onClick = {
+                                            activeSourceId = layer.id
+                                            isSourceDropdownOpen = false
+                                            onMaskChange(activeMaskType, layer.id, activeInverted)
+                                        }
+                                    )
                                 }
+                            }
+                        }
+                    }
+                }
+
+                // Invert Mask Toggle & Live Mask Preview
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Invert Mask", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+                        Text("Reverses mask opacity", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    }
+                    SaltySwitch(
+                        checked = activeInverted,
+                        onCheckedChange = { checked ->
+                            activeInverted = checked
+                            onMaskChange(activeMaskType, activeSourceId, checked)
+                        }
+                    )
+                }
+
+                // Mask Preview Tile
+                if (maskPreview != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colors.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Image(
+                            bitmap = maskPreview.asImageBitmap(),
+                            contentDescription = "Mask Preview",
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .border(1.dp, colors.outline.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                        )
+                        Column {
+                            Text(
+                                text = "Active Mask Preview (${activeMaskType.displayName}${if (activeInverted) " Inverted" else ""})",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.onSurface
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(layer.name, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+                            Text(
+                                text = "Source: ${selectedSourceLayer?.name ?: "None"}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.onSurfaceVariant
+                            )
                         }
                     }
                 }

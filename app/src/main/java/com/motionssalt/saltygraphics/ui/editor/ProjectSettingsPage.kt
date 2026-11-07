@@ -20,8 +20,12 @@ fun ProjectSettingsPage(document: ProjectDocument, onChange: (ProjectDocument) -
             1f, 1024f, 20f, 1f, "px")
         ColorPickerRow("Grid colour", settings.gridColor, { update(settings.copy(gridColor = it)) })
         ToggleControl("Snap", settings.snapEnabled, { update(settings.copy(snapEnabled = it)) })
-        DropdownControl("Default preview quality", PreviewQuality.entries.map { it.name },
-            settings.defaultPreviewQuality.name, { update(settings.copy(defaultPreviewQuality = PreviewQuality.valueOf(it))) })
+        val qualityOptions = listOf(PreviewQuality.QUARTER, PreviewQuality.HALF, PreviewQuality.THREE_QUARTERS, PreviewQuality.FULL)
+        DropdownControl("Default preview quality", qualityOptions.map { it.displayName },
+            settings.defaultPreviewQuality.displayName, { selectedName ->
+                val chosen = qualityOptions.find { it.displayName == selectedName } ?: PreviewQuality.FULL
+                update(settings.copy(defaultPreviewQuality = chosen))
+            })
         Text("Canvas: ${document.canvasSize.width} × ${document.canvasSize.height} px")
         val divisor = gcd(document.canvasSize.width, document.canvasSize.height)
         Text("Aspect ratio: ${document.canvasSize.width / divisor}:${document.canvasSize.height / divisor}")

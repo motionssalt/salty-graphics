@@ -32,6 +32,9 @@ data class Layer(
     val isLocked: Boolean = false,
     val opacity: Float = 1.0f,
     val blendMode: BlendMode = BlendMode.NORMAL,
+    val maskType: MaskType = MaskType.NONE,
+    val maskSourceLayerId: String? = null,
+    val isMaskInverted: Boolean = false,
     val maskMode: MaskMode = MaskMode.NONE,
     val affectsLayerIds: List<String> = emptyList(), // For masks and adjustment layers
     val transform: Transform2D = Transform2D(),
@@ -46,6 +49,24 @@ data class Layer(
     val children: List<Layer> = emptyList(), // For Group layers
     val quarantinedData: QuarantinedLayerData? = null
 ) {
+    val effectiveMaskType: MaskType
+        get() = when {
+            maskType != MaskType.NONE -> maskType
+            maskMode == MaskMode.IN_MASK -> if (type == LayerType.VECTOR) MaskType.VECTOR else MaskType.ALPHA
+            maskMode == MaskMode.OUT_MASK -> if (type == LayerType.VECTOR) MaskType.VECTOR else MaskType.ALPHA
+            else -> MaskType.NONE
+        }
+
+    val effectiveMaskInverted: Boolean
+        get() = when {
+            maskType != MaskType.NONE -> isMaskInverted
+            maskMode == MaskMode.OUT_MASK -> true
+            else -> false
+        }
+
+    val effectiveMaskSourceLayerId: String?
+        get() = maskSourceLayerId ?: affectsLayerIds.firstOrNull()
+
     val editablePaths: List<VectorPathData> get() = listOfNotNull(vectorPathData) + additionalVectorPaths
 
     fun withVectorPaths(paths: List<VectorPathData>): Layer = copy(

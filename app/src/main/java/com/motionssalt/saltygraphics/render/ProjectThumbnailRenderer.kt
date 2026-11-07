@@ -78,6 +78,13 @@ object ProjectThumbnailRenderer {
 
         for (layer in document.layers.reversed()) {
             if (!layer.isVisible) continue
+            if (layer.type == LayerType.ADJUSTMENT) continue
+
+            val layerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                alpha = (layer.opacity * 255).toInt().coerceIn(0, 255)
+                com.motionssalt.saltygraphics.engine.render.LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
+            }
+            canvas.saveLayer(null, layerPaint)
 
             canvas.save()
             // Translate to layer center in canvas
@@ -201,6 +208,7 @@ object ProjectThumbnailRenderer {
                 }
                 else -> {}
             }
+            canvas.restore()
             canvas.restore()
         }
 

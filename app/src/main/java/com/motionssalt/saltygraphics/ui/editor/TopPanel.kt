@@ -138,27 +138,30 @@ fun TopPanel(
                     }
                 }
 
-                // Preview Quality Badge / Button
+                // Preview Quality Badge / Button (T13: distinct from zoom with icon and fractional label)
                 Surface(
                     onClick = onPreviewQualityClick,
                     shape = RoundedCornerShape(6.dp),
                     color = colors.surfaceVariant,
-                    modifier = Modifier.padding(start = 2.dp)
+                    modifier = Modifier.padding(start = 4.dp)
                 ) {
-                    Text(
-                        text = when (previewQuality) {
-                            PreviewQuality.LOW -> "25%"
-                            PreviewQuality.MEDIUM -> "50%"
-                            PreviewQuality.HIGH -> "100%"
-                        },
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                        color = when (previewQuality) {
-                            PreviewQuality.LOW -> colors.secondary
-                            PreviewQuality.MEDIUM -> colors.primary
-                            PreviewQuality.HIGH -> Color.White
-                        },
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.HighQuality,
+                            contentDescription = "Preview Quality",
+                            tint = colors.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Preview: ${previewQuality.displayName}",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = colors.onSurface
+                        )
+                    }
                 }
             }
 
@@ -170,7 +173,7 @@ fun TopPanel(
                     .background(colors.outline)
             )
 
-            // Right Group: Direct Undo/Redo (S13), Action Tree, Operation Menu, Export, Settings
+            // Right Group: Direct Undo/Redo (S13), Action Tree, Export, Settings (T27: redundant 3-dot menu removed)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Always visible Undo button
                 IconButton(
@@ -208,27 +211,6 @@ fun TopPanel(
                         contentDescription = "Action Tree History",
                         tint = colors.primary
                     )
-                }
-
-                // Operation Dropdown (Save Project .sg, etc.)
-                Box {
-                    IconButton(onClick = { showOperationMenu = true }, modifier = Modifier.size(38.dp)) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More Operations", tint = colors.onSurface)
-                    }
-                    DropdownMenu(
-                        expanded = showOperationMenu,
-                        onDismissRequest = { showOperationMenu = false },
-                        modifier = Modifier.background(colors.surfaceVariant)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Save Project (.sg)", color = colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.Save, contentDescription = null, tint = colors.primary) },
-                            onClick = {
-                                onSaveSgClick()
-                                showOperationMenu = false
-                            }
-                        )
-                    }
                 }
 
                 IconButton(onClick = onExportClick, modifier = Modifier.size(38.dp)) {

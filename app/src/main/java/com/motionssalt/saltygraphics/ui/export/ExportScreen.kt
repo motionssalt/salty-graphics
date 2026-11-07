@@ -97,26 +97,7 @@ fun ExportScreen(
 
             val layerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 alpha = (layer.opacity * 255).toInt().coerceIn(0, 255)
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                layerPaint.blendMode = when (layer.blendMode) {
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.DARKEN -> android.graphics.BlendMode.DARKEN
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.MULTIPLY -> android.graphics.BlendMode.MULTIPLY
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_BURN -> android.graphics.BlendMode.COLOR_BURN
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.LIGHTEN -> android.graphics.BlendMode.LIGHTEN
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.SCREEN -> android.graphics.BlendMode.SCREEN
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR_DODGE -> android.graphics.BlendMode.COLOR_DODGE
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.OVERLAY -> android.graphics.BlendMode.OVERLAY
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.SOFT_LIGHT -> android.graphics.BlendMode.SOFT_LIGHT
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.HARD_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.DIFFERENCE -> android.graphics.BlendMode.DIFFERENCE
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.EXCLUSION -> android.graphics.BlendMode.EXCLUSION
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.HUE -> android.graphics.BlendMode.HUE
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.SATURATION -> android.graphics.BlendMode.SATURATION
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR -> android.graphics.BlendMode.COLOR
-                    com.motionssalt.saltygraphics.engine.model.BlendMode.LUMINOSITY -> android.graphics.BlendMode.LUMINOSITY
-                    else -> android.graphics.BlendMode.SRC_OVER
-                }
+                com.motionssalt.saltygraphics.engine.render.LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
             }
 
             canvas.saveLayer(null, layerPaint)

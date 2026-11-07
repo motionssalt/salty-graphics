@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_3/T7",
+  "current_phase": "fix_round_3/T14",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -558,32 +558,32 @@
       {
         "id": "T9",
         "title": "Blending modes must really apply",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root causes: CanvasView, ExportScreen and ProjectThumbnailRenderer never passed blendMode to Text, Media, Vector, Adjustment, or Group layers; for Shapes, CanvasView drew directly to the window canvas with drawOval(..., blendMode) without saveLayer, blending stroke into its own fill rather than compositing the layer into the backdrop. In earlier rounds, reference math tests passed on BlendMath directly without testing the real render path. Fixed: Built LayerCompositor providing unified 23-blend-mode compositing across all layer types (Shape, Text, Media, Vector, Group, Adjustment). CanvasView, ExportScreen, and ProjectThumbnailRenderer now composite each layer inside saveLayer with LayerCompositor.applyLayerBlendMode. Verified with LayerCompositorTest exercising all 23 blend modes across all layer types against real rendered pixel output."
       },
       {
         "id": "T10",
         "title": "Correct non-destructive layer masks",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root causes: Previous mask implementation was an unrendered placeholder enum (IN_MASK, OUT_MASK) on layers without compositing logic. Implemented non-destructive compositing masks: Alpha (source opacity), Luminance (ITU-R BT.601 brightness), and Vector masks with inversion option (isMaskInverted) and selectable mask source layer. Preserves partial float alpha values for soft and feathered edges. Masks work across groups and inside groups. Legacy projects with IN_MASK/OUT_MASK automatically migrate in SgProjectArchive to ALPHA/VECTOR masks with matching inversion. Verified in LayerCompositorTest."
       },
       {
         "id": "T11",
         "title": "Blending UI: categories, previews, and masking inside it",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Replaced legacy BlendingMaskDialog with unified in-panel BlendingPage featuring 6 category tabs (Normal, Darken, Lighten, Contrast, Inversion, Component), 64px live thumbnail grid rendered with the real pipeline from a CC0 procedural development image (documented in docs/licenses/BLEND_PREVIEW_LICENSE.txt) and cached in BlendThumbnailCache. Masking integrated directly inside Blending page with MaskType chips, source layer picker, SaltySwitch invert toggle, and live mask thumbnail preview. Removed redundant separate Mask button."
       },
       {
         "id": "T12",
         "title": "Re-implement the adjustment layer (reopened)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root causes: Adjustment layer was previously drawn as a flat tinted gray rectangle on canvas, with a full selection box and transform handles. Fixed: Adjustment layer is now an invisible, full-canvas layer with no visible shape or bounding box on canvas (suppressed in CanvasView). When selected in Layers panel, row highlights without canvas handles. Compositor applies adjustment layer's effects, opacity, blend mode, and mask to the underlying composite; inside groups, affects only that group's underlying layers. Verified in LayerCompositorTest and AdjustmentLayerTest."
       },
       {
         "id": "T13",
         "title": "Preview quality that actually works, with fractional levels",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root causes: PreviewQuality was stored in EditorSettings and TopPanel but never passed to CanvasView or the render pipeline, leaving preview quality stuck at 100%. Fixed: Updated PreviewQuality to fractional levels (1/4, 1/2, 3/4, Full) with backwards compatibility aliases (LOW, MEDIUM, HIGH). Passed previewQuality to CanvasView, which scales the proxy offscreen buffer by scaleFactor. Made TopPanel control distinct with HighQuality icon and 'Preview: 1/4' label. Export is unaffected and always runs at 1.0x. Verified with PreviewQualityTest."
       },
       {
         "id": "T14",
@@ -666,14 +666,14 @@
       {
         "id": "T27",
         "title": "Remove the redundant project-export menu",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Removed redundant MoreVert three-dot menu from TopPanel that only contained 'Save Project (.sg)'. Project saving is already directly accessible on ExportScreen. TopPanel layout remains balanced with Undo, Redo, Action Tree, Export, and Settings."
       },
       {
         "id": "T28",
         "title": "Oversized scrollbar in the Animation tab",
-        "status": "pending",
-        "notes": ""
+        "status": "blocked",
+        "notes": "Audited entire repository codebase for 'Animation' / 'Animation tab'. No animation tab, scrollbar, or feature exists in the applet; the only references to animation are Compose core animation primitives. Marked blocked per instructions, no animation feature invented."
       },
       {
         "id": "T29",
@@ -692,16 +692,17 @@
       "T5: legacy selectedLayerIds remain readable for archive compatibility, but history strips them and ignores selection/timestamp-only commands. No direct tap-to-jump was reproduced after T1; document the evidence rather than inventing a new root cause.",
       "T6: connected-node history graph uses dp-space pan/pinch, .25x-2.5x zoom, Fit/Current controls and viewport-culling of node cards/edges. Current node auto-centers on opening; straight retained runs share a lane. No generic UI refinement.",
       "T6: optional preferredChildren snapshot map records most recently active branches (including explicit jumps); old archives without it choose the newest child until navigation establishes a preference. Undo/redo/jumps save complete tree snapshots, prune nonexistent UI selections and invalidate Compose even for equal-document states.",
-      "T7/T8: Continuous values (position -100000..100000px, scale 1..10000%, rotation -36000..36000 deg, shape dimensions 1..50000px) use shared RulerSlider with sub-pixel 1:1 tracking; per-frame canvas draw is bounded to viewport (~30 ticks, ~0.02ms) with zero allocations. Every transform value is clickable and opens ValueEditorDialog with red-field refusal."
+      "T7/T8: Continuous values (position -100000..100000px, scale 1..10000%, rotation -36000..36000 deg, shape dimensions 1..50000px) use shared RulerSlider with sub-pixel 1:1 tracking; per-frame canvas draw is bounded to viewport (~30 ticks, ~0.02ms) with zero allocations. Every transform value is clickable and opens ValueEditorDialog with red-field refusal.",
+      "T9-T13, T27-T28: Built unified LayerCompositor in engine with 23 blend modes, non-destructive masks (Alpha, Luminance, Vector), recursive group compositing, and invisible adjustment layers. CanvasView and ExportScreen use saveLayer with LayerCompositor.applyLayerBlendMode. PreviewQuality upgraded to 1/4, 1/2, 3/4, Full and wired to proxy scale. BlendingPage features 6 categories, cached CC0 procedural thumbnails, and integrated mask controls with live mask preview. Removed redundant 3-dot export menu; audited T28 animation tab (absent in codebase, marked blocked)."
     ],
     "known_issues": [
-      "PARTIAL ROUND: T1-T6 verified done; T7-T29 pending and not implemented/verified in this session. No round-3 release or final compatibility audit yet. No newly blocked items.",
+      "PARTIAL ROUND: T1-T13, T27 done; T28 blocked (no Animation tab in codebase); T14-T26, T29 pending. No round-3 release or final compatibility audit yet.",
       "Inherited seed-project migration still deletes by name and layer count, an unsafe heuristic already flagged in round-1 notes. Observed during T2 review, not silently reworked; preserve user projects in future acceptance audit.",
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T12:11:56.146399+00:00",
-    "last_session_note": "Verified T7 and T8: RulerSlider upgraded to smooth 1:1 sub-pixel tracking, scrolling container disambiguation, momentum fling, and commit on release. TransformPanel and ShapeSettingsDialog migrated from bounded Sliders to RulerSlider with unbounded/natural ranges. All numerical transform values are clickable with ValueEditorDialog popup. Comprehensive tests added in ScrollWheelTransformRegressionTest. T9 is next.",
+    "last_updated": "2026-11-07T13:20:00.000000+00:00",
+    "last_session_note": "Completed and verified T9 (blend modes on all layer types), T10 (non-destructive Alpha/Luma/Vector masks + migration), T11 (blending categories, cached thumbnails, integrated mask section), T12 (invisible adjustment layer with effect compositing and no selection box), T13 (fractional preview quality 1/4, 1/2, 3/4, Full wired to canvas proxy), T27 (removed redundant 3-dot menu), and T28 (audited and marked blocked). Resuming at T14.",
     "verification": {
       "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42359607649",
       "commit": "1f5324136c38c0d7d50de815569510c62560fcbc",

@@ -175,13 +175,29 @@ object SgProjectArchive {
             }
         }
 
+        val finalDocument = migrateLegacyMasks(document)
+
         return SgImportResult(
-            document = document,
+            document = finalDocument,
             assets = assets,
             manifest = manifest,
             historySnapshot = historySnapshot,
             previewPng = previewPng
         )
+    }
+
+    fun migrateLegacyMasks(doc: ProjectDocument): ProjectDocument {
+        val migratedLayers = doc.layers.map { layer ->
+            if (layer.maskType == com.motionssalt.saltygraphics.engine.model.MaskType.NONE &&
+                layer.maskMode != com.motionssalt.saltygraphics.engine.model.MaskMode.NONE) {
+                layer.copy(
+                    maskType = layer.effectiveMaskType,
+                    isMaskInverted = layer.effectiveMaskInverted,
+                    maskSourceLayerId = layer.effectiveMaskSourceLayerId
+                )
+            } else layer
+        }
+        return doc.copy(layers = migratedLayers)
     }
 
     /**

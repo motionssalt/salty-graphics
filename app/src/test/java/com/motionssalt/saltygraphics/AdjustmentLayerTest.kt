@@ -61,6 +61,9 @@ class AdjustmentLayerTest {
         )
 
         assertEquals(MaskMode.IN_MASK, adjWithMask.maskMode)
+        assertEquals(MaskType.ALPHA, adjWithMask.effectiveMaskType)
+        assertFalse(adjWithMask.effectiveMaskInverted)
+        assertEquals("layer-1", adjWithMask.effectiveMaskSourceLayerId)
         assertEquals(BlendMode.MULTIPLY, adjWithMask.blendMode)
     }
 }
