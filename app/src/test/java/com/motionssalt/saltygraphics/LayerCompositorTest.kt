@@ -1,10 +1,5 @@
 package com.motionssalt.saltygraphics
 
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import com.motionssalt.saltygraphics.engine.render.LayerCompositor
-import com.motionssalt.saltygraphics.engine.model.*
-
 import android.graphics.Bitmap
 import android.graphics.Color
 import com.motionssalt.saltygraphics.engine.file.SgProjectArchive
@@ -13,7 +8,8 @@ import com.motionssalt.saltygraphics.engine.render.BlendMath
 import com.motionssalt.saltygraphics.engine.render.LayerCompositor
 import org.junit.Assert.*
 import org.junit.Test
-
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class LayerCompositorTest {
 
