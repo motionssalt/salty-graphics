@@ -90,3 +90,10 @@ Actions https://github.com/motionssalt/salty-graphics/actions/runs/42270618002 p
 
 ### 6. Shape Live Editing
 - Removed modal "Apply" button from Shape dialog. Geometry updates live on canvas; single history action recorded on slider release.
+
+## Fix round 3 — T1 transform safety
+The stable canvas pointer coroutine must read both geometry **and callbacks** through `rememberUpdatedState`. Retaining an initial callback reintroduced an obsolete document even though geometry itself was current; this is why the round-2 gesture-key fix did not stop apparent layer deletion. Transform requests now operate on the live document through `SelectionGeometry.apply`, which only copies a target transform and rejects missing/locked targets and invalid numbers. Resizing uses the opposite local anchor transformed into document space; linked corner scaling preserves the existing X:Y ratio, not just equal scale values. Rotation uses pointer-down angular delta about the measured visible center. Selection geometry measures native text metrics and sampled rendered vector paths, unions child/group and multi-selection bounds, and draws one high-contrast overlay last. Targets are 44dp; graphics remain constant-size at every zoom.
+
+Android Compose 1.7.5 synthesizes consumed up changes for ACTION_CANCEL; these must roll back preview rather than commit. Pinch interruptions also roll back the uncommitted edit, and pure layer taps never create a transform node. Verification: [Actions 42351917072](https://github.com/motionssalt/salty-graphics/actions/runs/42351917072), 146 test executions across debug/release, no failures/errors/skips, signed universal and ABI APK artifacts. The round is not complete and no round-3 release is published. No UI refinement.
+
+Release discipline: main pushes retain CI/APK artifacts but no longer publish premature releases. Explicit new version tags publish only after final acceptance; existing stable signing secrets and reference release remain untouched.
