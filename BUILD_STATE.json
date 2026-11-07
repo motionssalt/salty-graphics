@@ -2,8 +2,8 @@
   "project": "Salty Graphics",
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
-  "status": "complete",
-  "current_phase": "F14",
+  "status": "in_progress",
+  "current_phase": "fix_round_3/T3",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,9 +194,9 @@
     "F14"
   ],
   "next_steps": [
-    "Resume R13: portable media/font/document/action-tree archives and Save project entry points.",
-    "R14: re-audit inherited acceptance gaps, run all tests, establish stable signing, publish next versioned release.",
-    "Do not start UI refinement in this fix round."
+    "Resume fix_round_3 at T3; read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
+    "Finish and verify each remaining ordered item through T28; then T29 full compatibility audit and new uniquely tagged stable-signed APK release.",
+    "Do not start UI refinement or build a web frontend/preview."
   ],
   "decisions": [
     {
@@ -379,8 +379,8 @@
       "device_testing": "not performed (per brief)"
     }
   },
-  "last_updated": "2026-11-06T18:32:12.859124+00:00",
-  "last_session_note": "PARTIAL CHECKPOINT, NOT ROUND COMPLETION. Resumed at R11 and completed it with Actions verification 42270618002. Restored inherited failing R10/R12 compilation and tests; isolated Robolectric classes rather than disabling tests. R1-R10/R12 inherited done markers retained, not fully re-audited. Resume at R13 portable .sg assets/history and export/import entry points; then R14 acceptance audit, stable signing and new release. No new release and no UI refinement. See known_issues for inherited gaps requiring R14 audit.",
+  "last_updated": "2026-11-07T08:01:00.624648+00:00",
+  "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. T1/T2 done, code aea7d95b verified green Actions 42353088901 with 164 test executions and signed universal/per-ABI APK artifacts. Resume T3 bottom panel persistence, then ordered T4-T29. Complete acceptance brief in docs/FIX_ROUND_3_PROMPT.md (credentials removed). No new release; do not publish until T29 and do not start UI refinement.",
   "fix_round_2": {
     "status": "done",
     "queue": [
@@ -516,8 +516,8 @@
       {
         "id": "T2",
         "title": "Projects that load forever",
-        "status": "in_progress",
-        "notes": "Root causes: getProject swallowed errors into null while EditorScreen only had a doc-null spinner; no terminal Error or timeout. Autosave truncated live .sg files directly and synchronously waited for thumbnail decode. Implemented same-directory fsync/atomic rename, bounded interruptible-worker bridge with 15s deadline (does not wait for stuck codecs), progress and error recovery UI, safe-mode hidden quarantines retaining raw data, async thumbnails and load gates for autosave. Phase timings append to existing crash diagnostic report. Tests added; not yet verified."
+        "status": "done",
+        "notes": "Root causes: getProject swallowed exceptions into null while EditorScreen only displayed a null-document spinner (no terminal Error/timeout); autosave truncated live archives and synchronously waited for media-decoding thumbnails. Added Loading with phase progress -> Loaded/Error, 15s bounded blocking-reader bridge (at most two daemon workers, timeout does not wait for an interrupt-ignoring codec), Retry/Open in safe mode/Back, atomic fsync + same-directory rename for archives/index/assets, serialized saves delayed while foreground load is active, independent cancellable thumbnails, off-main preview cache misses, and phase timings in last_crash.txt/Report a problem. Safe mode preserves healthy siblings and retains raw failed data in hidden quarantined layers; a timed-out media layer is bypassed on safe retry; opening does not overwrite the archive. Verified Actions 42353088901 (aea7d95b): app 46 and engine 36 tests per debug/release variant, 164 executions, zero failures/errors/skips. Tests cover missing/corrupt/half-written files, serialized corrupt layer, slow uninterruptible decode plus safe recovery, blocked thumbnail and concurrent autosave, interrupted atomic write and concurrent readers/writers, phase order and actual recovery UI. Signed universal/per-ABI APKs built as Actions artifacts only, no release. Test fixture Unit return and Robolectric accessor errors were fixed; no tests disabled."
       },
       {
         "id": "T3",
@@ -684,18 +684,51 @@
     ],
     "decisions": [
       "Restored tag-only release publishing: inherited workflow published a release on every main push, conflicting with frequent checkpoints and T29 gated handoff. Main continues testing/building signed APK artifacts; new releases only from explicit v* tags after acceptance. Existing releases and signing secrets untouched.",
-      "T1: selection handles clamp at positive scale 0.0001; invalid/non-finite transform requests are refused. Touch targets use nearest handle within 22dp radius, while visible corner/edge sizes remain 9dp/6dp. Multi-touch cancels the uncommitted layer edit before pinch/pan."
+      "T1: selection handles clamp at positive scale 0.0001; invalid/non-finite transform requests are refused. Touch targets use nearest handle within 22dp radius, while visible corner/edge sizes remain 9dp/6dp. Multi-touch cancels the uncommitted layer edit before pinch/pan.",
+      "T2: 15-second foreground deadline; at most two daemon blocking-reader workers. If native codecs ignore interruption, late callbacks are ignored and saturated readers return a recoverable busy error rather than enqueue forever.",
+      "T2: safe recovery does not auto-save over the original. Failed layers remain hidden QUARANTINED entries with raw source JSON; healthy layers survive. The media layer active at timeout is skipped on safe retry. A safe-mode recovery starts clean history to prevent invalid archived snapshots reintroducing failed media.",
+      "T2: writes use unique temp siblings, fsync and atomic rename with no non-atomic fallback. Essential autosave is independent of thumbnail generation; media cache misses in preview decode asynchronously. Stable signing secrets/reference release untouched."
     ],
-    "known_issues": [],
-    "last_updated": "2026-11-07T07:52:41.023720+00:00",
-    "last_session_note": "T2 verification ongoing: corrected Robolectric application accessor (non-generic API) and explicit Unit coroutine fixture signatures. Engine implementation and app implementation compile; full native regression run must pass before done. No T3-T29 work begun.",
+    "known_issues": [
+      "PARTIAL ROUND: T1 and T2 verified done; T3-T29 remain pending. No round-3 release or version tag published. Resume T3 next in order; sanitized full acceptance brief is docs/FIX_ROUND_3_PROMPT.md.",
+      "Inherited seed-project migration still deletes by name and layer count, an unsafe heuristic already flagged in round-1 notes. Observed during T2 review, not silently reworked; preserve user projects in future acceptance audit.",
+      "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
+      "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
+    ],
+    "last_updated": "2026-11-07T08:01:00.624648+00:00",
+    "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. T1/T2 done, code aea7d95b verified green Actions 42353088901 with 164 test executions and signed universal/per-ABI APK artifacts. Resume T3 bottom panel persistence, then ordered T4-T29. Complete acceptance brief in docs/FIX_ROUND_3_PROMPT.md (credentials removed). No new release; do not publish until T29 and do not start UI refinement.",
     "verification": {
-      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42351917072",
-      "commit": "a0a26286",
+      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42353088901",
+      "commit": "aea7d95b",
       "result": "success",
-      "app_tests_per_variant": 41,
-      "engine_tests_per_variant": 32,
-      "apk_delivery": "Actions artifacts only; round 3 release not published"
+      "jvm_test_counts": {
+        "app/build/test-results/testDebugUnitTest": {
+          "tests": 46,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app/build/test-results/testReleaseUnitTest": {
+          "tests": 46,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine/build/test-results/testDebugUnitTest": {
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine/build/test-results/testReleaseUnitTest": {
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "device_testing": "not performed, as requested",
+      "release": "Not published: T29 pending. Signed universal and per-ABI Actions artifacts only."
     }
   }
 }
