@@ -48,7 +48,7 @@ class DeviceInfoProvider(private val context: Context) {
         val info = getDeviceInfo(maxTextureSize)
         val crashFile = java.io.File(context.filesDir, "last_crash.txt")
         val crashLogContent = if (crashFile.exists()) {
-            try { crashFile.readText().take(4000) } catch (_: Throwable) { null }
+            try { crashFile.readText().takeLast(16000) } catch (_: Throwable) { null }
         } else null
 
         val reportBody = buildString {
@@ -65,7 +65,7 @@ class DeviceInfoProvider(private val context: Context) {
             appendLine("RAM: ${info.availableRamMB} MB free / ${info.totalRamMB} MB total")
             appendLine("GPU Renderer: ${info.gpuRenderer}")
             appendLine("Max Texture Size: ${info.maxTextureSize}px")
-            appendLine("App Version: 1.0.0-beta1")
+            appendLine("App Version: ${com.motionssalt.saltygraphics.BuildConfig.VERSION_NAME}")
             if (!crashLogContent.isNullOrBlank()) {
                 appendLine()
                 appendLine("--- Recent Crash Log ---")

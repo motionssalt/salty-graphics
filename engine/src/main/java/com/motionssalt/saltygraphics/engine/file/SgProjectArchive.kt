@@ -262,7 +262,7 @@ object SgProjectArchive {
         historySnapshot: ActionTreeSnapshot? = null,
         previewPng: ByteArray? = null
     ) {
-        FileOutputStream(file).use { fos ->
+        AtomicFiles.write(file) { fos ->
             exportToStream(
                 document = document,
                 outputStream = fos,

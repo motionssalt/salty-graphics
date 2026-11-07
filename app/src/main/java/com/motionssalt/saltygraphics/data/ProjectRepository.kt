@@ -3,6 +3,19 @@ package com.motionssalt.saltygraphics.data
 import android.content.Context
 import com.motionssalt.saltygraphics.engine.action.ActionTreeSnapshot
 import com.motionssalt.saltygraphics.engine.file.SgProjectArchive
+import com.motionssalt.saltygraphics.engine.file.SgImportResult
+import com.motionssalt.saltygraphics.engine.file.ProjectLoader
+import com.motionssalt.saltygraphics.engine.file.ProjectLoadState
+import com.motionssalt.saltygraphics.engine.file.AtomicFiles
+import com.motionssalt.saltygraphics.engine.model.Layer
+import com.motionssalt.saltygraphics.engine.model.LayerType
+import com.motionssalt.saltygraphics.engine.model.QuarantinedLayerData
+import com.motionssalt.saltygraphics.engine.model.SelectionGeometry
+import com.motionssalt.saltygraphics.media.MediaCache
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.motionssalt.saltygraphics.engine.model.CanvasSize
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.render.ProjectThumbnailRenderer
@@ -31,7 +44,93 @@ data class ProjectSummary(
     val modifiedAt: Long
 )
 
-class ProjectRepository(private val context: Context) {
+class ProjectRepository(private val context: Context,
+    private val loader: ProjectLoader = ProjectLoader(),
+    private val decodeMedia: (Context,String,String) -> Boolean = { c,id,path -> MediaCache.getOrLoad(c,id,path)!=null },
+    private val renderThumbnail: (Context,ProjectDocument) -> ByteArray = ProjectThumbnailRenderer::renderToPng
+) {
+    private val loadingProjects=ConcurrentHashMap<String,CompletableDeferred<Unit>>()
+    private val saveMutexes=ConcurrentHashMap<String,Mutex>()
+    private val thumbnailJobs=ConcurrentHashMap<String,Job>()
+    private val backgroundScope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
+    private val indexLock=Any()
+    fun isProjectLoading(id: String): Boolean = loadingProjects.containsKey(id)
+
+    private fun scheduleThumbnail(doc: ProjectDocument) {
+        thumbnailJobs.remove(doc.id)?.cancel()
+        if(isProjectLoading(doc.id)) return
+        thumbnailJobs[doc.id]=backgroundScope.launch {
+            try {
+                if(isProjectLoading(doc.id)) return@launch
+                val bytes=renderThumbnail(context,doc)
+                ensureActive()
+                if(!isProjectLoading(doc.id)) AtomicFiles.write(getThumbnailFile(doc.id)) {it.write(bytes)}
+            } catch(e: CancellationException) { throw e }
+            catch(e: Exception) {LocalDiagnostics.record(context,"thumbnail failed ${e.javaClass.simpleName}")}
+        }
+    }
+
+    /** Explicit foreground state machine; neither thumbnails nor autosave are awaited. */
+    suspend fun openProject(id: String, safeMode: Boolean = false,
+                            onProgress: (ProjectLoadState.Loading)->Unit = {}): ProjectLoadState {
+        val gate=CompletableDeferred<Unit>()
+        if(loadingProjects.putIfAbsent(id,gate)!=null) return ProjectLoadState.Error("This project is already opening. Please retry.")
+        thumbnailJobs.remove(id)?.cancel()
+        val start=LocalDiagnostics.clockMillis()
+        var previous=start
+        fun logPhase(label:String) {
+            val now=LocalDiagnostics.clockMillis()
+            LocalDiagnostics.record(context,"project_load phase=$label elapsed_ms=${now-start} previous_phase_ms=${now-previous}")
+            previous=now
+        }
+        return try {
+            val state=loader.load(safeMode,{ logPhase(it.phase);onProgress(it) }) { load ->
+                load.phase("Reading archive",1)
+                val file=getProjectFile(id)
+                require(file.isFile) {"Project file is missing. Restore a saved .sg file or go back."}
+                val imported=SgProjectArchive.loadFromFile(file)
+                load.phase("Restoring assets",2)
+                val assetDir=getAssetsDir(id).canonicalFile
+                for((path,bytes) in imported.assets) {
+                    load.checkActive()
+                    val target=File(assetDir,path).canonicalFile
+                    require(target.path.startsWith(assetDir.path+File.separator)) {"Unsafe asset path in project"}
+                    if(!target.exists()) AtomicFiles.write(target) {out->load.checkActive();out.write(bytes)}
+                }
+                load.phase("Checking layers and media",3)
+                fun validate(layer:Layer):Layer {
+                    load.checkActive()
+                    return try {
+                        require(layer.type!=LayerType.QUARANTINED) {layer.quarantinedData?.error ?: "Corrupt layer"}
+                        require(SelectionGeometry.valid(layer.transform)) {"Invalid layer transform"}
+                        if(layer.type==LayerType.MEDIA) {
+                            val path=layer.mediaAssetPath ?: error("Missing media reference")
+                            val asset=File(assetDir,path.removePrefix("assets/")).canonicalFile
+                            require(asset.path.startsWith(assetDir.path+File.separator) && asset.isFile) {"Missing media asset"}
+                            require(decodeMedia(context,id,path)) {"Cannot decode media asset"}
+                        }
+                        layer.copy(children=layer.children.map(::validate))
+                    } catch(e: Exception) {
+                        load.checkActive()
+                        if(!safeMode) throw IllegalArgumentException("${layer.name}: ${e.message}. Try safe mode.",e)
+                        LocalDiagnostics.record(context,"project_load quarantined_layer reason=${e.javaClass.simpleName}")
+                        layer.copy(type=LayerType.QUARANTINED,isVisible=false,children=emptyList(),
+                            quarantinedData=layer.quarantinedData ?: QuarantinedLayerData(json.encodeToString(layer),e.message ?: "Load failure",layer.id,layer.name))
+                    }
+                }
+                require(imported.document.canvasSize.width>0 && imported.document.canvasSize.height>0) {"Invalid canvas dimensions"}
+                val document=imported.document.copy(id=id,layers=imported.document.layers.map(::validate))
+                load.phase("Ready",4)
+                imported.copy(document=document,historySnapshot=if(safeMode) null else imported.historySnapshot)
+            }
+            logPhase(if(state is ProjectLoadState.Loaded) "Loaded" else "Error")
+            if(state is ProjectLoadState.Error) LocalDiagnostics.record(context,"project_load error=${state.message}")
+            state
+        } finally {
+            loadingProjects.remove(id,gate);gate.complete(Unit)
+        }
+    }
+
     private val projectsDir = File(context.filesDir, "projects").apply { mkdirs() }
     private val thumbnailsDir = File(context.filesDir, "thumbnails").apply { mkdirs() }
     private val indexFile = File(projectsDir, "index.json")
@@ -81,17 +180,10 @@ class ProjectRepository(private val context: Context) {
                 _projects.value = list.sortedByDescending { it.modifiedAt }
             }
 
-            // S2b: Background check for missing thumbnails on old projects
-            CoroutineScope(Dispatchers.IO).launch {
-                for (proj in _projects.value) {
-                    val thumb = File(thumbnailsDir, "${proj.id}.png")
-                    if (!thumb.exists()) {
-                        try {
-                            val doc = getProject(proj.id)
-                            if (doc != null) {
-                                ProjectThumbnailRenderer.saveThumbnail(context, doc)
-                            }
-                        } catch (_: Throwable) {}
+            for(proj in _projects.value) {
+                if(!getThumbnailFile(proj.id).exists() && !isProjectLoading(proj.id)) {
+                    backgroundScope.launch {
+                        if(!isProjectLoading(proj.id)) getProject(proj.id)?.let {scheduleThumbnail(it)}
                     }
                 }
             }
@@ -100,9 +192,9 @@ class ProjectRepository(private val context: Context) {
         }
     }
 
-    private fun saveIndex(list: List<ProjectSummary>) {
+    private fun saveIndex(list: List<ProjectSummary>) = synchronized(indexLock) {
         try {
-            indexFile.writeText(json.encodeToString(list))
+            AtomicFiles.write(indexFile) { it.write(json.encodeToString(list).toByteArray()) }
             _projects.value = list.sortedByDescending { it.modifiedAt }
         } catch (e: Throwable) {
             _projects.value = list
@@ -160,37 +252,22 @@ class ProjectRepository(private val context: Context) {
     }
 
     suspend fun saveProject(doc: ProjectDocument, historySnapshot: ActionTreeSnapshot? = null) = withContext(Dispatchers.IO) {
-        try {
-            val file = File(projectsDir, "${doc.id}.sg")
-            val assets = getProjectAssets(doc.id)
-            val previewBytes = try {
-                val thumbFile = ProjectThumbnailRenderer.saveThumbnail(context, doc)
-                thumbFile.readBytes()
-            } catch (_: Throwable) {
-                null
+        loadingProjects[doc.id]?.await()
+        saveMutexes.getOrPut(doc.id) {Mutex()}.withLock {
+            // A foreground open can begin while this save waited for an earlier save.
+            loadingProjects[doc.id]?.await()
+            val assets=getProjectAssets(doc.id)
+            val thumbnail=getThumbnailFile(doc.id).let {if(it.exists()) it.readBytes() else null}
+            // Essential document storage comes first; thumbnail rendering is independent work.
+            SgProjectArchive.saveToFile(doc,getProjectFile(doc.id),assets,historySnapshot,thumbnail)
+            synchronized(indexLock) {
+                saveIndex(_projects.value.map {
+                    if(it.id==doc.id) it.copy(name=doc.name,width=doc.canvasSize.width,height=doc.canvasSize.height,
+                        layerCount=doc.layers.size,modifiedAt=System.currentTimeMillis()) else it
+                })
             }
-
-            SgProjectArchive.saveToFile(
-                document = doc,
-                file = file,
-                assetFiles = assets,
-                historySnapshot = historySnapshot,
-                previewPng = previewBytes
-            )
-
-            val updated = _projects.value.map {
-                if (it.id == doc.id) {
-                    it.copy(
-                        name = doc.name,
-                        width = doc.canvasSize.width,
-                        height = doc.canvasSize.height,
-                        layerCount = doc.layers.size,
-                        modifiedAt = System.currentTimeMillis()
-                    )
-                } else it
-            }
-            saveIndex(updated)
-        } catch (_: Throwable) {}
+            scheduleThumbnail(doc)
+        }
     }
 
     suspend fun duplicateProject(id: String) = withContext(Dispatchers.IO) {

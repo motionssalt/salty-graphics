@@ -516,8 +516,8 @@
       {
         "id": "T2",
         "title": "Projects that load forever",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Root causes: getProject swallowed errors into null while EditorScreen only had a doc-null spinner; no terminal Error or timeout. Autosave truncated live .sg files directly and synchronously waited for thumbnail decode. Implemented same-directory fsync/atomic rename, bounded interruptible-worker bridge with 15s deadline (does not wait for stuck codecs), progress and error recovery UI, safe-mode hidden quarantines retaining raw data, async thumbnails and load gates for autosave. Phase timings append to existing crash diagnostic report. Tests added; not yet verified."
       },
       {
         "id": "T3",
@@ -687,8 +687,8 @@
       "T1: selection handles clamp at positive scale 0.0001; invalid/non-finite transform requests are refused. Touch targets use nearest handle within 22dp radius, while visible corner/edge sizes remain 9dp/6dp. Multi-touch cancels the uncommitted layer edit before pinch/pan."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-07T07:41:31.687967+00:00",
-    "last_session_note": "T1 verified and done. Next ordered item T2: loading state machine, atomic storage, bounded recovery and diagnostics. No new release or UI refinement.",
+    "last_updated": "2026-11-07T07:44:39.412526+00:00",
+    "last_session_note": "T2 implementation checkpoint: explicit timed foreground load states/retry/safe mode, atomic project/index/asset writes, media validation and quarantine, load phase diagnostics, autosave gating and independent cancellable thumbnails. Added interrupted-write/concurrent archive tests, uninterruptible decoder timeout, missing/corrupt/half-written input and real recovery UI tests. Await full Actions verification; T2 not done.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42351917072",
       "commit": "a0a26286",

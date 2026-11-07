@@ -21,6 +21,9 @@ import com.motionssalt.saltygraphics.engine.action.PasteMode
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.motionssalt.saltygraphics.engine.file.ProjectLoadState
+import androidx.compose.ui.platform.testTag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,13 +71,19 @@ fun EditorScreen(
     var vectorDraft by remember { mutableStateOf<Layer?>(null) }
     var isActionTreeOpen by remember { mutableStateOf(false) }
 
-    // Load project and init action tree
-    LaunchedEffect(projectId) {
-        val loaded = repository.getProject(projectId)
-        if (loaded != null) {
-            previewQuality = loaded.editorSettings.defaultPreviewQuality
-            projectDocument = loaded
-            actionTree = ActionTree(loaded)
+    val loadState=remember(projectId) {MutableStateFlow<ProjectLoadState>(ProjectLoadState.Loading())}
+    val loading by loadState.collectAsState()
+    var loadAttempt by remember(projectId) {mutableIntStateOf(0)}
+    var safeMode by remember(projectId) {mutableStateOf(false)}
+    LaunchedEffect(projectId,loadAttempt) {
+        projectDocument=null;actionTree=null
+        val result=repository.openProject(projectId,safeMode) {loadState.value=it}
+        loadState.value=result
+        if(result is ProjectLoadState.Loaded) {
+            val loaded=result.result.document
+            previewQuality=loaded.editorSettings.defaultPreviewQuality
+            projectDocument=loaded
+            actionTree=result.result.historySnapshot?.let {ActionTree.fromSnapshot(it,loaded)} ?: ActionTree(loaded)
         }
     }
 
@@ -86,7 +95,7 @@ fun EditorScreen(
         treeRef.recordAction(description, newDoc)
         projectDocument = newDoc
         coroutineScope.launch {
-            repository.saveProject(newDoc)
+            repository.saveProject(newDoc,treeRef.toSnapshot())
         }
     }
 
@@ -160,9 +169,9 @@ fun EditorScreen(
     }
 
     if (doc == null || tree == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        ProjectLoadingPanel(loading,
+            onRetry={safeMode=false;loadState.value=ProjectLoadState.Loading();loadAttempt++},
+            onSafeMode={safeMode=true;loadState.value=ProjectLoadState.Loading();loadAttempt++},onBack=onNavigateBack)
         return
     }
 
