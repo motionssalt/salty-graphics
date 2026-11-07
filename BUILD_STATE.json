@@ -503,5 +503,188 @@
     "known_issues": [],
     "last_updated": "2026-11-06T21:50:00Z",
     "last_session_note": "Fix round 2 complete (S1 through S18). All root causes identified, fixed, and verified with unit and UI tests. APK release signed with permanent release key."
+  },
+  "fix_round_3": {
+    "status": "in_progress",
+    "queue": [
+      {
+        "id": "T1",
+        "title": "Selection box: handles must never delete the layer, and must actually transform",
+        "status": "in_progress",
+        "notes": ""
+      },
+      {
+        "id": "T2",
+        "title": "Projects that load forever",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T3",
+        "title": "Bottom control panel must stay open during transform editing",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T4",
+        "title": "Clearing the layer selection",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T5",
+        "title": "Layer taps must not jump to another action-tree branch",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T6",
+        "title": "Branched action-history tree (zoomable and pannable)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T7",
+        "title": "Shared scroll-wheel (ruler) control: smooth, precise, and used everywhere",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T8",
+        "title": "Clickable transform values everywhere",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T9",
+        "title": "Blending modes must really apply",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T10",
+        "title": "Correct non-destructive layer masks",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T11",
+        "title": "Blending UI: categories, previews, and masking inside it",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T12",
+        "title": "Re-implement the adjustment layer (reopened)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T13",
+        "title": "Preview quality that actually works, with fractional levels",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T14",
+        "title": "Shared gradient selector (engine component)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T15",
+        "title": "Universal Fill control across all layers",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T16",
+        "title": "Media fill modes: Fill, Fit, Stretch",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T17",
+        "title": "Unified Border & Shadow panel",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T18",
+        "title": "Shape picker with editable shape-specific settings",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T19",
+        "title": "Vector curve editing (reopened)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T20",
+        "title": "Vector-aware selection and editing for shape and vector layers",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T21",
+        "title": "Reliable snapping with visible Smart Guides",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T22",
+        "title": "Layer panel: long-press and drag to reorder, and grouping",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T23",
+        "title": "Duplicate layer button",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T24",
+        "title": "Selective copy and paste of layer properties",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T25",
+        "title": "Font search must stay visible with the keyboard open",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T26",
+        "title": "Grid lines: square-grid toggle and canvas-matched sizing",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T27",
+        "title": "Remove the redundant project-export menu",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T28",
+        "title": "Oversized scrollbar in the Animation tab",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "T29",
+        "title": "Verify, release, and hand off",
+        "status": "pending",
+        "notes": ""
+      }
+    ],
+    "decisions": [],
+    "known_issues": [],
+    "last_updated": "2026-11-07T07:10:00Z",
+    "last_session_note": "Initialized fix_round_3 with all 28 open tasks (T1-T28) plus T29 verification and handoff."
   }
 }
