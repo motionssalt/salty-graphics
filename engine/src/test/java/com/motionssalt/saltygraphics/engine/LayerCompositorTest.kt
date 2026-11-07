@@ -139,7 +139,7 @@ class LayerCompositorTest {
             shapeData = ShapeData(width = 100f, height = 100f, fillColor = 0xFF0000FFL, hasFill = true)
         )
         val vecPath = VectorPathData(
-            points = listOf(VectorPoint(-30f, -30f), VectorPoint(30f, -30f), VectorPoint(0f, 30f)),
+            points = listOf(BezierPoint(-30f, -30f), BezierPoint(30f, -30f), BezierPoint(0f, 30f)),
             isClosed = true,
             hasFill = true,
             fillColor = 0xFFFFFF00L
