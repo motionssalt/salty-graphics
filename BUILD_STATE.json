@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_3/T6",
+  "current_phase": "fix_round_3/T7",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,7 +194,7 @@
     "F14"
   ],
   "next_steps": [
-    "Resume fix_round_3 at T6; read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
+    "Resume fix_round_3 at T7; T1-T6 are verified done. Read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
     "Finish and verify each remaining ordered item through T28; then T29 full compatibility audit and new uniquely tagged stable-signed APK release.",
     "Do not start UI refinement or build a web frontend/preview."
   ],
@@ -540,8 +540,8 @@
       {
         "id": "T6",
         "title": "Branched action-history tree (zoomable and pannable)",
-        "status": "in_progress",
-        "notes": "Replaced stacked dialog rows with a full-height connected-node graph, active-path edges, faded retained branches, node icons, current/branch markers, pan/pinch plus zoom/fit/center controls, initial current-node centering and viewport-culling of cards and edges. Straight retained paths reuse lanes. Engine redo now follows the most recently active child, persisted in an optional backward-compatible preferredChildren map; legacy files fall back to newest child. Explicit history navigation now persists the entire history snapshot instead of dropping it; a Compose revision invalidates equal-document pointer transitions, and stale selected ids are pruned as UI-only state. Added required create/move/delete/create/undo/redo and multi-undo/branch sequences with flags, redo targets, snapshot migration, clipboard, 800-node culling math, and real 500-node viewport pan/pinch/jump tests. Existing T5 branch-tap test uses Fit tree before selecting alternate nodes. Awaiting Actions verification; not done yet."
+        "status": "done",
+        "notes": "Replaced stacked dialog rows with a full-height connected-node graph, active-path edges, faded retained branches, node icons, current/branch markers, pan/pinch plus zoom/fit/center controls, initial current-node centering and viewport-culling of cards and edges. Straight retained paths reuse lanes. Engine redo now follows the most recently active child, persisted in an optional backward-compatible preferredChildren map; legacy files fall back to newest child. Explicit history navigation now persists the entire history snapshot instead of dropping it; a Compose revision invalidates equal-document pointer transitions, and stale selected ids are pruned as UI-only state. Added required create/move/delete/create/undo/redo and multi-undo/branch sequences with flags, redo targets, snapshot migration, clipboard, 800-node culling math, and real 500-node viewport pan/pinch/jump tests. Existing T5 branch-tap test uses Fit tree before selecting alternate nodes. Verified Actions 42359607649 at 1f5324136c38c0d7d50de815569510c62560fcbc: app 54 + engine 38 tests in each debug/release variant (184 executions), zero failures/errors/skips; universal and all three ABI release APK artifacts built and signatures verified. Required sequences check documents, complete tree structure, active/faded flags, redo targets, explicit jumps and clipboard. Actual native Compose test verifies 500-node current centering, root culling, touch pan, two-pointer pinch without accidental navigation and intentional node selection. No physical-device testing or UI refinement. No round-3 release yet."
       },
       {
         "id": "T7",
@@ -687,30 +687,36 @@
       "T1: selection handles clamp at positive scale 0.0001; invalid/non-finite transform requests are refused. Touch targets use nearest handle within 22dp radius, while visible corner/edge sizes remain 9dp/6dp. Multi-touch cancels the uncommitted layer edit before pinch/pan.",
       "T2: 15-second foreground deadline; at most two daemon blocking-reader workers. If native codecs ignore interruption, late callbacks are ignored and saturated readers return a recoverable busy error rather than enqueue forever.",
       "T2: safe recovery does not auto-save over the original. Failed layers remain hidden QUARANTINED entries with raw source JSON; healthy layers survive. The media layer active at timeout is skipped on safe retry. A safe-mode recovery starts clean history to prevent invalid archived snapshots reintroducing failed media.",
-      "T2: writes use unique temp siblings, fsync and atomic rename with no non-atomic fallback. Essential autosave is independent of thumbnail generation; media cache misses in preview decode asynchronously. Stable signing secrets/reference release untouched."
+      "T2: writes use unique temp siblings, fsync and atomic rename with no non-atomic fallback. Essential autosave is independent of thumbnail generation; media cache misses in preview decode asynchronously. Stable signing secrets/reference release untouched.",
+      "T3/T4: fixed pane content is resolved synchronously from current selection/page eligibility; clear incompatible page requests rather than dismissing the pane. Select None is an accessible drawer-toolbar action; selection remains UI-only.",
+      "T5: legacy selectedLayerIds remain readable for archive compatibility, but history strips them and ignores selection/timestamp-only commands. No direct tap-to-jump was reproduced after T1; document the evidence rather than inventing a new root cause.",
+      "T6: connected-node history graph uses dp-space pan/pinch, .25x-2.5x zoom, Fit/Current controls and viewport-culling of node cards/edges. Current node auto-centers on opening; straight retained runs share a lane. No generic UI refinement.",
+      "T6: optional preferredChildren snapshot map records most recently active branches (including explicit jumps); old archives without it choose the newest child until navigation establishes a preference. Undo/redo/jumps save complete tree snapshots, prune nonexistent UI selections and invalidate Compose even for equal-document states."
     ],
     "known_issues": [
-      "PARTIAL ROUND: T1-T5 verified done; T6-T29 remain pending. No round-3 release yet.",
+      "PARTIAL ROUND: T1-T6 verified done; T7-T29 pending and not implemented/verified in this session. No round-3 release or final compatibility audit yet. No newly blocked items.",
       "Inherited seed-project migration still deletes by name and layer count, an unsafe heuristic already flagged in round-1 notes. Observed during T2 review, not silently reworked; preserve user projects in future acceptance audit.",
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T09:23:39.819132+00:00",
-    "last_session_note": "T1-T5 verified done. T6 graph/redo/persistence implementation and acceptance tests pushed for Actions verification; do not mark done or advance before green. No new release, phone testing, frontend or UI refinement.",
+    "last_updated": "2026-11-07T09:34:41.082677+00:00",
+    "last_session_note": "VERIFIED PARTIAL CHECKPOINT: T1/T2 inherited verified; T3-T6 implemented and verified this session. Latest code 1f53241 passed Actions 42359607649 (184 debug/release tests, zero failures/errors/skips, stable-signed universal and ABI APK artifacts). First unfinished item is T7; T7-T29 remain pending, not blocked or complete. Resume in order from docs/FIX_ROUND_3_PROMPT.md. No release/tag was published; T29 gated release still required. No phone testing, web frontend, preview or UI refinement. Working tree committed and pushed.",
     "verification": {
-      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42358256458",
-      "commit": "b002b9560234e1b500138ed98af39d4a50dcebdd",
+      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42359607649",
+      "commit": "1f5324136c38c0d7d50de815569510c62560fcbc",
+      "conclusion": "success",
       "tests": {
-        "app_debug": 50,
-        "app_release": 50,
+        "app_debug": 54,
+        "app_release": 54,
         "engine_debug": 38,
         "engine_release": 38,
-        "total": 176,
+        "total": 184,
         "failures": 0,
         "errors": 0,
         "skipped": 0
       },
-      "release": "Not published: T29 pending. Signed universal and ABI Actions artifacts only.",
+      "release_apks": "Universal, arm64-v8a, armeabi-v7a and x86_64 artifacts assembled and signature verified. Stable signing secrets untouched.",
+      "release": "Not published: T29 pending. Existing releases and reference-keyflaw untouched.",
       "device_testing": "not performed, as requested"
     }
   }
