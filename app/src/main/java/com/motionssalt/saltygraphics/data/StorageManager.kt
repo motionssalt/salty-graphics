@@ -68,8 +68,10 @@ object StorageManager {
     fun resolveUniqueFileName(existingNames: Set<String>, targetName: String): String {
         val lowerNames = existingNames.map { it.lowercase() }.toSet()
         if (!lowerNames.contains(targetName.lowercase())) return targetName
-        val base = targetName.substringBeforeLast('.')
-        val ext = targetName.substringAfterLast('.', "")
+        val existingMatch = existingNames.firstOrNull { it.equals(targetName, ignoreCase = true) }
+        val nameToUse = existingMatch ?: targetName
+        val base = nameToUse.substringBeforeLast('.')
+        val ext = nameToUse.substringAfterLast('.', "")
         val extSuffix = if (ext.isNotEmpty()) ".$ext" else ""
         var counter = 1
         var candidate = "${base}_$counter$extSuffix"
