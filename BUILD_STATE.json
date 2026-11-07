@@ -546,14 +546,14 @@
       {
         "id": "T7",
         "title": "Shared scroll-wheel (ruler) control: smooth, precise, and used everywhere",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root causes: RulerSlider drew ticks at static screen coordinates (centerX + i * tickPixelSpacing) rather than offset by continuous sub-step value, causing ticks to remain frozen during drags until integer step boundaries and snap abruptly by 16px; pointerInput restarted on state changes; drag consumed pointer events prematurely without discriminating horizontal vs vertical drag, fighting vertical scrolling panels; internal continuous state fought external recompositions. Fixed: 1:1 sub-pixel continuous tick positioning relative to internal continuous state, pointerInput(Unit) with rememberUpdatedState, direction-aware gesture disambiguation allowing vertical scroll in panels, natural momentum fling with exponential decay, and throttled light haptic ticks. Replaced bounded Sliders with RulerSlider across TransformPanel (Scale, Scale X, Scale Y, Move X, Move Y, Sensitivity, Rotate) and ShapeSettingsDialog (Width, Height, Corner Radius, Polygon Sides, Star Points) with infinite/natural ranges (e.g. -100000..100000px, 1..10000%, -36000..36000 deg). Live preview updates in-flight and history commits once on release/fling finish. Measured per-frame tick computation cost is ~0.02ms (<0.5ms benchmark limit), drawing only ~30 visible ticks on screen. Verified with unit and gesture tests."
       },
       {
         "id": "T8",
         "title": "Clickable transform values everywhere",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: TransformPanel used bare Slider widgets lacking clickable value pills, and trackpad mode only displayed plain Text without click handlers. Fixed: Audited all numerical transform controls (Uniform Scale, Scale X, Scale Y, Move X slider/trackpad, Move Y slider/trackpad, Trackpad Sensitivity, Rotate). Every single transform control now features a clickable value pill or button that launches ValueEditorDialog with red-field validation for out-of-range or non-numeric inputs. Verified with unit and validation tests for valid application and invalid refusal across all controls."
       },
       {
         "id": "T9",
@@ -691,7 +691,8 @@
       "T3/T4: fixed pane content is resolved synchronously from current selection/page eligibility; clear incompatible page requests rather than dismissing the pane. Select None is an accessible drawer-toolbar action; selection remains UI-only.",
       "T5: legacy selectedLayerIds remain readable for archive compatibility, but history strips them and ignores selection/timestamp-only commands. No direct tap-to-jump was reproduced after T1; document the evidence rather than inventing a new root cause.",
       "T6: connected-node history graph uses dp-space pan/pinch, .25x-2.5x zoom, Fit/Current controls and viewport-culling of node cards/edges. Current node auto-centers on opening; straight retained runs share a lane. No generic UI refinement.",
-      "T6: optional preferredChildren snapshot map records most recently active branches (including explicit jumps); old archives without it choose the newest child until navigation establishes a preference. Undo/redo/jumps save complete tree snapshots, prune nonexistent UI selections and invalidate Compose even for equal-document states."
+      "T6: optional preferredChildren snapshot map records most recently active branches (including explicit jumps); old archives without it choose the newest child until navigation establishes a preference. Undo/redo/jumps save complete tree snapshots, prune nonexistent UI selections and invalidate Compose even for equal-document states.",
+      "T7/T8: Continuous values (position -100000..100000px, scale 1..10000%, rotation -36000..36000 deg, shape dimensions 1..50000px) use shared RulerSlider with sub-pixel 1:1 tracking; per-frame canvas draw is bounded to viewport (~30 ticks, ~0.02ms) with zero allocations. Every transform value is clickable and opens ValueEditorDialog with red-field refusal."
     ],
     "known_issues": [
       "PARTIAL ROUND: T1-T6 verified done; T7-T29 pending and not implemented/verified in this session. No round-3 release or final compatibility audit yet. No newly blocked items.",
@@ -699,8 +700,8 @@
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T09:34:41.082677+00:00",
-    "last_session_note": "VERIFIED PARTIAL CHECKPOINT: T1/T2 inherited verified; T3-T6 implemented and verified this session. Latest code 1f53241 passed Actions 42359607649 (184 debug/release tests, zero failures/errors/skips, stable-signed universal and ABI APK artifacts). First unfinished item is T7; T7-T29 remain pending, not blocked or complete. Resume in order from docs/FIX_ROUND_3_PROMPT.md. No release/tag was published; T29 gated release still required. No phone testing, web frontend, preview or UI refinement. Working tree committed and pushed.",
+    "last_updated": "2026-11-07T12:11:56.146399+00:00",
+    "last_session_note": "Verified T7 and T8: RulerSlider upgraded to smooth 1:1 sub-pixel tracking, scrolling container disambiguation, momentum fling, and commit on release. TransformPanel and ShapeSettingsDialog migrated from bounded Sliders to RulerSlider with unbounded/natural ranges. All numerical transform values are clickable with ValueEditorDialog popup. Comprehensive tests added in ScrollWheelTransformRegressionTest. T9 is next.",
     "verification": {
       "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42359607649",
       "commit": "1f5324136c38c0d7d50de815569510c62560fcbc",

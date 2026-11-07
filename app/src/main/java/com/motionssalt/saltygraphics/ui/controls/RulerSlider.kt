@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 @Composable
@@ -39,6 +41,7 @@ fun RulerSlider(
     defaultValue: Float = minValue,
     step: Float = 1f,
     unit: String = "",
+    onValueChangeFinished: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
@@ -47,7 +50,16 @@ fun RulerSlider(
     var isEditorOpen by remember { mutableStateOf(false) }
 
     // Internal continuous float state for 1:1 smooth dragging without losing sub-step deltas
-    var internalValue by remember(value) { mutableFloatStateOf(value) }
+    var internalValue by remember { mutableFloatStateOf(value) }
+    var isInteracting by remember { mutableStateOf(false) }
+
+    // Sync from external value when not actively dragging or animating
+    LaunchedEffect(value) {
+        if (!isInteracting) {
+            internalValue = value
+        }
+    }
+
     var lastHapticTime by remember { mutableLongStateOf(0L) }
 
     val formattedValue = remember(value, step, unit) {
@@ -61,21 +73,30 @@ fun RulerSlider(
 
     val tickPixelSpacing = 16f // pixels per step
 
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+    val currentOnCommit by rememberUpdatedState(onValueChangeFinished)
+    val currentMin by rememberUpdatedState(minValue)
+    val currentMax by rememberUpdatedState(maxValue)
+    val currentDefault by rememberUpdatedState(defaultValue)
+    val currentStep by rememberUpdatedState(step)
+
     fun applyNewValue(rawVal: Float) {
-        val clamped = rawVal.coerceIn(minValue, maxValue)
+        val clamped = rawVal.coerceIn(currentMin, currentMax)
         internalValue = clamped
-        val snapped = if (abs(clamped - defaultValue) < step * 0.35f) {
-            defaultValue
-        } else if (abs(clamped) < step * 0.35f && minValue <= 0f && maxValue >= 0f) {
+        val s = currentStep
+        val d = currentDefault
+        val snapped = if (abs(clamped - d) < s * 0.35f) {
+            d
+        } else if (abs(clamped) < s * 0.35f && currentMin <= 0f && currentMax >= 0f) {
             0f
         } else {
-            (clamped / step).roundToInt() * step
-        }.coerceIn(minValue, maxValue)
+            (clamped / s).roundToInt() * s
+        }.coerceIn(currentMin, currentMax)
 
         if (snapped != value) {
-            onValueChange(snapped)
+            currentOnValueChange(snapped)
             val now = System.currentTimeMillis()
-            if (now - lastHapticTime > 45L) {
+            if (now - lastHapticTime > 40L) {
                 lastHapticTime = now
                 try {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -95,8 +116,9 @@ fun RulerSlider(
         // Label Button: Reset to default on tap
         Surface(
             onClick = {
-                internalValue = defaultValue
-                onValueChange(defaultValue)
+                internalValue = currentDefault
+                currentOnValueChange(currentDefault)
+                currentOnCommit?.invoke()
                 try {
                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                 } catch (_: Throwable) {}
@@ -121,7 +143,7 @@ fun RulerSlider(
                 .clip(RoundedCornerShape(8.dp))
                 .background(colors.background)
                 .border(1.dp, colors.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                .pointerInput(minValue, maxValue, step) {
+                .pointerInput(Unit) {
                     val velocityTracker = VelocityTracker()
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
@@ -130,37 +152,61 @@ fun RulerSlider(
 
                         var previousX = down.position.x
                         var isDragging = false
+                        var totalDx = 0f
+                        var totalDy = 0f
 
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) {
-                                // Gesture released: handle fling momentum
+                                // Gesture released: handle fling momentum or commit
                                 val velocity = velocityTracker.calculateVelocity().x
-                                if (abs(velocity) > 200f) {
+                                if (isDragging && abs(velocity) > 150f) {
+                                    isInteracting = true
                                     coroutineScope.launch {
                                         val anim = Animatable(internalValue)
-                                        val targetVelocity = -velocity / tickPixelSpacing * step
+                                        val targetVelocity = -velocity / tickPixelSpacing * currentStep
                                         anim.animateDecay(targetVelocity, exponentialDecay(frictionMultiplier = 2.0f)) {
                                             applyNewValue(this.value)
                                         }
+                                        isInteracting = false
+                                        currentOnCommit?.invoke()
+                                    }
+                                } else {
+                                    isInteracting = false
+                                    if (isDragging) {
+                                        currentOnCommit?.invoke()
                                     }
                                 }
                                 break
                             }
 
                             val currentX = change.position.x
+                            val currentY = change.position.y
                             val deltaX = currentX - previousX
                             previousX = currentX
 
-                            if (!isDragging && abs(currentX - down.position.x) > 2f) {
-                                isDragging = true
+                            totalDx += (currentX - down.position.x)
+                            totalDy += (currentY - down.position.y)
+
+                            if (!isDragging) {
+                                val dx = abs(currentX - down.position.x)
+                                val dy = abs(currentY - down.position.y)
+                                // If vertical scroll is dominant, let parent scrolling container handle it
+                                if (dy > 16f && dy > dx * 1.2f) {
+                                    break
+                                }
+                                if (dx > 6f && dx > dy * 0.8f) {
+                                    isDragging = true
+                                    isInteracting = true
+                                    change.consume()
+                                }
                             }
 
                             if (isDragging && deltaX != 0f) {
                                 change.consume() // Claim horizontal drag so parent vertical scroll does not steal it
                                 velocityTracker.addPosition(change.uptimeMillis, change.position)
-                                val deltaValue = (-deltaX / tickPixelSpacing) * step
+                                val deltaValue = (-deltaX / tickPixelSpacing) * currentStep
                                 applyNewValue(internalValue + deltaValue)
                             }
                         }
@@ -173,20 +219,30 @@ fun RulerSlider(
                 val h = size.height
                 val centerX = w / 2f
 
-                // Draw tick marks relative to center
-                val visibleTicks = (w / tickPixelSpacing).toInt() + 4
-                val currentStepIndex = ((value - minValue) / step).toInt()
+                // Draw continuous tick marks relative to center based on continuous internalValue
+                val currentVal = internalValue
+                val s = currentStep
+                val minV = currentMin
+                val maxV = currentMax
+                val defV = currentDefault
 
-                for (i in -visibleTicks / 2..visibleTicks / 2) {
-                    val tickIndex = currentStepIndex + i
-                    val tickVal = minValue + (tickIndex * step)
-                    if (tickVal < minValue || tickVal > maxValue) continue
+                val halfWidth = w / 2f
+                val minVisibleVal = currentVal - ((halfWidth + tickPixelSpacing * 2f) / tickPixelSpacing) * s
+                val maxVisibleVal = currentVal + ((halfWidth + tickPixelSpacing * 2f) / tickPixelSpacing) * s
 
-                    val x = centerX + (i * tickPixelSpacing)
-                    if (x < 0 || x > w) continue
+                val firstTickIndex = floor(((minVisibleVal - minV) / s).toDouble()).toLong()
+                val lastTickIndex = ceil(((maxVisibleVal - minV) / s).toDouble()).toLong()
 
-                    val isMajor = tickIndex % 5 == 0
-                    val isSuper = tickIndex % 10 == 0 || tickVal == defaultValue || (tickVal == 0f && minValue < 0)
+                for (tickIndex in firstTickIndex..lastTickIndex) {
+                    val tickVal = minV + (tickIndex * s)
+                    if (tickVal < minV || tickVal > maxV) continue
+
+                    // Continuous sub-pixel screen x coordinate: translates 1:1 with finger
+                    val x = centerX + ((tickVal - currentVal) / s) * tickPixelSpacing
+                    if (x < -tickPixelSpacing || x > w + tickPixelSpacing) continue
+
+                    val isMajor = tickIndex % 5L == 0L
+                    val isSuper = tickIndex % 10L == 0L || tickVal == defV || (tickVal == 0f && minV < 0f)
 
                     val tickHeight = when {
                         isSuper -> h * 0.65f
@@ -259,6 +315,7 @@ fun RulerSlider(
             onValueApplied = {
                 internalValue = it
                 onValueChange(it)
+                onValueChangeFinished?.invoke()
             },
             onDismiss = { isEditorOpen = false }
         )
