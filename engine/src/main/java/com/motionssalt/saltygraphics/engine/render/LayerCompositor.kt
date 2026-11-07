@@ -1,7 +1,14 @@
 package com.motionssalt.saltygraphics.engine.render
 
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Bitmap
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.os.Build
+import com.motionssalt.saltygraphics.engine.model.BlendMode as EngineBlendMode
 import com.motionssalt.saltygraphics.engine.model.*
 import kotlin.math.*
 
@@ -17,46 +24,46 @@ object LayerCompositor {
     /**
      * Maps engine BlendMode to Android Graphics BlendMode (API 29+).
      */
-    fun toAndroidBlendMode(mode: BlendMode): android.graphics.BlendMode {
+    fun toAndroidBlendMode(mode: EngineBlendMode): android.graphics.BlendMode {
         return when (mode) {
-            BlendMode.NORMAL -> android.graphics.BlendMode.SRC_OVER
-            BlendMode.DARKEN -> android.graphics.BlendMode.DARKEN
-            BlendMode.MULTIPLY -> android.graphics.BlendMode.MULTIPLY
-            BlendMode.COLOR_BURN -> android.graphics.BlendMode.COLOR_BURN
-            BlendMode.LINEAR_BURN -> android.graphics.BlendMode.DARKEN
-            BlendMode.LIGHTEN -> android.graphics.BlendMode.LIGHTEN
-            BlendMode.SCREEN -> android.graphics.BlendMode.SCREEN
-            BlendMode.COLOR_DODGE -> android.graphics.BlendMode.COLOR_DODGE
-            BlendMode.LINEAR_DODGE -> android.graphics.BlendMode.PLUS
-            BlendMode.OVERLAY -> android.graphics.BlendMode.OVERLAY
-            BlendMode.SOFT_LIGHT -> android.graphics.BlendMode.SOFT_LIGHT
-            BlendMode.HARD_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
-            BlendMode.VIVID_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
-            BlendMode.LINEAR_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
-            BlendMode.PIN_LIGHT -> android.graphics.BlendMode.DARKEN
-            BlendMode.DIFFERENCE -> android.graphics.BlendMode.DIFFERENCE
-            BlendMode.EXCLUSION -> android.graphics.BlendMode.EXCLUSION
-            BlendMode.SUBTRACT -> android.graphics.BlendMode.DIFFERENCE
-            BlendMode.DIVIDE -> android.graphics.BlendMode.SCREEN
-            BlendMode.HUE -> android.graphics.BlendMode.HUE
-            BlendMode.SATURATION -> android.graphics.BlendMode.SATURATION
-            BlendMode.COLOR -> android.graphics.BlendMode.COLOR
-            BlendMode.LUMINOSITY -> android.graphics.BlendMode.LUMINOSITY
+            EngineBlendMode.NORMAL -> android.graphics.BlendMode.SRC_OVER
+            EngineBlendMode.DARKEN -> android.graphics.BlendMode.DARKEN
+            EngineBlendMode.MULTIPLY -> android.graphics.BlendMode.MULTIPLY
+            EngineBlendMode.COLOR_BURN -> android.graphics.BlendMode.COLOR_BURN
+            EngineBlendMode.LINEAR_BURN -> android.graphics.BlendMode.DARKEN
+            EngineBlendMode.LIGHTEN -> android.graphics.BlendMode.LIGHTEN
+            EngineBlendMode.SCREEN -> android.graphics.BlendMode.SCREEN
+            EngineBlendMode.COLOR_DODGE -> android.graphics.BlendMode.COLOR_DODGE
+            EngineBlendMode.LINEAR_DODGE -> android.graphics.BlendMode.PLUS
+            EngineBlendMode.OVERLAY -> android.graphics.BlendMode.OVERLAY
+            EngineBlendMode.SOFT_LIGHT -> android.graphics.BlendMode.SOFT_LIGHT
+            EngineBlendMode.HARD_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
+            EngineBlendMode.VIVID_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
+            EngineBlendMode.LINEAR_LIGHT -> android.graphics.BlendMode.HARD_LIGHT
+            EngineBlendMode.PIN_LIGHT -> android.graphics.BlendMode.DARKEN
+            EngineBlendMode.DIFFERENCE -> android.graphics.BlendMode.DIFFERENCE
+            EngineBlendMode.EXCLUSION -> android.graphics.BlendMode.EXCLUSION
+            EngineBlendMode.SUBTRACT -> android.graphics.BlendMode.DIFFERENCE
+            EngineBlendMode.DIVIDE -> android.graphics.BlendMode.SCREEN
+            EngineBlendMode.HUE -> android.graphics.BlendMode.HUE
+            EngineBlendMode.SATURATION -> android.graphics.BlendMode.SATURATION
+            EngineBlendMode.COLOR -> android.graphics.BlendMode.COLOR
+            EngineBlendMode.LUMINOSITY -> android.graphics.BlendMode.LUMINOSITY
         }
     }
 
     /**
      * Maps engine BlendMode to PorterDuff Mode for Android API 26-28.
      */
-    fun toPorterDuffMode(mode: BlendMode): PorterDuff.Mode {
+    fun toPorterDuffMode(mode: EngineBlendMode): PorterDuff.Mode {
         return when (mode) {
-            BlendMode.NORMAL -> PorterDuff.Mode.SRC_OVER
-            BlendMode.DARKEN -> PorterDuff.Mode.DARKEN
-            BlendMode.MULTIPLY -> PorterDuff.Mode.MULTIPLY
-            BlendMode.LIGHTEN -> PorterDuff.Mode.LIGHTEN
-            BlendMode.SCREEN -> PorterDuff.Mode.SCREEN
-            BlendMode.OVERLAY -> PorterDuff.Mode.OVERLAY
-            BlendMode.LINEAR_DODGE -> PorterDuff.Mode.ADD
+            EngineBlendMode.NORMAL -> PorterDuff.Mode.SRC_OVER
+            EngineBlendMode.DARKEN -> PorterDuff.Mode.DARKEN
+            EngineBlendMode.MULTIPLY -> PorterDuff.Mode.MULTIPLY
+            EngineBlendMode.LIGHTEN -> PorterDuff.Mode.LIGHTEN
+            EngineBlendMode.SCREEN -> PorterDuff.Mode.SCREEN
+            EngineBlendMode.OVERLAY -> PorterDuff.Mode.OVERLAY
+            EngineBlendMode.LINEAR_DODGE -> PorterDuff.Mode.ADD
             else -> PorterDuff.Mode.SRC_OVER
         }
     }
@@ -64,7 +71,7 @@ object LayerCompositor {
     /**
      * Applies layer blend mode to an Android Paint.
      */
-    fun applyLayerBlendMode(paint: Paint, mode: BlendMode) {
+    fun applyLayerBlendMode(paint: Paint, mode: EngineBlendMode) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             paint.blendMode = toAndroidBlendMode(mode)
         } else {
@@ -122,7 +129,7 @@ object LayerCompositor {
         backdrop: IntArray,
         source: IntArray,
         output: IntArray,
-        mode: BlendMode,
+        mode: EngineBlendMode,
         opacity: Float,
         width: Int,
         height: Int
@@ -277,19 +284,19 @@ object LayerCompositor {
                         }
                         canvas.drawPath(path, fillPaint)
                     }
-                    if (data.hasBorder && data.borderWidth > 0) {
+                    if (data.hasStroke && data.strokeWidth > 0) {
                         val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                            color = data.borderColor.toInt()
-                            strokeWidth = data.borderWidth
+                            color = data.strokeColor.toInt()
+                            strokeWidth = data.strokeWidth
                             style = Paint.Style.STROKE
                             strokeCap = when (data.strokeCap) {
-                                VectorStrokeCap.ROUND -> Paint.Cap.ROUND
-                                VectorStrokeCap.SQUARE -> Paint.Cap.SQUARE
+                                VectorCap.ROUND -> Paint.Cap.ROUND
+                                VectorCap.SQUARE -> Paint.Cap.SQUARE
                                 else -> Paint.Cap.BUTT
                             }
                             strokeJoin = when (data.strokeJoin) {
-                                VectorStrokeJoin.ROUND -> Paint.Join.ROUND
-                                VectorStrokeJoin.BEVEL -> Paint.Join.BEVEL
+                                VectorJoin.ROUND -> Paint.Join.ROUND
+                                VectorJoin.BEVEL -> Paint.Join.BEVEL
                                 else -> Paint.Join.MITER
                             }
                         }
@@ -337,20 +344,17 @@ object LayerCompositor {
             if (layer.type == LayerType.ADJUSTMENT) {
                 // Adjustment layer: affects the composite of everything beneath it
                 // If it has a mask, apply mask over the adjustment area
-                if (layer.effects.isEmpty() && layer.blendMode == BlendMode.NORMAL && layer.opacity >= 0.999f && layer.effectiveMaskType == MaskType.NONE) {
+                if (layer.effects.isEmpty() && layer.blendMode == EngineBlendMode.NORMAL && layer.opacity >= 0.999f && layer.effectiveMaskType == MaskType.NONE) {
                     continue // Zero-effect normal adjustment layer draws nothing
                 }
 
                 // If adjustment has effects, apply them to current backdrop
-                // For test effects / blend modes on adjustment layers:
-                if (layer.blendMode != BlendMode.NORMAL || layer.opacity < 1f || layer.effects.isNotEmpty()) {
-                    // Create an adjusted copy of backdrop
+                if (layer.blendMode != EngineBlendMode.NORMAL || layer.opacity < 1f || layer.effects.isNotEmpty()) {
                     val adjustedBackdrop = IntArray(backdropPixels.size) { backdropPixels[it] }
 
                     // Apply any effects
                     for (effect in layer.effects) {
-                        // Apply effect values (e.g. brightness, tint, etc.)
-                        val amount = effect.parameters["amount"]?.toFloatOrNull() ?: 0.5f
+                        val amount = effect.getFloat("amount", 0.5f)
                         for (p in adjustedBackdrop.indices) {
                             val px = adjustedBackdrop[p]
                             val a = (px ushr 24) and 0xFF
