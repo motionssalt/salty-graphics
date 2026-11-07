@@ -68,8 +68,8 @@ class ProjectRepositoryTest {
     }
 
     @Test
-    fun testUnmodifiedSeedMigrationRemovesSeedWhilePreservingUserProjects() {
-        val projectsWithSeed = listOf(
+    fun testProjectsAreNeverAutomaticallyDeleted() {
+        val projects = listOf(
             ProjectSummary(
                 id = "seed-id",
                 name = "My First Salty Design",
@@ -88,7 +88,7 @@ class ProjectRepositoryTest {
             ),
             ProjectSummary(
                 id = "user-id-2",
-                name = "My First Salty Design", // User renamed/added layers to 5 layers
+                name = "My First Salty Design",
                 width = 1080,
                 height = 1920,
                 layerCount = 5,
@@ -96,13 +96,11 @@ class ProjectRepositoryTest {
             )
         )
 
-        // Filter untouched seed
-        val migrated = projectsWithSeed.filterNot { it.name == "My First Salty Design" && it.layerCount == 2 }
-
-        assertEquals(2, migrated.size)
-        assertFalse("Untouched seed must be removed", migrated.any { it.id == "seed-id" })
-        assertTrue("User project 1 must be kept", migrated.any { it.id == "user-id-1" })
-        assertTrue("User edited project with modified layers must be kept", migrated.any { it.id == "user-id-2" })
+        // No automatic deletion path touches any project
+        assertEquals(3, projects.size)
+        assertTrue("Seed project must be kept and never automatically deleted", projects.any { it.id == "seed-id" })
+        assertTrue("User project 1 must be kept", projects.any { it.id == "user-id-1" })
+        assertTrue("User project 2 must be kept", projects.any { it.id == "user-id-2" })
     }
 
     @Test

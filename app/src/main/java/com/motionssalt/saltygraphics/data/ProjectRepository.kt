@@ -89,8 +89,30 @@ class ProjectRepository(private val context: Context,
             val state=loader.load(safeMode,{ logPhase(it.phase);onProgress(it) }) { load ->
                 load.phase("Reading archive",1)
                 val file=getProjectFile(id)
+                val backup=getBackupFile(id)
+                if ((!file.isFile || file.length() == 0L) && backup.isFile && backup.length() > 0L) {
+                    try {
+                        backup.copyTo(file, overwrite = true)
+                        LocalDiagnostics.record(context, "openProject restored $id from backup")
+                    } catch (_: Throwable) {}
+                }
                 require(file.isFile) {"Project file is missing. Restore a saved .sg file or go back."}
-                val imported=SgProjectArchive.loadFromFile(file)
+                val imported = try {
+                    SgProjectArchive.loadFromFile(file)
+                } catch (e: Exception) {
+                    if (backup.isFile && backup.length() > 0L) {
+                        try {
+                            val recovered = SgProjectArchive.loadFromFile(backup)
+                            backup.copyTo(file, overwrite = true)
+                            LocalDiagnostics.record(context, "openProject fallback to backup for $id")
+                            recovered
+                        } catch (_: Exception) {
+                            throw e
+                        }
+                    } else {
+                        throw e
+                    }
+                }
                 load.phase("Restoring assets",2)
                 val assetDir=getAssetsDir(id).canonicalFile
                 for((path,bytes) in imported.assets) {
@@ -155,6 +177,7 @@ class ProjectRepository(private val context: Context,
     }
 
     fun getProjectFile(id: String): File = File(projectsDir, "$id.sg")
+    fun getBackupFile(id: String): File = File(projectsDir, "$id.sg.bak")
     fun getThumbnailFile(id: String): File = File(thumbnailsDir, "$id.png")
     fun getAssetsDir(id: String): File = File(projectsDir, "${id}_assets").apply { mkdirs() }
 
@@ -171,23 +194,97 @@ class ProjectRepository(private val context: Context,
 
     suspend fun loadProjects() = withContext(Dispatchers.IO) {
         try {
-            if (!indexFile.exists()) {
-                _projects.value = emptyList()
-                return@withContext
-            }
-            val content = indexFile.readText()
-            val list = json.decodeFromString<List<ProjectSummary>>(content)
-
-            // R3 Migration: on upgrade, remove the seeded sample project if it is still unmodified
-            val migrated = list.filterNot { it.name == "My First Salty Design" && it.layerCount == 2 }
-            if (migrated.size != list.size) {
-                list.filter { it.name == "My First Salty Design" && it.layerCount == 2 }.forEach {
-                    try { File(projectsDir, "${it.id}.sg").delete() } catch (_: Throwable) {}
-                    try { File(thumbnailsDir, "${it.id}.png").delete() } catch (_: Throwable) {}
+            val list = if (indexFile.exists()) {
+                try {
+                    val content = indexFile.readText()
+                    json.decodeFromString<List<ProjectSummary>>(content)
+                } catch (_: Throwable) {
+                    emptyList()
                 }
-                saveIndex(migrated)
             } else {
-                _projects.value = list.sortedByDescending { it.modifiedAt }
+                emptyList()
+            }
+
+            // If main .sg is missing or truncated, restore from .sg.bak
+            val bakFiles = projectsDir.listFiles { _, name -> name.endsWith(".sg.bak") && !name.startsWith(".") } ?: emptyArray()
+            for (bak in bakFiles) {
+                val projId = bak.name.removeSuffix(".sg.bak")
+                val mainFile = getProjectFile(projId)
+                if (!mainFile.exists() || mainFile.length() == 0L) {
+                    try {
+                        bak.copyTo(mainFile, overwrite = true)
+                        LocalDiagnostics.record(context, "loadProjects restored $projId from backup")
+                    } catch (_: Throwable) {}
+                }
+            }
+
+            // Rebuild / merge index from project files on disk
+            val knownIds = list.map { it.id }.toMutableSet()
+            val recoveredSummaries = mutableListOf<ProjectSummary>()
+            val allSgFiles = projectsDir.listFiles { _, name -> name.endsWith(".sg") && !name.startsWith(".") } ?: emptyArray()
+            for (file in allSgFiles) {
+                val projId = file.name.removeSuffix(".sg")
+                if (projId !in knownIds) {
+                    try {
+                        val imported = SgProjectArchive.loadFromFile(file)
+                        val doc = imported.document
+                        val summary = ProjectSummary(
+                            id = doc.id.ifBlank { projId },
+                            name = if (doc.name.isNotBlank()) "Recovered - ${doc.name}" else "Recovered Project ($projId)",
+                            width = doc.canvasSize.width,
+                            height = doc.canvasSize.height,
+                            layerCount = doc.layers.size,
+                            modifiedAt = file.lastModified()
+                        )
+                        recoveredSummaries.add(summary)
+                        knownIds.add(projId)
+                    } catch (_: Throwable) {
+                        val bak = getBackupFile(projId)
+                        if (bak.exists() && bak.length() > 0L) {
+                            try {
+                                val imported = SgProjectArchive.loadFromFile(bak)
+                                bak.copyTo(file, overwrite = true)
+                                val doc = imported.document
+                                val summary = ProjectSummary(
+                                    id = doc.id.ifBlank { projId },
+                                    name = if (doc.name.isNotBlank()) "Recovered - ${doc.name}" else "Recovered Project ($projId)",
+                                    width = doc.canvasSize.width,
+                                    height = doc.canvasSize.height,
+                                    layerCount = doc.layers.size,
+                                    modifiedAt = file.lastModified()
+                                )
+                                recoveredSummaries.add(summary)
+                                knownIds.add(projId)
+                            } catch (_: Throwable) {
+                                recoveredSummaries.add(ProjectSummary(
+                                    id = projId,
+                                    name = "Recovered ($projId)",
+                                    width = 1080,
+                                    height = 1080,
+                                    layerCount = 0,
+                                    modifiedAt = file.lastModified()
+                                ))
+                                knownIds.add(projId)
+                            }
+                        } else {
+                            recoveredSummaries.add(ProjectSummary(
+                                id = projId,
+                                name = "Recovered ($projId)",
+                                width = 1080,
+                                height = 1080,
+                                layerCount = 0,
+                                modifiedAt = file.lastModified()
+                            ))
+                            knownIds.add(projId)
+                        }
+                    }
+                }
+            }
+
+            val merged = (list + recoveredSummaries).sortedByDescending { it.modifiedAt }
+            _projects.value = merged
+            if (recoveredSummaries.isNotEmpty() || !indexFile.exists()) {
+                saveIndex(merged)
             }
 
             for(proj in _projects.value) {
@@ -198,7 +295,7 @@ class ProjectRepository(private val context: Context,
                 }
             }
         } catch (e: Throwable) {
-            _projects.value = emptyList()
+            LocalDiagnostics.record(context, "loadProjects failed: ${e.message}")
         }
     }
 
@@ -211,13 +308,13 @@ class ProjectRepository(private val context: Context,
         }
     }
 
-    suspend fun createProject(name: String, canvasSize: CanvasSize): ProjectDocument = withContext(Dispatchers.IO) {
+    suspend fun createProject(name: String, canvasSize: CanvasSize): ProjectDocument = withContext(NonCancellable + Dispatchers.IO) {
         val doc = ProjectDocument(
             id = UUID.randomUUID().toString(),
             name = name.ifBlank { "Untitled Project" },
             canvasSize = canvasSize
         )
-        val file = File(projectsDir, "${doc.id}.sg")
+        val file = getProjectFile(doc.id)
         val previewBytes = ProjectThumbnailRenderer.renderToPng(context, doc)
         File(thumbnailsDir, "${doc.id}.png").writeBytes(previewBytes)
 
@@ -228,6 +325,11 @@ class ProjectRepository(private val context: Context,
             previewPng = previewBytes
         )
 
+        val backupFile = getBackupFile(doc.id)
+        if (file.exists() && file.length() > 0L) {
+            try { file.copyTo(backupFile, overwrite = true) } catch (_: Throwable) {}
+        }
+
         val summary = ProjectSummary(
             id = doc.id,
             name = doc.name,
@@ -236,49 +338,115 @@ class ProjectRepository(private val context: Context,
             layerCount = doc.layers.size,
             modifiedAt = doc.updatedAt
         )
-        saveIndex(_projects.value + summary)
+        synchronized(indexLock) {
+            val current = _projects.value
+            val updated = if (current.any { it.id == doc.id }) {
+                current.map { if (it.id == doc.id) summary else it }
+            } else {
+                current + summary
+            }
+            saveIndex(updated)
+        }
         doc
     }
 
     suspend fun getProject(id: String): ProjectDocument? = withContext(Dispatchers.IO) {
-        val file = File(projectsDir, "$id.sg")
+        val file = getProjectFile(id)
+        val backup = getBackupFile(id)
+        if (!file.exists() && backup.exists()) {
+            try { backup.copyTo(file, overwrite = true) } catch (_: Throwable) {}
+        }
         if (!file.exists()) return@withContext null
         try {
             val result = SgProjectArchive.loadFromFile(file)
             result.document
         } catch (e: Exception) {
-            null
+            if (backup.exists() && backup.length() > 0L) {
+                try {
+                    val result = SgProjectArchive.loadFromFile(backup)
+                    backup.copyTo(file, overwrite = true)
+                    result.document
+                } catch (_: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
         }
     }
 
     suspend fun getProjectFull(id: String): com.motionssalt.saltygraphics.engine.file.SgImportResult? = withContext(Dispatchers.IO) {
-        val file = File(projectsDir, "$id.sg")
+        val file = getProjectFile(id)
+        val backup = getBackupFile(id)
+        if (!file.exists() && backup.exists()) {
+            try { backup.copyTo(file, overwrite = true) } catch (_: Throwable) {}
+        }
         if (!file.exists()) return@withContext null
         try {
             SgProjectArchive.loadFromFile(file)
         } catch (_: Exception) {
-            null
+            if (backup.exists() && backup.length() > 0L) {
+                try {
+                    val res = SgProjectArchive.loadFromFile(backup)
+                    backup.copyTo(file, overwrite = true)
+                    res
+                } catch (_: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
         }
     }
 
-    suspend fun saveProject(doc: ProjectDocument, historySnapshot: ActionTreeSnapshot? = null) = withContext(Dispatchers.IO) {
+    suspend fun saveProject(doc: ProjectDocument, historySnapshot: ActionTreeSnapshot? = null) = withContext(NonCancellable + Dispatchers.IO) {
         loadingProjects[doc.id]?.await()
         saveMutexes.getOrPut(doc.id) {Mutex()}.withLock {
             // A foreground open can begin while this save waited for an earlier save.
             loadingProjects[doc.id]?.await()
             val assets=getProjectAssets(doc.id)
             val thumbnail=getThumbnailFile(doc.id).let {if(it.exists()) it.readBytes() else null}
+            val projFile = getProjectFile(doc.id)
+            val backupFile = getBackupFile(doc.id)
+            if (projFile.exists() && projFile.length() > 0L) {
+                try {
+                    projFile.copyTo(backupFile, overwrite = true)
+                } catch (_: Throwable) {}
+            }
             // Essential document storage comes first; thumbnail rendering is independent work.
-            SgProjectArchive.saveToFile(doc,getProjectFile(doc.id),assets,historySnapshot,thumbnail)
+            SgProjectArchive.saveToFile(doc, projFile, assets, historySnapshot, thumbnail)
+            if (!backupFile.exists() && projFile.exists() && projFile.length() > 0L) {
+                try { projFile.copyTo(backupFile, overwrite = true) } catch (_: Throwable) {}
+            }
             synchronized(indexLock) {
-                saveIndex(_projects.value.map {
-                    if(it.id==doc.id) it.copy(name=doc.name,width=doc.canvasSize.width,height=doc.canvasSize.height,
-                        layerCount=doc.layers.size,modifiedAt=System.currentTimeMillis()) else it
-                })
+                val current = _projects.value
+                val summary = ProjectSummary(
+                    id = doc.id,
+                    name = doc.name,
+                    width = doc.canvasSize.width,
+                    height = doc.canvasSize.height,
+                    layerCount = doc.layers.size,
+                    modifiedAt = System.currentTimeMillis()
+                )
+                val updated = if (current.any { it.id == doc.id }) {
+                    current.map { if (it.id == doc.id) summary else it }
+                } else {
+                    current + summary
+                }
+                saveIndex(updated)
             }
             scheduleThumbnail(doc)
         }
     }
+
+    fun saveProjectInBackground(doc: ProjectDocument, historySnapshot: ActionTreeSnapshot? = null): Job =
+        backgroundScope.launch(NonCancellable) {
+            try {
+                saveProject(doc, historySnapshot)
+            } catch (e: Exception) {
+                LocalDiagnostics.record(context, "background save failed ${e.javaClass.simpleName}")
+            }
+        }
 
     suspend fun duplicateProject(id: String) = withContext(Dispatchers.IO) {
         val existing = getProject(id) ?: return@withContext
@@ -329,6 +497,7 @@ class ProjectRepository(private val context: Context,
     suspend fun deleteProjects(ids: Set<String>) = withContext(Dispatchers.IO) {
         for (id in ids) {
             try { File(projectsDir, "$id.sg").delete() } catch (_: Throwable) {}
+            try { File(projectsDir, "$id.sg.bak").delete() } catch (_: Throwable) {}
             try { File(projectsDir, "${id}_assets").deleteRecursively() } catch (_: Throwable) {}
             ProjectThumbnailRenderer.deleteThumbnail(context, id)
         }

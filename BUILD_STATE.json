@@ -729,14 +729,14 @@
       {
         "id": "V1",
         "title": "Projects disappear when leaving them (CRITICAL, data loss)",
-        "status": "in_progress",
-        "notes": "Pending root cause investigation and fault-injection test suite."
+        "status": "done",
+        "notes": "Root causes: 1) Inherited seed migration deleted projects named 'My First Salty Design' with 2 layers. 2) Missing index rebuild caused disk projects to disappear if index.json was corrupted or missing. 3) saveProject mapped existing list and omitted new projects if not already loaded into StateFlow. 4) Leaving EditorScreen cancelled Composable coroutineScope mid-save. Fixes: Removed all automatic deletions; added disk-based index recovery in loadProjects; added .sg.bak backup file maintenance and fallback in openProject/getProject; migrated saveProject to NonCancellable; added saveProjectInBackground; added safe exit flow awaiting save and showing retry dialog on error in EditorScreen. Verified with ProjectPersistenceFaultInjectionTest covering deleted index, corrupt index, truncated main file, cancelled save scope, and seed preservation."
       },
       {
         "id": "V2",
         "title": "Layer-panel order must match canvas stacking order",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Investigating stacking convention in LayersPanel vs LayerCompositor/CanvasView."
       },
       {
         "id": "V3",

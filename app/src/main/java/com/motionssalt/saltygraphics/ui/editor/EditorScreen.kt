@@ -94,20 +94,54 @@ fun EditorScreen(
     // must invalidate the UI even when two history nodes have equal documents.
     val tree = remember(actionTree, historyVersion) { actionTree }
 
+    var isSavingBeforeExit by remember { mutableStateOf(false) }
+    var exitSaveError by remember { mutableStateOf<String?>(null) }
+
+    fun requestSafeExit() {
+        val currentDoc = projectDocument
+        val snapshot = actionTree?.toSnapshot()
+        if (currentDoc != null) {
+            isSavingBeforeExit = true
+            exitSaveError = null
+            coroutineScope.launch {
+                try {
+                    repository.saveProject(currentDoc, snapshot)
+                    isSavingBeforeExit = false
+                    onNavigateBack()
+                } catch (e: Exception) {
+                    isSavingBeforeExit = false
+                    exitSaveError = e.message ?: e.javaClass.simpleName
+                }
+            }
+        } else {
+            onNavigateBack()
+        }
+    }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP || event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) {
+                val currentDoc = projectDocument
+                val snapshot = actionTree?.toSnapshot()
+                if (currentDoc != null) {
+                    repository.saveProjectInBackground(currentDoc, snapshot)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     fun recordAndAutoSave(description: String, newDoc: ProjectDocument) {
         val treeRef = actionTree ?: return
         treeRef.recordAction(description, newDoc)
         historyVersion++
         projectDocument = treeRef.currentDocument
-        val snapshot=treeRef.toSnapshot()
-        coroutineScope.launch {
-            try {repository.saveProject(newDoc,snapshot)}
-            catch(e:kotlinx.coroutines.CancellationException) {throw e}
-            catch(e:Exception) {
-                com.motionssalt.saltygraphics.data.LocalDiagnostics.record(context,"autosave failed ${e.javaClass.simpleName}")
-                Toast.makeText(context,"Could not save project. Your changes are still open; retry saving before leaving.",Toast.LENGTH_LONG).show()
-            }
-        }
+        val snapshot = treeRef.toSnapshot()
+        repository.saveProjectInBackground(newDoc, snapshot)
     }
 
     fun restoreHistoryDocument(restored: ProjectDocument) {
@@ -115,14 +149,7 @@ fun EditorScreen(
         selectedLayerIds = selectedLayerIds.filter { restored.findLayerById(it) != null }.toSet()
         historyVersion++
         val snapshot = actionTree?.toSnapshot()
-        coroutineScope.launch {
-            try { repository.saveProject(restored, snapshot) }
-            catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: Exception) {
-                com.motionssalt.saltygraphics.data.LocalDiagnostics.record(context, "history save failed ${e.javaClass.simpleName}")
-                Toast.makeText(context, "Could not save history. Your project is still open.", Toast.LENGTH_LONG).show()
-            }
-        }
+        repository.saveProjectInBackground(restored, snapshot)
     }
 
     val svgLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -184,13 +211,15 @@ fun EditorScreen(
 
     // Handle nested group Back navigation
     BackHandler {
-        if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
+        if (exitSaveError != null) {
+            exitSaveError = null
+        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
             isVectorMenuOpen = false; isVectorSettingsOpen = false; vectorDraft = null
             isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
         } else if (activeGroupId != null) {
             activeGroupId = null // Return to parent document
         } else {
-            onNavigateBack()
+            requestSafeExit()
         }
     }
 
@@ -228,7 +257,7 @@ fun EditorScreen(
                     if (activeGroupId != null) {
                         activeGroupId = null
                     } else {
-                        onNavigateBack()
+                        requestSafeExit()
                     }
                 },
                 onToggleLayers = { isLayersPanelOpen = !isLayersPanelOpen },
@@ -701,6 +730,24 @@ fun EditorScreen(
                 }
             },
             onDismiss = { isActionTreeOpen = false }
+        )
+    }
+
+    if (exitSaveError != null) {
+        AlertDialog(
+            onDismissRequest = { exitSaveError = null },
+            title = { Text("Save Error") },
+            text = { Text("Could not save project before exit. Your changes are preserved in memory. Retry saving before leaving so you do not lose work.\n\n$exitSaveError") },
+            confirmButton = {
+                Button(onClick = { requestSafeExit() }) {
+                    Text("Retry Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { exitSaveError = null }) {
+                    Text("Keep Editing")
+                }
+            }
         )
     }
 }
