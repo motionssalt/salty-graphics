@@ -511,7 +511,7 @@
         "id": "T1",
         "title": "Selection box: handles must never delete the layer, and must actually transform",
         "status": "in_progress",
-        "notes": ""
+        "notes": "Investigating stale CanvasView callbacks: stable gesture coroutine reads latest geometry but invokes callbacks captured with obsolete document. Prior round fixed state keys, not callback freshness. No verified fix yet."
       },
       {
         "id": "T2",
@@ -684,7 +684,7 @@
     ],
     "decisions": [],
     "known_issues": [],
-    "last_updated": "2026-11-07T07:10:00Z",
-    "last_session_note": "Initialized fix_round_3 with all 28 open tasks (T1-T28) plus T29 verification and handoff."
+    "last_updated": "2026-11-07T07:27:00.955870+00:00",
+    "last_session_note": "Resumed existing T1 (queue already initialized). Root cause found: pointerInput(Unit) remembers initial onUpdate/onCommit callbacks capturing the old editor document; using handles after adding layers restores the obsolete layer list. Will use fresh callbacks plus current-document transform-only boundary and regression gestures."
   }
 }
