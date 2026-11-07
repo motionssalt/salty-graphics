@@ -25,7 +25,7 @@ class ProjectLoadingTest {
             assertEquals(listOf("project.sg"),dir.list()!!.toList())
         } finally {dir.deleteRecursively()}
     }
-    @Test fun concurrentAtomicWritersNeverExposeHalfAnArchive() = runBlocking {
+    @Test fun concurrentAtomicWritersNeverExposeHalfAnArchive() = runBlocking<Unit> {
         val dir=Files.createTempDirectory("salty-concurrent").toFile();val file=File(dir,"project.sg")
         try {
             SgProjectArchive.saveToFile(ProjectDocument(name="Initial"),file)
@@ -36,7 +36,7 @@ class ProjectLoadingTest {
             writers.awaitAll()
         } finally {dir.deleteRecursively()}
     }
-    @Test fun slowUninterruptibleReaderStillEndsWithTimeoutAndIgnoresLateProgress() = runBlocking {
+    @Test fun slowUninterruptibleReaderStillEndsWithTimeoutAndIgnoresLateProgress() = runBlocking<Unit> {
         val release=CountDownLatch(1);val phases=java.util.concurrent.CopyOnWriteArrayList<String>()
         try {
             val elapsed=measureTimeMillis {
@@ -54,7 +54,7 @@ class ProjectLoadingTest {
             assertFalse(phases.contains("Late callback"))
         } finally {release.countDown()}
     }
-    @Test fun loadingHasOrderedPhasesAndAlwaysTerminalSuccessOrError() = runBlocking {
+    @Test fun loadingHasOrderedPhasesAndAlwaysTerminalSuccessOrError() = runBlocking<Unit> {
         val phases=mutableListOf<Int>()
         val loader=ProjectLoader(1000)
         val success=loader.load(false,{phases.add(it.step)}) {ctx->
