@@ -141,8 +141,8 @@ fun BorderShadowDialog(
                                     currentStroke = updated
                                     onStrokeChange(updated)
                                 },
-                                min = 1f,
-                                max = 200f,
+                                 minValue = 1f,
+                                maxValue = 200f,
                                 step = 1f,
                                 unit = "px"
                             )
@@ -201,8 +201,8 @@ fun BorderShadowDialog(
                                         currentStroke = updated
                                         onStrokeChange(updated)
                                     },
-                                    min = 1f,
-                                    max = 100f,
+                                    minValue = 1f,
+                                    maxValue = 100f,
                                     step = 1f,
                                     unit = "px"
                                 )
@@ -214,8 +214,8 @@ fun BorderShadowDialog(
                                         currentStroke = updated
                                         onStrokeChange(updated)
                                     },
-                                    min = 1f,
-                                    max = 100f,
+                                    minValue = 1f,
+                                    maxValue = 100f,
                                     step = 1f,
                                     unit = "px"
                                 )
@@ -279,11 +279,10 @@ fun BorderShadowDialog(
                                     currentShadow = updated
                                     onShadowChange(updated)
                                 },
-                                min = 0f,
-                                max = 360f,
+                                minValue = 0f,
+                                maxValue = 360f,
                                 step = 1f,
-                                unit = "°",
-                                isInteger = true
+                                unit = "°"
                             )
 
                             RulerSlider(
@@ -294,8 +293,8 @@ fun BorderShadowDialog(
                                     currentShadow = updated
                                     onShadowChange(updated)
                                 },
-                                min = 0f,
-                                max = 200f,
+                                minValue = 0f,
+                                maxValue = 200f,
                                 step = 1f,
                                 unit = "px"
                             )
@@ -308,8 +307,8 @@ fun BorderShadowDialog(
                                     currentShadow = updated
                                     onShadowChange(updated)
                                 },
-                                min = 0f,
-                                max = 150f,
+                                minValue = 0f,
+                                maxValue = 150f,
                                 step = 1f,
                                 unit = "px"
                             )
@@ -322,11 +321,10 @@ fun BorderShadowDialog(
                                     currentShadow = updated
                                     onShadowChange(updated)
                                 },
-                                min = 0f,
-                                max = 100f,
+                                minValue = 0f,
+                                maxValue = 100f,
                                 step = 1f,
-                                unit = "%",
-                                isInteger = true
+                                unit = "%"
                             )
                         }
                     }

@@ -283,11 +283,10 @@ fun GradientSelectorDialog(
                                     currentGradient = updated
                                     onGradientChange(updated)
                                 },
-                                min = 0f,
-                                max = 100f,
+                                 minValue = 0f,
+                                maxValue = 100f,
                                 step = 1f,
-                                unit = "%",
-                                isInteger = true
+                                unit = "%"
                             )
                         }
 
@@ -301,11 +300,10 @@ fun GradientSelectorDialog(
                                     currentGradient = updated
                                     onGradientChange(updated)
                                 },
-                                min = -360f,
-                                max = 360f,
+                                minValue = -360f,
+                                maxValue = 360f,
                                 step = 1f,
-                                unit = "°",
-                                isInteger = true
+                                unit = "°"
                             )
                         }
                     } else {

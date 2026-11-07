@@ -130,11 +130,10 @@ fun UniversalFillSection(
                         val updated = fill.copy(solidOpacity = (pct / 100f).coerceIn(0f, 1f))
                         onFillChange(updated)
                     },
-                    min = 0f,
-                    max = 100f,
+                    minValue = 0f,
+                    maxValue = 100f,
                     step = 1f,
-                    unit = "%",
-                    isInteger = true
+                    unit = "%"
                 )
             }
             FillType.GRADIENT -> {
