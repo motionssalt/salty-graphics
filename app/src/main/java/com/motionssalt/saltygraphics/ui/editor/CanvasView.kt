@@ -609,8 +609,8 @@ fun CanvasView(
                         drawCircle(Color.White,4.dp.toPx(),rotate)
 
                         // T20: Vector-aware / Shape-specific live geometry handles
-                        if (selectedLayer.type == LayerType.SHAPE && selectedLayer.shapeData != null) {
-                            val shape = selectedLayer.shapeData
+                        val shape = selectedLayer.shapeData
+                        if (selectedLayer.type == LayerType.SHAPE && shape != null) {
                             if (shape.type == ShapeType.ROUNDED_RECTANGLE) {
                                 // Corner radius handle inside top-left corner
                                 val rOffset = min(shape.cornerRadius * t.scaleX * effectiveZoom, min(halfW, halfH) * 0.8f)

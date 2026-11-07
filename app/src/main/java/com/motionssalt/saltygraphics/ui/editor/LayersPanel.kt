@@ -2,7 +2,10 @@ package com.motionssalt.saltygraphics.ui.editor
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -234,28 +237,14 @@ fun LayersPanel(
                     )
                     Spacer(Modifier.height(4.dp))
 
-                    fun propRow(label: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onChecked(!checked) }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(label, style = MaterialTheme.typography.bodyMedium)
-                            Checkbox(checked = checked, onCheckedChange = onChecked)
-                        }
-                    }
-
-                    propRow("Transform (Position, Scale, Rotation)", pasteTransform) { pasteTransform = it }
-                    propRow("Effects Stack", pasteEffects) { pasteEffects = it }
-                    propRow("Fill (Color, Gradient, Media)", pasteFill) { pasteFill = it }
-                    propRow("Stroke / Border", pasteStroke) { pasteStroke = it }
-                    propRow("Drop Shadow", pasteShadow) { pasteShadow = it }
-                    propRow("Blend Mode", pasteBlend) { pasteBlend = it }
-                    propRow("Opacity", pasteOpacity) { pasteOpacity = it }
-                    propRow("Layer Mask", pasteMask) { pasteMask = it }
+                    SelectivePasteRow("Transform (Position, Scale, Rotation)", pasteTransform) { pasteTransform = it }
+                    SelectivePasteRow("Effects Stack", pasteEffects) { pasteEffects = it }
+                    SelectivePasteRow("Fill (Color, Gradient, Media)", pasteFill) { pasteFill = it }
+                    SelectivePasteRow("Stroke / Border", pasteStroke) { pasteStroke = it }
+                    SelectivePasteRow("Drop Shadow", pasteShadow) { pasteShadow = it }
+                    SelectivePasteRow("Blend Mode", pasteBlend) { pasteBlend = it }
+                    SelectivePasteRow("Opacity", pasteOpacity) { pasteOpacity = it }
+                    SelectivePasteRow("Layer Mask", pasteMask) { pasteMask = it }
                 }
             },
             confirmButton = {
@@ -418,5 +407,20 @@ fun LayerRow(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SelectivePasteRow(label: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onChecked(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Checkbox(checked = checked, onCheckedChange = onChecked)
     }
 }
