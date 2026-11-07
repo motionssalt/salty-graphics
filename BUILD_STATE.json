@@ -522,7 +522,7 @@
       {
         "id": "T3",
         "title": "Bottom control panel must stay open during transform editing",
-        "status": "pending",
+        "status": "in_progress",
         "notes": ""
       },
       {
@@ -695,8 +695,8 @@
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T08:01:00.624648+00:00",
-    "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. T1/T2 done, code aea7d95b verified green Actions 42353088901 with 164 test executions and signed universal/per-ABI APK artifacts. Resume T3 bottom panel persistence, then ordered T4-T29. Complete acceptance brief in docs/FIX_ROUND_3_PROMPT.md (credentials removed). No new release; do not publish until T29 and do not start UI refinement.",
+    "last_updated": "2026-11-07T08:34:57.023154+00:00",
+    "last_session_note": "Resumed existing round: T1/T2 remain verified done; inspecting T3 fixed-panel page eligibility and related selection/history wiring. No UI refinement, preview or release.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42353088901",
       "commit": "aea7d95b",
