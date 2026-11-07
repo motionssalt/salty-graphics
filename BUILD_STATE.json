@@ -511,7 +511,7 @@
         "id": "T1",
         "title": "Selection box: handles must never delete the layer, and must actually transform",
         "status": "in_progress",
-        "notes": "Investigating stale CanvasView callbacks: stable gesture coroutine reads latest geometry but invokes callbacks captured with obsolete document. Prior round fixed state keys, not callback freshness. No verified fix yet."
+        "notes": "Root cause: stable pointerInput(Unit) retained obsolete callback closures after new layer creation; prior S4/S7 stabilized state but not callback freshness. Implemented rememberUpdatedState callbacks and latest-document validated transform-only updates, anchor-preserving handle math, text/path/group/combined bounds and high-contrast constant-screen square handles. Added fuzz and actual pointer tests; acceptance not yet verified."
       },
       {
         "id": "T2",
@@ -686,7 +686,7 @@
       "Restored tag-only release publishing: inherited workflow published a release on every main push, conflicting with frequent checkpoints and T29 gated handoff. Main continues testing/building signed APK artifacts; new releases only from explicit v* tags after acceptance. Existing releases and signing secrets untouched."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-07T07:27:00.955870+00:00",
-    "last_session_note": "Resumed existing T1 (queue already initialized). Root cause found: pointerInput(Unit) remembers initial onUpdate/onCommit callbacks capturing the old editor document; using handles after adding layers restores the obsolete layer list. Will use fresh callbacks plus current-document transform-only boundary and regression gestures."
+    "last_updated": "2026-11-07T07:29:46.924942+00:00",
+    "last_session_note": "T1 implementation checkpoint: fresh stable gesture callbacks, current-document transform-only commands, opposite-anchor resize/rotation geometry, measured selection bounds, combined selection overlay, constant-size contrast handles and multi-touch rollback. Added 10,000-drag engine fuzz plus native Robolectric gesture regressions. Await Actions; T1 not marked done."
   }
 }

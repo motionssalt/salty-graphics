@@ -243,11 +243,25 @@ fun EditorScreen(
                     selectedLayerIds = if (id != null) setOf(id) else emptySet()
                 },
                 onUpdateLayerTransform = { id, newTransform ->
-                    projectDocument = doc.updateLayer(id) { it.copy(transform = newTransform) }
+                    projectDocument?.let { projectDocument=SelectionGeometry.apply(it,id,newTransform) }
                 },
                 onCommitLayerTransform = { id, finalTransform ->
-                    val updated = doc.updateLayer(id) { it.copy(transform = finalTransform) }
-                    recordAndAutoSave("Transform Layer", updated)
+                    val live=projectDocument
+                    if(live!=null) recordAndAutoSave("Transform Layer",SelectionGeometry.apply(live,id,finalTransform))
+                },
+                onUpdateLayerTransforms = { transforms ->
+                    val live=projectDocument
+                    if(live!=null && transforms.values.all { SelectionGeometry.valid(it) }) {
+                        projectDocument=transforms.entries.fold(live) { d,(id,t) -> SelectionGeometry.apply(d,id,t) }
+                    }
+                },
+                onCommitLayerTransforms = { transforms ->
+                    val live=projectDocument
+                    if(live!=null && transforms.isNotEmpty() && transforms.values.all { SelectionGeometry.valid(it) }) {
+                        val updated=transforms.entries.fold(live) { d,(id,t) -> SelectionGeometry.apply(d,id,t) }
+                        // Compare to the committed history state, not the last preview frame.
+                        if(updated.layers!=actionTree?.currentDocument?.layers) recordAndAutoSave("Transform Layer",updated)
+                    }
                 }
             )
 
