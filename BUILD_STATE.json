@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_3/T3",
+  "current_phase": "fix_round_3/T5",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,7 +194,7 @@
     "F14"
   ],
   "next_steps": [
-    "Resume fix_round_3 at T3; read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
+    "Resume fix_round_3 at T5; read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
     "Finish and verify each remaining ordered item through T28; then T29 full compatibility audit and new uniquely tagged stable-signed APK release.",
     "Do not start UI refinement or build a web frontend/preview."
   ],
@@ -522,14 +522,14 @@
       {
         "id": "T3",
         "title": "Bottom control panel must stay open during transform editing",
-        "status": "in_progress",
-        "notes": "Root cause: pageOpen included stale layer-page request flags even when the selected layer was null or incompatible; this suppressed BottomPanel while the requested page also rendered nothing. Effective page eligibility is now derived synchronously; incompatible requests are cleared on selection changes. Real EditorScreen gesture tests cover same-layer, another layer and empty canvas during Transform plus incompatible text-to-shape selection. Awaiting Actions verification; not done yet."
+        "status": "done",
+        "notes": "Root cause: pageOpen included stale layer-page request flags even when the selected layer was null or incompatible; this suppressed BottomPanel while the requested page also rendered nothing. Effective page eligibility is now derived synchronously; incompatible requests are cleared on selection changes. Real EditorScreen gesture tests cover same-layer, another layer and empty canvas during Transform plus incompatible text-to-shape selection. Verified Actions 42357187092 at 718085b: app 49 + engine 36 tests in each debug/release variant (170 executions), zero failures/errors/skips; signed universal and ABI APK artifacts built and signature-checked. Three real-editor scenarios isolated into JVM classes after first run exposed cross-test Compose idling leakage; no assertions removed. No physical-phone testing."
       },
       {
         "id": "T4",
         "title": "Clearing the layer selection",
-        "status": "in_progress",
-        "notes": "Related T3 fix restores no-selection tools immediately. Existing CanvasView already deselects on empty tap without a history command; added explicit accessible Select None in layer toolbar and real-editor tests exercising both deselection paths and creating shapes/adjustments afterwards. Awaiting Actions verification; not done yet."
+        "status": "done",
+        "notes": "Related T3 fix restores no-selection tools immediately. Existing CanvasView already deselects on empty tap without a history command; added explicit accessible Select None in layer toolbar and real-editor tests exercising both deselection paths and creating shapes/adjustments afterwards. Verified Actions 42357187092 at 718085b: app 49 + engine 36 tests in each debug/release variant (170 executions), zero failures/errors/skips; signed universal and ABI APK artifacts built and signature-checked. Three real-editor scenarios isolated into JVM classes after first run exposed cross-test Compose idling leakage; no assertions removed. No physical-phone testing."
       },
       {
         "id": "T5",
@@ -690,45 +690,28 @@
       "T2: writes use unique temp siblings, fsync and atomic rename with no non-atomic fallback. Essential autosave is independent of thumbnail generation; media cache misses in preview decode asynchronously. Stable signing secrets/reference release untouched."
     ],
     "known_issues": [
-      "PARTIAL ROUND: T1 and T2 verified done; T3-T29 remain pending. No round-3 release or version tag published. Resume T3 next in order; sanitized full acceptance brief is docs/FIX_ROUND_3_PROMPT.md.",
+      "PARTIAL ROUND: T1-T4 verified done; T5-T29 remain pending. No round-3 release yet.",
       "Inherited seed-project migration still deletes by name and layer count, an unsafe heuristic already flagged in round-1 notes. Observed during T2 review, not silently reworked; preserve user projects in future acceptance audit.",
       "Reader timeout bounds UI waiting, not the lifetime of a native codec that ignores interruption. Two-reader cap prevents unbounded thread growth; if both remain stuck, recovery shows busy/error until readers finish or app restarts.",
       "No physical-device testing performed. Existing earlier done markers outside T1/T2 were not re-audited. UI refinement not started."
     ],
-    "last_updated": "2026-11-07T08:49:26.303128+00:00",
-    "last_session_note": "T3 real-editor Transform/empty-canvas regression passed first Actions attempt. Two later tests encountered Compose idling leakage across manually owned Activity instances in the same JVM class; split fixtures into isolated classes under existing forkEvery=1 policy. Assertions/coverage retained; rerun pending, do not advance.",
+    "last_updated": "2026-11-07T09:00:34.819131+00:00",
+    "last_session_note": "T3/T4 verified done in Actions 42357187092, 170 tests all pass plus signed APK artifacts. T5 next. No new release until T29; no UI refinement.",
     "verification": {
-      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42353088901",
-      "commit": "aea7d95b",
-      "result": "success",
-      "jvm_test_counts": {
-        "app/build/test-results/testDebugUnitTest": {
-          "tests": 46,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0
-        },
-        "app/build/test-results/testReleaseUnitTest": {
-          "tests": 46,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0
-        },
-        "engine/build/test-results/testDebugUnitTest": {
-          "tests": 36,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0
-        },
-        "engine/build/test-results/testReleaseUnitTest": {
-          "tests": 36,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0
-        }
+      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/42357187092",
+      "commit": "718085bc6b2051b9a3bc204990eee041af169645",
+      "tests": {
+        "app_debug": 49,
+        "app_release": 49,
+        "engine_debug": 36,
+        "engine_release": 36,
+        "total": 170,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
       },
-      "device_testing": "not performed, as requested",
-      "release": "Not published: T29 pending. Signed universal and per-ABI Actions artifacts only."
+      "release": "Not published: T29 pending. Signed universal and ABI Actions artifacts only.",
+      "device_testing": "not performed, as requested"
     }
   }
 }
