@@ -23,9 +23,7 @@ fun ShapeSettingsDialog(
 
     PanelPage("Shape", onBack = onDismiss) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Width
