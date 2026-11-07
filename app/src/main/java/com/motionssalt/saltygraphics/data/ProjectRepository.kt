@@ -50,6 +50,7 @@ class ProjectRepository(private val context: Context,
     private val renderThumbnail: (Context,ProjectDocument) -> ByteArray = ProjectThumbnailRenderer::renderToPng
 ) {
     private val loadingProjects=ConcurrentHashMap<String,CompletableDeferred<Unit>>()
+    private val timedOutMedia=ConcurrentHashMap<String,String>()
     private val saveMutexes=ConcurrentHashMap<String,Mutex>()
     private val thumbnailJobs=ConcurrentHashMap<String,Job>()
     private val backgroundScope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
@@ -76,6 +77,7 @@ class ProjectRepository(private val context: Context,
         val gate=CompletableDeferred<Unit>()
         if(loadingProjects.putIfAbsent(id,gate)!=null) return ProjectLoadState.Error("This project is already opening. Please retry.")
         thumbnailJobs.remove(id)?.cancel()
+        val decodingLayer=java.util.concurrent.atomic.AtomicReference<String?>(null)
         val start=LocalDiagnostics.clockMillis()
         var previous=start
         fun logPhase(label:String) {
@@ -107,7 +109,12 @@ class ProjectRepository(private val context: Context,
                             val path=layer.mediaAssetPath ?: error("Missing media reference")
                             val asset=File(assetDir,path.removePrefix("assets/")).canonicalFile
                             require(asset.path.startsWith(assetDir.path+File.separator) && asset.isFile) {"Missing media asset"}
-                            require(decodeMedia(context,id,path)) {"Cannot decode media asset"}
+                            require(!safeMode || timedOutMedia[id]!=layer.id) {"Media timed out during the previous attempt"}
+                            decodingLayer.set(layer.id)
+                            val decoded=decodeMedia(context,id,path)
+                            load.checkActive()
+                            decodingLayer.set(null)
+                            require(decoded) {"Cannot decode media asset"}
                         }
                         layer.copy(children=layer.children.map(::validate))
                     } catch(e: Exception) {
@@ -124,7 +131,10 @@ class ProjectRepository(private val context: Context,
                 imported.copy(document=document,historySnapshot=if(safeMode) null else imported.historySnapshot)
             }
             logPhase(if(state is ProjectLoadState.Loaded) "Loaded" else "Error")
-            if(state is ProjectLoadState.Error) LocalDiagnostics.record(context,"project_load error=${state.message}")
+            if(state is ProjectLoadState.Error) {
+                decodingLayer.get()?.let {timedOutMedia[id]=it}
+                LocalDiagnostics.record(context,"project_load error=${state.message}")
+            } else if(!safeMode) timedOutMedia.remove(id)
             state
         } finally {
             loadingProjects.remove(id,gate);gate.complete(Unit)

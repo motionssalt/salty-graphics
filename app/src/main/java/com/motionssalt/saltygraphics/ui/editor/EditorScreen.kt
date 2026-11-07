@@ -94,8 +94,14 @@ fun EditorScreen(
         val treeRef = actionTree ?: return
         treeRef.recordAction(description, newDoc)
         projectDocument = newDoc
+        val snapshot=treeRef.toSnapshot()
         coroutineScope.launch {
-            repository.saveProject(newDoc,treeRef.toSnapshot())
+            try {repository.saveProject(newDoc,snapshot)}
+            catch(e:kotlinx.coroutines.CancellationException) {throw e}
+            catch(e:Exception) {
+                com.motionssalt.saltygraphics.data.LocalDiagnostics.record(context,"autosave failed ${e.javaClass.simpleName}")
+                Toast.makeText(context,"Could not save project. Your changes are still open; retry saving before leaving.",Toast.LENGTH_LONG).show()
+            }
         }
     }
 

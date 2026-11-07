@@ -85,6 +85,7 @@ fun CanvasView(
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val density = LocalDensity.current
+    val mediaGeneration by MediaCache.revision.collectAsState()
     var viewport by remember { mutableStateOf(IntSize.Zero) }
 
     val fit = if (viewport.width > 0 && viewport.height > 0)
@@ -248,6 +249,7 @@ fun CanvasView(
             }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
+            @Suppress("UNUSED_VARIABLE") val cacheGeneration=mediaGeneration
             val center = Offset(size.width / 2f + panOffset.x, size.height / 2f + panOffset.y)
             val canvasW = document.canvasSize.width.toFloat()
             val canvasH = document.canvasSize.height.toFloat()
@@ -453,7 +455,7 @@ fun CanvasView(
                         LayerType.MEDIA -> {
                             val mediaAsset = layer.mediaAssetPath
                             val bmp = if (mediaAsset != null) {
-                                MediaCache.getOrLoad(context, document.id, mediaAsset)
+                                MediaCache.getOrRequest(context, document.id, mediaAsset)
                             } else null
 
                             val mw = layer.mediaWidth ?: 300f

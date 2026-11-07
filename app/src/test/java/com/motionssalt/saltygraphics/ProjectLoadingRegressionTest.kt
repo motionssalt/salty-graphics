@@ -101,13 +101,16 @@ class ProjectLoadingRegressionTest {
             true
         })
         val doc=repo.createProject("Slow",CanvasSize(256,256))
-        SgProjectArchive.saveToFile(doc.copy(layers=listOf(Layer(type=LayerType.MEDIA,mediaAssetPath="slow.png"))),
+        SgProjectArchive.saveToFile(doc.copy(layers=listOf(Layer(id="healthy",shapeData=ShapeData()),Layer(type=LayerType.MEDIA,mediaAssetPath="slow.png"))),
             repo.getProjectFile(doc.id),mapOf("slow.png" to byteArrayOf(1)))
         try {
             val elapsed=measureTimeMillis {assertTrue(repo.openProject(doc.id) is ProjectLoadState.Error)}
             assertTrue(elapsed<1500);assertFalse(repo.isProjectLoading(doc.id))
             val report=DeviceInfoProvider(context).composeProblemReport("Stuck project").getStringExtra(Intent.EXTRA_TEXT)!!
             assertTrue(report.contains("project_load"));assertTrue(report.contains("elapsed_ms"));assertTrue(report.contains("timed out"))
+            val safe=repo.openProject(doc.id,true) as ProjectLoadState.Loaded
+            assertEquals("healthy",safe.result.document.layers.first().id)
+            assertEquals(LayerType.QUARANTINED,safe.result.document.layers.last().type)
         } finally {release.countDown()}
     }
 

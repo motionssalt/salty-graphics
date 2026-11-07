@@ -687,8 +687,8 @@
       "T1: selection handles clamp at positive scale 0.0001; invalid/non-finite transform requests are refused. Touch targets use nearest handle within 22dp radius, while visible corner/edge sizes remain 9dp/6dp. Multi-touch cancels the uncommitted layer edit before pinch/pan."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-07T07:44:39.412526+00:00",
-    "last_session_note": "T2 implementation checkpoint: explicit timed foreground load states/retry/safe mode, atomic project/index/asset writes, media validation and quarantine, load phase diagnostics, autosave gating and independent cancellable thumbnails. Added interrupted-write/concurrent archive tests, uninterruptible decoder timeout, missing/corrupt/half-written input and real recovery UI tests. Await full Actions verification; T2 not done.",
+    "last_updated": "2026-11-07T07:46:29.064329+00:00",
+    "last_session_note": "T2 follow-up before acceptance: safe mode remembers the media layer that exceeded the deadline and bypasses it on recovery while preserving healthy siblings. Preview cache misses now decode asynchronously off-main (export remains unchanged); save errors retain open changes and report failure instead of crashing. Rerun native recovery and full CI before done.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42351917072",
       "commit": "a0a26286",
