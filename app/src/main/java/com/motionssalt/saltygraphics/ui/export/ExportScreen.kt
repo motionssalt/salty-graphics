@@ -90,7 +90,7 @@ fun ExportScreen(
         val halfW = finalWidth / 2f
         val halfH = finalHeight / 2f
 
-        for (layer in doc.layers) {
+        for (layer in doc.layers.asReversed()) {
             if (!layer.isVisible) continue
             val lx = halfW + (layer.transform.translationX * resolutionScale)
             val ly = halfH + (layer.transform.translationY * resolutionScale)

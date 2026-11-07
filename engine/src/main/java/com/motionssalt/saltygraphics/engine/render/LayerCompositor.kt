@@ -160,9 +160,9 @@ object LayerCompositor {
 
         if (!layer.isVisible && !forceVisible) return bitmap
 
-        // Group layers composite their children recursively
+        // Group layers composite their children recursively: index 0 is topmost, so draw bottom-to-top
         if (layer.type == LayerType.GROUP) {
-            for (child in layer.children) {
+            for (child in layer.children.asReversed()) {
                 if (!child.isVisible && !forceVisible) continue
                 val childBmp = renderLayerContent(child, width, height, document, mediaResolver, forceVisible)
                 val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -407,8 +407,8 @@ object LayerCompositor {
         val tempOutputPixels = IntArray(width * height)
         finalBitmap.getPixels(backdropPixels, 0, width, 0, 0, width, height)
 
-        // Render layers bottom to top (activeLayers is ordered bottom-to-top)
-        val layersToComposite = document.activeLayers
+        // Render layers bottom to top: activeLayers has index 0 as topmost (top of panel), so draw asReversed()
+        val layersToComposite = document.activeLayers.asReversed()
 
         for (layer in layersToComposite) {
             if (!layer.isVisible) continue

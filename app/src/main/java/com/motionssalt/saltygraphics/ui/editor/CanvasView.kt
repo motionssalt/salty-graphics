@@ -162,7 +162,8 @@ fun CanvasView(
                             ?: if(local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
                     }
                     if(handle==SelectionHandle.NONE) {
-                        target=activeDoc.activeLayers.asReversed().firstOrNull { layer ->
+                        // Hit-test from topmost layer (index 0 = top of panel = topmost on canvas)
+                        target=activeDoc.activeLayers.firstOrNull { layer ->
                             if(!layer.isVisible || layer.isLocked || layer.type==LayerType.ADJUSTMENT) false
                             else {
                                 val local=VectorEditing.toLocal(downPoint.x,downPoint.y,layer.transform)
@@ -365,7 +366,7 @@ fun CanvasView(
             )
 
             // Render Layers Bottom to Top using isolated saveLayer compositing
-            for (layer in document.activeLayers) {
+            for (layer in document.activeLayers.asReversed()) {
                 if (!layer.isVisible) continue
                 if (layer.type == LayerType.ADJUSTMENT) continue // Adjustment layers draw no direct shape
 

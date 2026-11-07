@@ -71,25 +71,25 @@ class LayerCompositorTest {
             blendMode = BlendMode.NORMAL,
             shapeData = ShapeData(width = 60f, height = 60f, fillColor = 0xFFFFFF00L, hasFill = true, hasStroke = false)
         )
-        val docNormal = ProjectDocument(id = "doc1", canvasSize = CanvasSize(100, 100), layers = listOf(bg, shapeNormal))
+        val docNormal = ProjectDocument(id = "doc1", canvasSize = CanvasSize(100, 100), layers = listOf(shapeNormal, bg))
         val bmpNormal = LayerCompositor.compositeDocument(docNormal, 100, 100)
         val centerPixelNormal = bmpNormal.getPixel(50, 50)
 
         // Multiply mode
         val shapeMultiply = shapeNormal.copy(id = "fg-multiply", blendMode = BlendMode.MULTIPLY)
-        val docMultiply = ProjectDocument(id = "doc2", canvasSize = CanvasSize(100, 100), layers = listOf(bg, shapeMultiply))
+        val docMultiply = ProjectDocument(id = "doc2", canvasSize = CanvasSize(100, 100), layers = listOf(shapeMultiply, bg))
         val bmpMultiply = LayerCompositor.compositeDocument(docMultiply, 100, 100)
         val centerPixelMultiply = bmpMultiply.getPixel(50, 50)
 
         // Screen mode
         val shapeScreen = shapeNormal.copy(id = "fg-screen", blendMode = BlendMode.SCREEN)
-        val docScreen = ProjectDocument(id = "doc3", canvasSize = CanvasSize(100, 100), layers = listOf(bg, shapeScreen))
+        val docScreen = ProjectDocument(id = "doc3", canvasSize = CanvasSize(100, 100), layers = listOf(shapeScreen, bg))
         val bmpScreen = LayerCompositor.compositeDocument(docScreen, 100, 100)
         val centerPixelScreen = bmpScreen.getPixel(50, 50)
 
         // Difference mode
         val shapeDiff = shapeNormal.copy(id = "fg-diff", blendMode = BlendMode.DIFFERENCE)
-        val docDiff = ProjectDocument(id = "doc4", canvasSize = CanvasSize(100, 100), layers = listOf(bg, shapeDiff))
+        val docDiff = ProjectDocument(id = "doc4", canvasSize = CanvasSize(100, 100), layers = listOf(shapeDiff, bg))
         val bmpDiff = LayerCompositor.compositeDocument(docDiff, 100, 100)
         val centerPixelDiff = bmpDiff.getPixel(50, 50)
 
@@ -116,8 +116,8 @@ class LayerCompositorTest {
         )
         val textDiff = textNormal.copy(id = "text-diff", blendMode = BlendMode.DIFFERENCE)
 
-        val docNormal = ProjectDocument(id = "d1", canvasSize = CanvasSize(100, 100), layers = listOf(bg, textNormal))
-        val docDiff = ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(bg, textDiff))
+        val docNormal = ProjectDocument(id = "d1", canvasSize = CanvasSize(100, 100), layers = listOf(textNormal, bg))
+        val docDiff = ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(textDiff, bg))
 
         val bmpNormal = LayerCompositor.compositeDocument(docNormal, 100, 100)
         val bmpDiff = LayerCompositor.compositeDocument(docDiff, 100, 100)
@@ -153,8 +153,8 @@ class LayerCompositorTest {
         val vecNormal = Layer(id = "v-norm", name = "Vec", type = LayerType.VECTOR, blendMode = BlendMode.NORMAL, vectorPathData = vecPath)
         val vecDiff = vecNormal.copy(id = "v-diff", blendMode = BlendMode.DIFFERENCE)
 
-        val bmpNormal = LayerCompositor.compositeDocument(ProjectDocument(id = "d1", canvasSize = CanvasSize(100, 100), layers = listOf(bg, vecNormal)), 100, 100)
-        val bmpDiff = LayerCompositor.compositeDocument(ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(bg, vecDiff)), 100, 100)
+        val bmpNormal = LayerCompositor.compositeDocument(ProjectDocument(id = "d1", canvasSize = CanvasSize(100, 100), layers = listOf(vecNormal, bg)), 100, 100)
+        val bmpDiff = LayerCompositor.compositeDocument(ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(vecDiff, bg)), 100, 100)
 
         var foundDifferent = false
         for (y in 0 until 100) {
@@ -186,8 +186,8 @@ class LayerCompositorTest {
         val groupNormal = Layer(id = "grp-norm", name = "Group", type = LayerType.GROUP, blendMode = BlendMode.NORMAL, children = listOf(child))
         val groupScreen = groupNormal.copy(id = "grp-screen", blendMode = BlendMode.SCREEN)
 
-        val bmpNormal = LayerCompositor.compositeDocument(ProjectDocument(id = "d1", canvasSize = CanvasSize(100, 100), layers = listOf(bg, groupNormal)), 100, 100)
-        val bmpScreen = LayerCompositor.compositeDocument(ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(bg, groupScreen)), 100, 100)
+        val bmpNormal = LayerCompositor.compositeDocument(ProjectDocument(id = "d1", canvasSize = CanvasSize(100, 100), layers = listOf(groupNormal, bg)), 100, 100)
+        val bmpScreen = LayerCompositor.compositeDocument(ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(groupScreen, bg)), 100, 100)
 
         assertNotEquals("Group blend mode must alter composited result", bmpNormal.getPixel(50, 50), bmpScreen.getPixel(50, 50))
     }
@@ -220,9 +220,9 @@ class LayerCompositorTest {
             shapeData = ShapeData(width = 100f, height = 100f, fillColor = 0xFFFFFF00L, hasFill = true)
         )
 
-        val doc = ProjectDocument(id = "d-mask", canvasSize = CanvasSize(100, 100), layers = listOf(bg, target))
+        val doc = ProjectDocument(id = "d-mask", canvasSize = CanvasSize(100, 100), layers = listOf(target, bg))
         // Add mask-source to doc layers lookup so compositor finds it
-        val docWithSource = doc.copy(layers = listOf(bg, maskSource.copy(isVisible = false), target))
+        val docWithSource = doc.copy(layers = listOf(target, maskSource.copy(isVisible = false), bg))
 
         val composited = LayerCompositor.compositeDocument(docWithSource, 100, 100)
 
@@ -259,7 +259,7 @@ class LayerCompositorTest {
             shapeData = ShapeData(width = 100f, height = 100f, fillColor = 0xFFFFFF00L, hasFill = true)
         )
 
-        val doc = ProjectDocument(id = "d-inv", canvasSize = CanvasSize(100, 100), layers = listOf(bg, maskSource.copy(isVisible = false), target))
+        val doc = ProjectDocument(id = "d-inv", canvasSize = CanvasSize(100, 100), layers = listOf(target, maskSource.copy(isVisible = false), bg))
         val composited = LayerCompositor.compositeDocument(doc, 100, 100)
 
         // Inside inverted mask (center 50, 50): target is masked OUT (hole), showing background blue!
@@ -348,7 +348,7 @@ class LayerCompositorTest {
         )
 
         val docWithout = ProjectDocument(id = "d1", canvasSize = CanvasSize(100, 100), layers = listOf(bg))
-        val docWith = ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(bg, adjZero))
+        val docWith = ProjectDocument(id = "d2", canvasSize = CanvasSize(100, 100), layers = listOf(adjZero, bg))
 
         val bmpWithout = LayerCompositor.compositeDocument(docWithout, 100, 100)
         val bmpWith = LayerCompositor.compositeDocument(docWith, 100, 100)
@@ -386,7 +386,8 @@ class LayerCompositorTest {
             shapeData = ShapeData(width = 30f, height = 30f, fillColor = 0xFFFF0000L, hasFill = true)
         )
 
-        val doc = ProjectDocument(id = "d-adj", canvasSize = CanvasSize(100, 100), layers = listOf(bg, adj, topLayer))
+        // Stacking order: topLayer is on top (index 0), then adj (index 1), then bg (index 2)
+        val doc = ProjectDocument(id = "d-adj", canvasSize = CanvasSize(100, 100), layers = listOf(topLayer, adj, bg))
         val bmp = LayerCompositor.compositeDocument(doc, 100, 100)
 
         // Top layer (red square at center) is drawn AFTER the adjustment layer, so it remains full red!

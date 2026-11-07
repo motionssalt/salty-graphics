@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V1",
+  "current_phase": "fix_round_4/V3",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -735,8 +735,8 @@
       {
         "id": "V2",
         "title": "Layer-panel order must match canvas stacking order",
-        "status": "in_progress",
-        "notes": "Investigating stacking convention in LayersPanel vs LayerCompositor/CanvasView."
+        "status": "done",
+        "notes": "Root cause: LayersPanel renders layers starting from index 0 at the top, and addLayer inserts new layers at index 0. However, CanvasView, LayerCompositor and ExportScreen rendered layers in forward index order (0 to last), which drew index 0 first under Painter's algorithm (behind everything else) and higher indices on top. Moving a layer down in the panel (towards higher indices) therefore made it appear in front on canvas, and new layers appeared behind existing ones. Fix: 1) Updated LayerCompositor.compositeDocument to iterate document.activeLayers.asReversed() and group children in reverse order, drawing index 0 on top. 2) Updated CanvasView.kt draw loop to iterate asReversed() and hit testing to test index 0 first. 3) Updated ExportScreen.kt draw loop to iterate asReversed(). 4) Updated onDuplicateLayer to insert duplicate above original at index idx instead of idx + 1. 5) Created LayerStackingOrderPropertyTest verifying index 0 (top of panel) is the topmost rendered layer across creation, reordering, duplication, and 30 randomized reorder permutations."
       },
       {
         "id": "V3",

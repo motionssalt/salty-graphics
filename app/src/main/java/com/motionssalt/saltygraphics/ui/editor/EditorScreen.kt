@@ -431,7 +431,7 @@ fun EditorScreen(
                                 val currentList = doc.activeLayers
                                 val idx = currentList.indexOfFirst { it.id == id }
                                 val updatedList = currentList.toMutableList()
-                                if (idx >= 0) updatedList.add(idx + 1, dup) else updatedList.add(dup)
+                                if (idx >= 0) updatedList.add(idx, dup) else updatedList.add(0, dup)
                                 val updated = if (activeGroupId == null) {
                                     doc.copy(layers = updatedList)
                                 } else {
