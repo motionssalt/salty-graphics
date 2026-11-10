@@ -279,11 +279,11 @@ abstract class FillEditorFixture {
             compose.onNodeWithText(layer.name).performClick()
             compose.onNodeWithContentDescription("Close Layers").performClick()
             compose.onNodeWithText("Fill").assertExists().performClick()
-            compose.onNodeWithText("Fill").assertExists()
+            compose.onNodeWithContentDescription("Close Fill").assertIsDisplayed()
             compose.onNodeWithContentDescription("Close Fill").performClick()
             compose.onNodeWithText("Border & Shadow").performClick()
-            compose.onNodeWithText("Stroke").assertExists()
-            compose.onNodeWithText("Shadow").assertExists()
+            compose.onNodeWithText("Stroke", useUnmergedTree = true).assertExists()
+            compose.onNodeWithText("Shadow", useUnmergedTree = true).assertExists()
         }
     }
 
@@ -380,7 +380,7 @@ class BorderEditorMutationTest : FillEditorFixture() {
 
             // Open Border & Shadow dialog
             compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).performClick()
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).assertIsDisplayed()
+            compose.onAllNodesWithText("Border & Shadow", useUnmergedTree = true).filterToOne(hasAnyAncestor(isDialog())).assertIsDisplayed()
 
             // Toggle Stroke on
             compose.onNodeWithTag("stroke_switch").performClick()

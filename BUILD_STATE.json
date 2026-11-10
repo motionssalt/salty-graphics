@@ -850,7 +850,7 @@
     "known_issues": [
       "Inherited V1\u2013V8 done markers retained, but their latest CI was failing. Baseline repair under verification before V9; no release until full audit."
     ],
-    "last_updated": "2026-11-10T09:32:39.340946+00:00",
-    "last_session_note": "Baseline repair: remove stale haptic imports, give shared switch real toggleable semantics, prevent explicit transparent vector fill from falling back to legacy paint, correct dash-cap/vector-coordinate fixtures, and isolate Compose editor hosts. Await full Actions; V9 not started."
+    "last_updated": "2026-11-10T09:50:07.864222+00:00",
+    "last_session_note": "Baseline CI 42793139439: CPU fill/stroke references and Fill mutation now pass. Five UI assertions still ambiguously match underlying tools plus dialog content; scope assertions to actual modal controls. Tests isolated per Compose JVM class, valid media fixture, writes awaited. Await full Actions before V9."
   }
 }
