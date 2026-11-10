@@ -61,9 +61,12 @@ class LayerReorderGestureTest : LayerReorderFixture() {
         assertEquals(initial,saved(repo,id).document.layers.map{it.id})
         assertEquals(Color.RED,LayerCompositor.compositeDocument(saved(repo,id).document).getPixel(100,100))
         val start=point("l0");val end=point("l2")
-        compose.onNodeWithTag("layer_list").performTouchInput {
-            down(start);advanceEventTime(700);moveTo(end,300);up()
-        }
+        val list=compose.onNodeWithTag("layer_list")
+        list.performTouchInput { down(start) }
+        compose.mainClock.advanceTimeBy(750)
+        compose.onNodeWithTag("layer_drag_feedback").assertExists()
+        compose.onNodeWithTag("layer_drop_indicator").assertExists()
+        list.performTouchInput { moveTo(end,300);up() }
         val reordered=listOf("l1","l2","l0","l3")
         waitForOrder(repo,id,reordered)
         val snapshot=saved(repo,id)
@@ -83,7 +86,10 @@ class LayerAutoScrollGestureTest : LayerReorderFixture() {
         val list=compose.onNodeWithTag("layer_list")
         val size=list.fetchSemanticsNode().size
         val edge=Offset(start.x,size.height-3f)
-        list.performTouchInput {down(start);advanceEventTime(700);moveTo(edge,300)}
+        list.performTouchInput {down(start)}
+        compose.mainClock.advanceTimeBy(750)
+        compose.onNodeWithTag("layer_drag_feedback").assertExists()
+        list.performTouchInput {moveTo(edge,300)}
         compose.mainClock.advanceTimeBy(2400)
         // A real long-lived pointer is still held while the LazyColumn recycles the source row.
         list.performTouchInput {moveTo(edge,16);up()}
@@ -95,7 +101,9 @@ class LayerAutoScrollGestureTest : LayerReorderFixture() {
         compose.onNodeWithTag("layer_scroll").performScrollToIndex(0)
         val first=after.document.layers.first().id
         val from=point(first)
-        list.performTouchInput {down(from);advanceEventTime(700);moveBy(Offset(0f,60f));cancel()}
+        list.performTouchInput {down(from)}
+        compose.mainClock.advanceTimeBy(750)
+        list.performTouchInput {moveBy(Offset(0f,60f));cancel()}
         compose.waitForIdle()
         assertEquals(after.document.layers,saved(repo,id).document.layers)
         compose.onAllNodesWithTag("layer_drag_feedback").assertCountEquals(0)

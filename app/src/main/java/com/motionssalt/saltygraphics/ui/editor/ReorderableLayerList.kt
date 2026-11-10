@@ -1,7 +1,8 @@
 package com.motionssalt.saltygraphics.ui.editor
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
@@ -76,27 +78,43 @@ internal fun ReorderableLayerList(
     Box(modifier.testTag("layer_list").semantics {
         stateDescription = draggedId?.let { "Reordering $it to ${target + 1}" } ?: "Layer order"
     }.pointerInput(Unit) {
-        detectDragGesturesAfterLongPress(
-            onDragStart = { position ->
-                val item = state.layoutInfo.visibleItemsInfo.find {
-                    position.y >= it.offset && position.y < it.offset + it.size
+        // Observe before the LazyColumn's scroll recognizer. After a real hold wins,
+        // consume on Initial so its first movement cannot be stolen as scrolling.
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            val item = state.layoutInfo.visibleItemsInfo.find {
+                down.position.y >= it.offset && down.position.y < it.offset + it.size
+            } ?: return@awaitEachGesture
+            val earlyEnd = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val pointer = event.changes.find { it.id == down.id }
+                    if (pointer == null || !pointer.pressed || event.changes.count { it.pressed } > 1 ||
+                        (pointer.position - down.position).getDistance() > viewConfiguration.touchSlop) break
                 }
-                if (item != null) {
-                    draggedId = currentLayers.getOrNull(item.index)?.id
-                    pointerY = position.y
-                    target = item.index
-                }
-            },
-            onDrag = { change, _ ->
-                if (draggedId != null) {
-                    change.consume()
-                    pointerY = change.position.y
+                true
+            }
+            if (earlyEnd != null) return@awaitEachGesture
+            draggedId = currentLayers.getOrNull(item.index)?.id
+            pointerY = down.position.y
+            target = item.index
+            try {
+                while (draggedId != null) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val pointer = event.changes.find { it.id == down.id }
+                    event.changes.forEach { it.consume() }
+                    if (pointer == null || event.changes.count { it.pressed } > 1) break
+                    pointerY = pointer.position.y
                     updateTarget()
+                    if (!pointer.pressed) {
+                        finish(true)
+                        break
+                    }
                 }
-            },
-            onDragEnd = { finish(true) },
-            onDragCancel = { finish(false) }
-        )
+            } finally {
+                finish(false)
+            }
+        }
     }) {
         LazyColumn(
             state = state,

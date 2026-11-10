@@ -777,7 +777,7 @@
         "id": "V9",
         "title": "Layer panel: one grab handle, long-press and drag to reorder",
         "status": "in_progress",
-        "notes": "Root cause: T22 added only a decorative handle; no drag recognizer existed and arrow buttons remained. Implementing list-owned long-press drag with stationary edge scrolling, one drop commit, explicit selection checkboxes, top-first nested-group commands; acceptance CI pending."
+        "notes": "Root cause: T22 added only a decorative handle; no drag recognizer existed and arrow buttons remained. Implementing list-owned long-press drag with stationary edge scrolling, one drop commit, explicit selection checkboxes, top-first nested-group commands; acceptance CI pending. Real gesture tests in run 42796958701 caught parent-vs-LazyColumn touch priority: standard parent long-press recognizer lost the first movement to child scrolling. Use list-owned Initial-pass hold recognition, consuming only after hold wins; normal scrolling/taps remain unconsumed. Staged pointer tests now explicitly assert feedback before drop."
       },
       {
         "id": "V10",
@@ -850,8 +850,8 @@
     "known_issues": [
       "V1\u2013V8 inherited done markers retained; baseline regression suite green, not a fresh exhaustive acceptance audit. V9 under verification; V10\u2013V20 pending. No round-4 release yet."
     ],
-    "last_updated": "2026-11-10T10:10:59.138307+00:00",
-    "last_session_note": "Baseline 7149ff1 verified successful Actions 42795048168 (all JVM tests + signed universal/per-ABI APK build). V9 list-owned drag implemented; now adding real-editor gesture tests including stationary edge auto-scroll, cancellation, plain taps, grouping, undo/redo, single history actions, and actual compositor overlap. V9 remains in_progress pending CI.",
+    "last_updated": "2026-11-10T10:17:26.499047+00:00",
+    "last_session_note": "V9 still in_progress. Pure stack property/group tests pass, real grouping test passes. Drag tests exposed gesture priority; repairing root Initial-pass recognition and staging real down/hold/drag clocks. Await CI before V10.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",
