@@ -172,7 +172,7 @@ fun CanvasView(
                             h to hypot(point.x-downPoint.x,point.y-downPoint.y)*effZoom
                         }
                         val closest = candidates.filter { it.second<=touchRadius }.minByOrNull { it.second }?.first
-                        if (isSelectedTextLayer && (closest == SelectionHandle.MIDDLE_LEFT || closest == SelectionHandle.MIDDLE_RIGHT)) {
+                        if (isSelectedTextLayer && (closest == SelectionHandle.EDGE_LEFT || closest == SelectionHandle.EDGE_RIGHT)) {
                             handle = closest
                             isTextFrameDrag = true
                             textStartBoxWidth = target.textData!!.boxWidth
@@ -279,7 +279,7 @@ fun CanvasView(
                                 val localCurrent = VectorEditing.toLocal(currentPoint.x, currentPoint.y, t)
                                 val localDown = VectorEditing.toLocal(downPoint.x, downPoint.y, t)
                                 val dx = localCurrent.first - localDown.first
-                                val newBoxW = if (handle == SelectionHandle.MIDDLE_RIGHT) {
+                                val newBoxW = if (handle == SelectionHandle.EDGE_RIGHT) {
                                     max(50f, textStartBoxWidth + (dx * 2f))
                                 } else {
                                     max(50f, textStartBoxWidth - (dx * 2f))

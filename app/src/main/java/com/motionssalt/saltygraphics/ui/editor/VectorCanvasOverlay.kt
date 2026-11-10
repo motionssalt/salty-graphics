@@ -4,7 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -335,7 +336,7 @@ fun VectorCanvasOverlay(
                         },
                         modifier = Modifier.size(32.dp).testTag("delete_vector_point")
                     ) {
-                        Icon(androidx.compose.material.icons.Icons.Default.Delete, contentDescription = "Delete Point", tint = colors.error, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Delete, contentDescription = "Delete Point", tint = colors.error, modifier = Modifier.size(18.dp))
                     }
                 }
             }

@@ -43,8 +43,9 @@ object LayerThumbnailRenderer {
         if (layer.type == LayerType.ADJUSTMENT || layer.type == LayerType.QUARANTINED) {
             return null
         }
+        val text = layer.textData
         // Empty text layer shows fallback icon
-        if (layer.type == LayerType.TEXT && (layer.textData == null || layer.textData.text.isBlank())) {
+        if (layer.type == LayerType.TEXT && (text == null || text.text.isBlank())) {
             return null
         }
         // Empty vector layer shows fallback icon
@@ -213,8 +214,9 @@ object LayerThumbnailRenderer {
                     }
                 }
 
-                if (fill.type == FillType.MEDIA && fill.mediaAssetPath != null) {
-                    val bmp = mediaResolver?.invoke(fill.mediaAssetPath)
+                val mediaPath = fill.mediaAssetPath
+                if (fill.type == FillType.MEDIA && mediaPath != null) {
+                    val bmp = mediaResolver?.invoke(mediaPath)
                     if (bmp != null) {
                         canvas.save()
                         canvas.clipPath(shapePath)
