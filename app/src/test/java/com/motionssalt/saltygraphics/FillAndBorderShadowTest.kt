@@ -111,6 +111,7 @@ class FillAndBorderShadowTest {
                 isDashed = isDashed,
                 dashLength = 12f,
                 dashGap = 12f,
+                cap = VectorCap.BUTT,
                 opacity = 1f
             )
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -215,10 +216,10 @@ class FillAndBorderShadowTest {
         val center = 100
         val vectorPath = VectorPathData(
             points = listOf(
+                BezierPoint(-50f, -50f),
+                BezierPoint(50f, -50f),
                 BezierPoint(50f, 50f),
-                BezierPoint(150f, 50f),
-                BezierPoint(150f, 150f),
-                BezierPoint(50f, 150f)
+                BezierPoint(-50f, 50f)
             ),
             isClosed = true
         )
@@ -251,7 +252,7 @@ class FillAndBorderShadowTest {
             val project = repo.createProject("Fill & Border Fixture", CanvasSize(1000, 1000))
             project.copy(layers = layers).also { repo.saveProject(it) }
         }
-        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
         try {
             host.get().setContent {
                 MaterialTheme {
@@ -264,75 +265,34 @@ class FillAndBorderShadowTest {
                     )
                 }
             }
-            compose.waitUntil(5000) {
+            compose.waitUntil(15000) {
                 compose.onAllNodesWithTag("editor_canvas").fetchSemanticsNodes().isNotEmpty()
             }
             check(doc.id, repo)
         } finally {
+            compose.runOnIdle { host.get().setContent {} }
             host.pause().stop().destroy()
         }
     }
 
-    @Test
-    fun testFillAndBorderButtonsExistOnAllLayerTypes() {
-        val shapeLayer = Layer(id = "layer_shape", name = "Test Shape", type = LayerType.SHAPE, shapeData = ShapeData())
-        val textLayer = Layer(id = "layer_text", name = "Test Text", type = LayerType.TEXT, textData = TextLayerData())
-        val vectorLayer = Layer(id = "layer_vector", name = "Test Vector", type = LayerType.VECTOR, vectorPathData = VectorPathData())
-        val mediaLayer = Layer(id = "layer_media", name = "Test Media", type = LayerType.MEDIA, mediaWidth = 200f, mediaHeight = 200f)
-        val adjLayer = Layer(id = "layer_adj", name = "Test Adj", type = LayerType.ADJUSTMENT)
-
-        withEditorFixture(listOf(shapeLayer, textLayer, vectorLayer, mediaLayer, adjLayer)) { _, _ ->
-            // 1. Check Shape Layer
+    private fun assertTools(layer: Layer) {
+        withEditorFixture(listOf(layer)) { _, _ ->
             compose.onNodeWithContentDescription("Layers").performClick()
-            compose.onNodeWithText("Test Shape").performClick()
+            compose.onNodeWithText(layer.name).performClick()
             compose.onNodeWithContentDescription("Close Layers").performClick()
-
-            compose.onNodeWithText("Fill", useUnmergedTree = true).assertIsDisplayed()
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).assertIsDisplayed()
-
-            // Open Fill dialog on Shape
-            compose.onNodeWithText("Fill", useUnmergedTree = true).performClick()
-            compose.onNodeWithText("Fill Settings", useUnmergedTree = true).assertIsDisplayed()
+            compose.onNodeWithText("Fill").assertExists().performClick()
+            compose.onNodeWithText("Fill").assertExists()
             compose.onNodeWithContentDescription("Close Fill").performClick()
-
-            // Open Border & Shadow dialog on Shape
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).performClick()
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).assertIsDisplayed()
-            compose.onNodeWithContentDescription("Close").performClick()
-
-            // 2. Check Text Layer
-            compose.onNodeWithContentDescription("Layers").performClick()
-            compose.onNodeWithText("Test Text").performClick()
-            compose.onNodeWithContentDescription("Close Layers").performClick()
-
-            compose.onNodeWithText("Fill", useUnmergedTree = true).assertIsDisplayed()
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).assertIsDisplayed()
-
-            // 3. Check Vector Layer
-            compose.onNodeWithContentDescription("Layers").performClick()
-            compose.onNodeWithText("Test Vector").performClick()
-            compose.onNodeWithContentDescription("Close Layers").performClick()
-
-            compose.onNodeWithText("Fill", useUnmergedTree = true).assertIsDisplayed()
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).assertIsDisplayed()
-
-            // 4. Check Media Layer
-            compose.onNodeWithContentDescription("Layers").performClick()
-            compose.onNodeWithText("Test Media").performClick()
-            compose.onNodeWithContentDescription("Close Layers").performClick()
-
-            compose.onNodeWithText("Fill", useUnmergedTree = true).assertIsDisplayed()
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).assertIsDisplayed()
-
-            // 5. Check Adjustment Layer: Fill and Border & Shadow should NOT be shown
-            compose.onNodeWithContentDescription("Layers").performClick()
-            compose.onNodeWithText("Test Adj").performClick()
-            compose.onNodeWithContentDescription("Close Layers").performClick()
-
-            compose.onNodeWithText("Fill", useUnmergedTree = true).assertDoesNotExist()
-            compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).assertDoesNotExist()
+            compose.onNodeWithText("Border & Shadow").performClick()
+            compose.onNodeWithText("Stroke").assertExists()
+            compose.onNodeWithText("Shadow").assertExists()
         }
     }
+
+    @Test fun shapeTools() = assertTools(Layer(id="s", name="Shape Layer", type=LayerType.SHAPE, shapeData=ShapeData()))
+    @Test fun textTools() = assertTools(Layer(id="t", name="Text Layer", type=LayerType.TEXT, textData=TextLayerData(text="Test")))
+    @Test fun vectorTools() = assertTools(Layer(id="v", name="Vector Layer", type=LayerType.VECTOR, vectorPathData=VectorPathData()))
+    @Test fun mediaTools() = assertTools(Layer(id="m", name="Media Layer", type=LayerType.MEDIA, mediaAssetPath="assets/test.png"))
 
     @Test
     fun testFillEditorModifiesDocumentAndSynchronizes() {

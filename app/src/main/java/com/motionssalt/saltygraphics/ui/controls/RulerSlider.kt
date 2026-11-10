@@ -1,6 +1,5 @@
 package com.motionssalt.saltygraphics.ui.controls
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.foundation.Canvas

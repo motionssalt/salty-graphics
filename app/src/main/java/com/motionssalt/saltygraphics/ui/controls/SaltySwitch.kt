@@ -5,7 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -97,14 +97,14 @@ fun SaltySwitch(
     Box(
         modifier = modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-            .clickable(
+            .toggleable(
+                value = checked,
+                onValueChange = { onCheckedChange?.invoke(it) },
                 interactionSource = interactionSource,
                 indication = null,
                 enabled = enabled,
                 role = Role.Switch
-            ) {
-                onCheckedChange?.invoke(!checked)
-            },
+            ),
         contentAlignment = Alignment.Center
     ) {
         // Track

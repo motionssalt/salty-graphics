@@ -348,7 +348,7 @@ object LayerCompositor {
                     val fillPaint = Paint()
                     if (FillRenderer.configureFillPaint(fillPaint, fill, bounds)) {
                         canvas.drawPath(path, fillPaint)
-                    } else if (data.hasFill) {
+                    } else if (layer.fillData == null && data.hasFill) {
                         fillPaint.color = data.fillColor.toInt()
                         fillPaint.style = Paint.Style.FILL
                         canvas.drawPath(path, fillPaint)
@@ -357,7 +357,7 @@ object LayerCompositor {
                     val strokePaint = Paint()
                     if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
                         FillRenderer.drawPathWithStroke(canvas, path, stroke, strokePaint)
-                    } else if (data.hasStroke && data.strokeWidth > 0) {
+                    } else if (layer.strokeData == null && data.hasStroke && data.strokeWidth > 0) {
                         val legacyStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                             color = data.strokeColor.toInt()
                             strokeWidth = data.strokeWidth
