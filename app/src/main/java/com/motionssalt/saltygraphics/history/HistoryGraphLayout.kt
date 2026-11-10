@@ -56,55 +56,64 @@ object HistoryGraphCalculator {
             }
         }
 
-        // 3. Topological traversal from root to assign lanes and vertical Y order
+        // 3. Topological traversal from root to assign lanes and depth-based vertical Y order
         val laneAssignment = mutableMapOf<String, Int>()
         val yOrder = mutableMapOf<String, Int>()
         var nextLane = 1
-        var currentY = 0
 
-        // Queue for BFS traversal
+        // Assign main path: all nodes on main path get lane 0 and sequential depth
+        val mainPathList = mutableListOf<String>()
+        var pCurr: ActionNode? = allNodes[currentNodeId]
+        while (pCurr != null) {
+            mainPathList.add(0, pCurr.id)
+            pCurr = pCurr.parentId?.let { allNodes[it] }
+        }
+        mainPathList.forEachIndexed { index, id ->
+            laneAssignment[id] = 0
+            yOrder[id] = index
+        }
+
+        // Recursive or queue-based DFS to lay out branches in dedicated lanes
         val visited = mutableSetOf<String>()
-        val queue = ArrayDeque<String>()
-        queue.add(rootNodeId)
+        visited.addAll(mainPathList)
 
-        while (queue.isNotEmpty()) {
-            val nodeId = queue.removeFirst()
-            if (visited.contains(nodeId)) continue
+        fun assignBranch(nodeId: String, lane: Int, depth: Int) {
+            if (nodeId in visited) return
             visited.add(nodeId)
+            laneAssignment[nodeId] = lane
+            yOrder[nodeId] = depth
 
-            val node = allNodes[nodeId] ?: continue
-
-            // Lane 0 is reserved for Main Path
-            val lane = if (mainPathSet.contains(nodeId)) {
-                0
-            } else {
-                laneAssignment[nodeId] ?: run {
-                    val assigned = nextLane++
-                    assigned
+            val node = allNodes[nodeId] ?: return
+            var continuationLane = lane
+            var firstChild = true
+            for (childId in node.childrenIds) {
+                if (childId !in mainPathSet) {
+                    val childLane = if (firstChild) continuationLane else nextLane++
+                    firstChild = false
+                    assignBranch(childId, childLane, depth + 1)
                 }
             }
-            laneAssignment[nodeId] = lane
-            yOrder[nodeId] = currentY++
+        }
 
-            // Process children: main path child first, then side branches
-            val sortedChildren = node.childrenIds.sortedByDescending { mainPathSet.contains(it) }
-            var continuationAssigned = false
-            for (childId in sortedChildren) {
-                if (!mainPathSet.contains(childId) && !laneAssignment.containsKey(childId)) {
-                    // Continue a retained straight branch in the same lane. Only
-                    // actual forks allocate another lane, not every action.
-                    laneAssignment[childId] = if (lane > 0 && !continuationAssigned) lane else nextLane++
-                    continuationAssigned = true
+        // Process side branches forking from main path nodes
+        for (mainNodeId in mainPathList) {
+            val node = allNodes[mainNodeId] ?: continue
+            val parentDepth = yOrder[mainNodeId] ?: 0
+            for (childId in node.childrenIds) {
+                if (childId !in mainPathSet) {
+                    val branchLane = nextLane++
+                    assignBranch(childId, branchLane, parentDepth + 1)
                 }
-                queue.add(childId)
             }
         }
 
         // Include any remaining orphan nodes
+        var orphanY = (yOrder.values.maxOrNull() ?: 0) + 1
         for (nodeId in allNodes.keys) {
-            if (!visited.contains(nodeId)) {
+            if (nodeId !in visited) {
                 laneAssignment[nodeId] = nextLane++
-                yOrder[nodeId] = currentY++
+                yOrder[nodeId] = orphanY++
+                visited.add(nodeId)
             }
         }
 

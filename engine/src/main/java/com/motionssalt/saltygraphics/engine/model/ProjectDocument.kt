@@ -221,6 +221,10 @@ data class ProjectDocument(
         return null
     }
 
+    fun updateEditorSettings(transform: (EditorSettings) -> EditorSettings): ProjectDocument {
+        return copy(editorSettings = transform(editorSettings), updatedAt = System.currentTimeMillis())
+    }
+
     fun updateLayer(targetId: String, transform: (Layer) -> Layer): ProjectDocument {
         fun updateRecursive(list: List<Layer>): List<Layer> {
             return list.map { layer ->

@@ -15,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.data.ProjectRepository
 import com.motionssalt.saltygraphics.media.MediaImporter
+import com.motionssalt.saltygraphics.engine.action.ActionIdentity
 import com.motionssalt.saltygraphics.engine.action.ActionTree
 import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
 import com.motionssalt.saltygraphics.engine.action.PasteMode
@@ -135,13 +136,26 @@ fun EditorScreen(
         }
     }
 
+    fun recordCommandAndAutoSave(identity: ActionIdentity, mutation: (ProjectDocument) -> ProjectDocument) {
+        val treeRef = actionTree ?: return
+        treeRef.recordCommand(identity, mutation)
+        historyVersion++
+        projectDocument = treeRef.currentDocument
+        val snapshot = treeRef.toSnapshot()
+        repository.saveProjectInBackground(treeRef.currentDocument, snapshot)
+    }
+
+    fun recordSettingChange(identity: ActionIdentity, transform: (EditorSettings) -> EditorSettings) {
+        recordCommandAndAutoSave(identity) { it.updateEditorSettings(transform) }
+    }
+
     fun recordAndAutoSave(description: String, newDoc: ProjectDocument) {
         val treeRef = actionTree ?: return
         treeRef.recordAction(description, newDoc)
         historyVersion++
         projectDocument = treeRef.currentDocument
         val snapshot = treeRef.toSnapshot()
-        repository.saveProjectInBackground(newDoc, snapshot)
+        repository.saveProjectInBackground(treeRef.currentDocument, snapshot)
     }
 
     fun restoreHistoryDocument(restored: ProjectDocument) {
@@ -285,8 +299,15 @@ fun EditorScreen(
                     zoom = 1.0f
                     panOffset = Offset.Zero
                 },
-                onToggleGrid = { recordAndAutoSave("Toggle grid", doc.copy(editorSettings = doc.editorSettings.copy(showGrid = !doc.editorSettings.showGrid))) },
-                onGridSizeChange = { recordAndAutoSave("Grid size", doc.copy(editorSettings = doc.editorSettings.copy(gridSize = it))) },
+                onToggleGrid = {
+                    val show = !(doc.editorSettings.showGrid)
+                    recordSettingChange(ActionIdentity(if (show) "Show" else "Hide", "Gridlines")) { it.copy(showGrid = show) }
+                },
+                onGridSizeChange = { nextSize ->
+                    val currentSize = doc.editorSettings.gridSize
+                    val verb = if (nextSize >= currentSize) "Increase" else "Decrease"
+                    recordSettingChange(ActionIdentity(verb, "Grid", "size")) { it.copy(gridSize = nextSize) }
+                },
                 onSaveSgClick = {
                     val name = doc.name.ifBlank { "Project" }.replace(" ", "_")
                     saveSgLauncher.launch("$name.sg")
@@ -518,7 +539,16 @@ fun EditorScreen(
                         { description, layer -> recordAndAutoSave(description, doc.updateLayer(layer.id) { layer }) },
                         { isVectorSettingsOpen = false })
                 } else if (isProjectSettingsOpen) {
-                    ProjectSettingsPage(doc, { recordAndAutoSave("Project settings", it) }, { isProjectSettingsOpen = false })
+                    ProjectSettingsPage(
+                        document = doc,
+                        onUpdateSetting = { identity, transform ->
+                            recordSettingChange(identity, transform)
+                        },
+                        onNameChange = { newName ->
+                            recordCommandAndAutoSave(ActionIdentity("Rename", "Project")) { it.copy(name = newName) }
+                        },
+                        onBack = { isProjectSettingsOpen = false }
+                    )
                 } else if (!pageOpen) {
 
             BottomPanel(
@@ -618,22 +648,29 @@ fun EditorScreen(
                         targetLayer = currentSelectedLayer,
                         allLayers = doc.activeLayers,
                         onAddEffect = { effect ->
-                            val updated = doc.updateLayer(currentSelectedLayer.id) {
-                                it.copy(effects = it.effects + effect)
+                            val def = EffectRegistry.getEffectDefinition(effect.effectId)
+                            val identity = ActionIdentity("Add", def?.name ?: "Effect")
+                            recordCommandAndAutoSave(identity) { latestDoc ->
+                                latestDoc.updateLayer(currentSelectedLayer.id) {
+                                    it.copy(effects = it.effects + effect)
+                                }
                             }
-                            recordAndAutoSave("Add Effect", updated)
                         },
                         onRemoveEffect = { effectId ->
-                            val updated = doc.updateLayer(currentSelectedLayer.id) {
-                                it.copy(effects = it.effects.filter { e -> e.effectId != effectId })
+                            val def = EffectRegistry.getEffectDefinition(effectId)
+                            val identity = ActionIdentity("Remove", def?.name ?: "Effect")
+                            recordCommandAndAutoSave(identity) { latestDoc ->
+                                latestDoc.updateLayer(currentSelectedLayer.id) {
+                                    it.copy(effects = it.effects.filter { e -> e.effectId != effectId })
+                                }
                             }
-                            recordAndAutoSave("Remove Effect", updated)
                         },
-                        onUpdateEffect = { updatedEffect ->
-                            val updated = doc.updateLayer(currentSelectedLayer.id) {
-                                it.copy(effects = it.effects.map { e -> if (e.effectId == updatedEffect.effectId) updatedEffect else e })
+                        onUpdateEffect = { identity, updatedEffect ->
+                            recordCommandAndAutoSave(identity) { latestDoc ->
+                                latestDoc.updateLayer(currentSelectedLayer.id) {
+                                    it.copy(effects = it.effects.map { e -> if (e.effectId == updatedEffect.effectId) updatedEffect else e })
+                                }
                             }
-                            recordAndAutoSave("Update Effect", updated)
                         },
                         onClose = { isEffectsSheetOpen = false }
                     )

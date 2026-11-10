@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V3",
+  "current_phase": "fix_round_4/V4",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -741,8 +741,8 @@
       {
         "id": "V3",
         "title": "History action identity, clean tree, branching bug, and lost settings",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root causes: 1) Action labels were unstructured or missing context. 2) Settings lost-update bug: settings mutations captured whole document/settings snapshots rather than per-property mutations. Modifying a second property (e.g., grid size after grid color) captured the initial default gridColor (0x66808080L gray), overwriting the user's black color. 3) Branching graph layout bug: HistoryGraphCalculator used a flat BFS traversal where nodes from distinct branches were interleaved in vertical Y order, creating edge crossings and a tangled visual appearance. Fixes: 1) Created ActionIdentity in engine with structured verb, target, property and toLabel() formatter, added ActionIdentity to ActionNode. 2) Added recordCommand(identity, mutation) to ActionTree and updateEditorSettings to ProjectDocument for per-property atomic mutations. 3) Updated ProjectSettingsPage to mutate individual properties against tree.currentDocument. 4) Rewrote HistoryGraphLayout with depth-based lane assignment (parent.depth + 1 for child branches in dedicated lanes), eliminating edge crossings. 5) Created HistoryActionIdentityAndBranchingTest verifying action labels, branching correctness across undo/redo/branching, black grid color retention across grid size changes, and 60 randomized settings mutations across undo/redo."
       },
       {
         "id": "V4",

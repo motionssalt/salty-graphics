@@ -88,6 +88,7 @@ object GlobalClipboard {
 data class ActionNode(
     val id: String = UUID.randomUUID().toString(),
     val description: String,
+    val identity: ActionIdentity? = null,
     val parentId: String? = null,
     val childrenIds: List<String> = emptyList(),
     val timestamp: Long = System.currentTimeMillis(),
@@ -126,6 +127,7 @@ class ActionTree(
         val root = ActionNode(
             id = "root",
             description = "Initial Project",
+            identity = ActionIdentity("Initial", "Project"),
             parentId = null,
             snapshot = initialState
         )
@@ -139,10 +141,34 @@ class ActionTree(
         get() = documentStates[currentNodeId] ?: _nodes[rootNodeId]?.snapshot ?: ProjectDocument()
 
     /**
+     * Records a per-property command that applies only its own mutation to currentDocument.
+     * Guaranteed never to overwrite unrelated properties or use a stale document.
+     */
+    fun recordCommand(
+        identity: ActionIdentity,
+        mutation: (ProjectDocument) -> ProjectDocument
+    ): ActionNode {
+        val base = currentDocument
+        val updated = mutation(base)
+        return recordActionWithIdentity(identity, updated)
+    }
+
+    fun recordActionWithIdentity(
+        identity: ActionIdentity,
+        newDocument: ProjectDocument
+    ): ActionNode {
+        return recordAction(identity.toLabel(), newDocument, identity)
+    }
+
+    /**
      * Records a new action command and transitions the document.
      * If currentNode is not a leaf (e.g. after undo), creates a new branch!
      */
-    fun recordAction(description: String, newDocument: ProjectDocument): ActionNode {
+    fun recordAction(
+        description: String,
+        newDocument: ProjectDocument,
+        identity: ActionIdentity? = null
+    ): ActionNode {
         val state = documentState(newDocument)
         // Refuse selection-only/timestamp-only commands even if a future caller
         // accidentally routes a layer tap through the document command boundary.
@@ -151,10 +177,13 @@ class ActionTree(
         }
         val newNodeId = UUID.randomUUID().toString()
         val parent = _nodes[currentNodeId]
+        val resolvedIdentity = identity ?: ActionIdentity.inferFromDescription(description)
+        val finalDescription = identity?.toLabel() ?: description
 
         val newNode = ActionNode(
             id = newNodeId,
-            description = description,
+            description = finalDescription,
+            identity = resolvedIdentity,
             parentId = currentNodeId,
             childrenIds = emptyList(),
             timestamp = System.currentTimeMillis(),
