@@ -28,7 +28,7 @@ class LayerStackingOrderPropertyTest {
             name = name,
             type = LayerType.SHAPE,
             shapeData = ShapeData(
-                shapeType = ShapeType.RECTANGLE,
+                type = ShapeType.RECTANGLE,
                 width = size,
                 height = size,
                 fillColor = color,
