@@ -21,7 +21,6 @@ class ControlEngineArchitectureTest {
         assertTrue("Source directory must exist: ${candidateDir.absolutePath}", candidateDir.exists())
 
         val violations = mutableListOf<String>()
-
         candidateDir.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
             val relativePath = file.relativeTo(candidateDir).path
             // Allow the library implementations themselves
@@ -37,14 +36,12 @@ class ControlEngineArchitectureTest {
                 if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
                     return@forEachIndexed
                 }
-
                 // Check raw Switch import or usage
                 if (trimmed.contains("import androidx.compose.material3.Switch") ||
                     trimmed.matches(Regex(".*\\bSwitch\\s*\\(.*"))
                 ) {
                     violations.add("$relativePath:${lineIdx + 1}: Found raw Switch usage ($trimmed)")
                 }
-
                 // Check raw Slider / RangeSlider import or usage
                 if (trimmed.contains("import androidx.compose.material3.Slider") ||
                     trimmed.contains("import androidx.compose.material3.RangeSlider") ||
@@ -53,7 +50,7 @@ class ControlEngineArchitectureTest {
                     violations.add("$relativePath:${lineIdx + 1}: Found raw Slider usage ($trimmed)")
                 }
             }
-        })
+        }
 
         assertTrue(
             "Forbidden raw Material controls found! Use shared controls (SaltySwitch, ToggleControl, RulerSlider, ProgressSliderControl) from ui.controls instead:\n" +
@@ -70,6 +67,7 @@ class ControlEngineArchitectureTest {
 
         val rulerFile = File(candidateDir, "RulerSlider.kt")
         assertTrue("RulerSlider.kt must exist", rulerFile.exists())
+
         val rulerContent = rulerFile.readText()
         assertFalse(
             "RulerSlider must NOT contain any haptic feedback calls (V5)",
@@ -83,16 +81,17 @@ class ControlEngineArchitectureTest {
 
     @Test
     fun testDynamicControlRegistrationAndExtensibility() {
-        // Register a dynamic custom effect with all standard control types
+        // Register a dynamic custom effect with standard control types
         val customEffect = EffectDefinition(
             id = "custom_lens_blur",
             name = "Lens Blur Pro",
-            category = EffectCategory.BLUR,
             description = "Dynamically registered professional lens blur effect",
+            glslShader = "// GLSL shader stub",
             controls = listOf(
-                ControlDefinition.Slider(
+                ControlDefinition(
                     id = "radius",
                     label = "Blur Radius",
+                    type = ControlType.SLIDER,
                     defaultValue = 15f,
                     minValue = 0f,
                     maxValue = 100f,
@@ -100,57 +99,74 @@ class ControlEngineArchitectureTest {
                     unit = "px",
                     sliderStyle = SliderStyle.RULER
                 ),
-                ControlDefinition.Toggle(
+                ControlDefinition(
                     id = "bokeh",
                     label = "Enable Bokeh",
-                    defaultValue = true
+                    type = ControlType.TOGGLE,
+                    defaultToggle = true
                 ),
-                ControlDefinition.Color(
+                ControlDefinition(
                     id = "tint",
                     label = "Aperture Tint",
-                    defaultValue = 0x80FFFFFFL
+                    type = ControlType.COLOR_PICKER,
+                    defaultColor = 0x80FFFFFFL
                 ),
-                ControlDefinition.Dropdown(
+                ControlDefinition(
                     id = "shape",
                     label = "Diaphragm Shape",
-                    options = listOf("Circular", "Hexagonal", "Octagonal"),
-                    defaultValue = "Hexagonal"
+                    type = ControlType.DROPDOWN,
+                    options = listOf("Circular", "Hexagonal", "Octagonal")
                 )
             )
         )
 
-        // Verify control properties and instantiation
-        assertEquals("custom_lens_blur", customEffect.id)
-        assertEquals(4, customEffect.controls.size)
+        // Register and verify retrieval from registry
+        EffectRegistry.registerEffect(customEffect)
+        val retrieved = EffectRegistry.getEffectDefinition("custom_lens_blur")
+        assertNotNull(retrieved)
+        assertEquals("Lens Blur Pro", retrieved?.name)
+        assertEquals(4, retrieved?.controls?.size)
 
-        val slider = customEffect.controls[0] as ControlDefinition.Slider
+        val slider = retrieved!!.controls[0]
         assertEquals("Blur Radius", slider.label)
+        assertEquals(ControlType.SLIDER, slider.type)
         assertEquals(SliderStyle.RULER, slider.sliderStyle)
 
-        val toggle = customEffect.controls[1] as ControlDefinition.Toggle
+        val toggle = retrieved.controls[1]
         assertEquals("Enable Bokeh", toggle.label)
-        assertTrue(toggle.defaultValue)
+        assertEquals(ControlType.TOGGLE, toggle.type)
+        assertTrue(toggle.defaultToggle)
 
-        val color = customEffect.controls[2] as ControlDefinition.Color
-        assertEquals(0x80FFFFFFL, color.defaultValue)
+        val color = retrieved.controls[2]
+        assertEquals("Aperture Tint", color.label)
+        assertEquals(ControlType.COLOR_PICKER, color.type)
+        assertEquals(0x80FFFFFFL, color.defaultColor)
 
-        val dropdown = customEffect.controls[3] as ControlDefinition.Dropdown
-        assertEquals("Hexagonal", dropdown.defaultValue)
+        val dropdown = retrieved.controls[3]
+        assertEquals("Diaphragm Shape", dropdown.label)
+        assertEquals(ControlType.DROPDOWN, dropdown.type)
         assertEquals(3, dropdown.options.size)
 
-        // Instantiate and test parameter mutation
-        val instance = customEffect.instantiate()
-        assertEquals(15f, instance.parameters["radius"])
-        assertEquals(true, instance.parameters["bokeh"])
-        assertEquals(0x80FFFFFFL, instance.parameters["tint"])
-        assertEquals("Hexagonal", instance.parameters["shape"])
+        // Instantiate EffectInstance with parameters and verify mutations
+        val instance = EffectInstance(
+            effectId = customEffect.id,
+            floatParams = mapOf("radius" to 15f),
+            boolParams = mapOf("bokeh" to true),
+            colorParams = mapOf("tint" to 0x80FFFFFFL),
+            stringParams = mapOf("shape" to "Hexagonal")
+        )
+        assertEquals(15f, instance.getFloat("radius"))
+        assertTrue(instance.getBool("bokeh"))
+        assertEquals(0x80FFFFFFL, instance.getColor("tint"))
+        assertEquals("Hexagonal", instance.getString("shape"))
 
-        val updatedInstance = instance.withParameter("radius", 45f)
-            .withParameter("bokeh", false)
-            .withParameter("shape", "Octagonal")
-
-        assertEquals(45f, updatedInstance.parameters["radius"])
-        assertEquals(false, updatedInstance.parameters["bokeh"])
-        assertEquals("Octagonal", updatedInstance.parameters["shape"])
+        val updatedInstance = instance.copy(
+            floatParams = instance.floatParams + ("radius" to 45f),
+            boolParams = instance.boolParams + ("bokeh" to false),
+            stringParams = instance.stringParams + ("shape" to "Octagonal")
+        )
+        assertEquals(45f, updatedInstance.getFloat("radius"))
+        assertFalse(updatedInstance.getBool("bokeh"))
+        assertEquals("Octagonal", updatedInstance.getString("shape"))
     }
 }

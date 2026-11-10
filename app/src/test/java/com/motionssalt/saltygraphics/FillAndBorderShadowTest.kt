@@ -215,10 +215,10 @@ class FillAndBorderShadowTest {
         val center = 100
         val vectorPath = VectorPathData(
             points = listOf(
-                VectorPoint(50f, 50f),
-                VectorPoint(150f, 50f),
-                VectorPoint(150f, 150f),
-                VectorPoint(50f, 150f)
+                BezierPoint(50f, 50f),
+                BezierPoint(150f, 50f),
+                BezierPoint(150f, 150f),
+                BezierPoint(50f, 150f)
             ),
             isClosed = true
         )
@@ -361,8 +361,8 @@ class FillAndBorderShadowTest {
 
             // Verify document was updated with Gradient fill
             runBlocking {
-                val saved = repo.loadProject(docId)
-                val updatedLayer = saved.findLayerById("target_shape")
+                val saved = repo.getProject(docId)
+                val updatedLayer = saved?.findLayerById("target_shape")
                 assertNotNull(updatedLayer)
                 assertEquals(FillType.GRADIENT, updatedLayer?.effectiveFill?.type)
             }
@@ -396,8 +396,8 @@ class FillAndBorderShadowTest {
 
             // Verify document was updated with stroke enabled
             runBlocking {
-                val saved = repo.loadProject(docId)
-                val updatedLayer = saved.findLayerById("stroke_shape")
+                val saved = repo.getProject(docId)
+                val updatedLayer = saved?.findLayerById("stroke_shape")
                 assertNotNull(updatedLayer)
                 assertTrue("Stroke should now be enabled", updatedLayer!!.effectiveStroke.isEnabled)
             }
