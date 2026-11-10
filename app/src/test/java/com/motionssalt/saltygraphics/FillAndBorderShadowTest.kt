@@ -26,21 +26,10 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/**
- * Acceptance test suite for V7 (Universal Fill) and V8 (Border & Shadow).
- * Covers CPU reference rendering (stroke alignment, dashes, caps, shadow, transparent fills)
- * and real UI interaction across all supported layer types (Text, Shape, Vector, Media).
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class FillAndBorderShadowTest {
-
-    @get:Rule
-    val compose = createEmptyComposeRule()
-
-    private val context get() = RuntimeEnvironment.getApplication()
-
     // =========================================================================
     // 1. CPU Reference Tests: Stroke Alignment, Dashes, Caps, Shadows & Fills
     // =========================================================================
@@ -241,18 +230,28 @@ class FillAndBorderShadowTest {
 
     // =========================================================================
     // 2. Real UI Tests: Fill and Border & Shadow on Text, Shape, Vector, Media
-    // =========================================================================
+}
 
-    private fun withEditorFixture(
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+abstract class FillEditorFixture {
+    @get:Rule val compose = createEmptyComposeRule()
+    private val context get() = RuntimeEnvironment.getApplication()
+    protected fun withEditorFixture(
         layers: List<Layer>,
         check: (docId: String, repo: ProjectRepository) -> Unit
     ) {
         val repo = ProjectRepository(context)
         val doc = runBlocking {
             val project = repo.createProject("Fill & Border Fixture", CanvasSize(1000, 1000))
+            val asset = java.io.File(repo.getAssetsDir(project.id), "test.png")
+            java.io.FileOutputStream(asset).use { out ->
+                Bitmap.createBitmap(16,16,Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLUE) }.compress(Bitmap.CompressFormat.PNG,100,out)
+            }
             project.copy(layers = layers).also { repo.saveProject(it) }
         }
-        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         try {
             host.get().setContent {
                 MaterialTheme {
@@ -270,12 +269,11 @@ class FillAndBorderShadowTest {
             }
             check(doc.id, repo)
         } finally {
-            compose.runOnIdle { host.get().setContent {} }
             host.pause().stop().destroy()
         }
     }
 
-    private fun assertTools(layer: Layer) {
+    protected fun assertTools(layer: Layer) {
         withEditorFixture(listOf(layer)) { _, _ ->
             compose.onNodeWithContentDescription("Layers").performClick()
             compose.onNodeWithText(layer.name).performClick()
@@ -289,11 +287,40 @@ class FillAndBorderShadowTest {
         }
     }
 
-    @Test fun shapeTools() = assertTools(Layer(id="s", name="Shape Layer", type=LayerType.SHAPE, shapeData=ShapeData()))
-    @Test fun textTools() = assertTools(Layer(id="t", name="Text Layer", type=LayerType.TEXT, textData=TextLayerData(text="Test")))
-    @Test fun vectorTools() = assertTools(Layer(id="v", name="Vector Layer", type=LayerType.VECTOR, vectorPathData=VectorPathData()))
-    @Test fun mediaTools() = assertTools(Layer(id="m", name="Media Layer", type=LayerType.MEDIA, mediaAssetPath="assets/test.png"))
+}
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class ShapeFillToolsTest : FillEditorFixture() {
+    @Test fun shapeTools() = assertTools(Layer(id="s", name="Shape Layer", type=LayerType.SHAPE, shapeData=ShapeData()))
+}
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class TextFillToolsTest : FillEditorFixture() {
+    @Test fun textTools() = assertTools(Layer(id="t", name="Text Layer", type=LayerType.TEXT, textData=TextLayerData(text="Test")))
+}
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class VectorFillToolsTest : FillEditorFixture() {
+    @Test fun vectorTools() = assertTools(Layer(id="v", name="Vector Layer", type=LayerType.VECTOR, vectorPathData=VectorPathData()))
+}
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class MediaFillToolsTest : FillEditorFixture() {
+    @Test fun mediaTools() = assertTools(Layer(id="m", name="Media Layer", type=LayerType.MEDIA, mediaAssetPath="assets/test.png"))
+}
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class FillEditorMutationTest : FillEditorFixture() {
     @Test
     fun testFillEditorModifiesDocumentAndSynchronizes() {
         val shapeLayer = Layer(
@@ -320,6 +347,7 @@ class FillAndBorderShadowTest {
             compose.onNodeWithContentDescription("Close Fill").performClick()
 
             // Verify document was updated with Gradient fill
+            compose.waitUntil(10000) { runBlocking { repo.getProject(docId)?.findLayerById("target_shape")?.effectiveFill?.type == FillType.GRADIENT } }
             runBlocking {
                 val saved = repo.getProject(docId)
                 val updatedLayer = saved?.findLayerById("target_shape")
@@ -329,6 +357,12 @@ class FillAndBorderShadowTest {
         }
     }
 
+}
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class BorderEditorMutationTest : FillEditorFixture() {
     @Test
     fun testBorderShadowEditorModifiesDocumentAndStrokeSettings() {
         val shapeLayer = Layer(
@@ -355,6 +389,7 @@ class FillAndBorderShadowTest {
             compose.onNodeWithContentDescription("Close").performClick()
 
             // Verify document was updated with stroke enabled
+            compose.waitUntil(10000) { runBlocking { repo.getProject(docId)?.findLayerById("stroke_shape")?.effectiveStroke?.isEnabled == true } }
             runBlocking {
                 val saved = repo.getProject(docId)
                 val updatedLayer = saved?.findLayerById("stroke_shape")
