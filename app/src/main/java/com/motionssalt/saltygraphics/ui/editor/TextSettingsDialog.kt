@@ -387,7 +387,10 @@ fun TextSettingsDialog(
                 OutlinedTextField(
                     value = tempText,
                     onValueChange = { tempText = it },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 220.dp),
+                    singleLine = false,
+                    minLines = 3,
+                    maxLines = 100,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 260.dp),
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                 )
             },

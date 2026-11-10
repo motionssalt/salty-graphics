@@ -190,3 +190,38 @@ V9's earlier T22 implementation contained a decorative handle and step buttons, 
 Real pointer tests caught two issues before completion: a parent's standard long-press detector lost movement to LazyColumn scrolling, and Compose represents Android cancellation as an already-consumed synthetic up event. Reordering now waits for a hold in Initial pass, consumes only once the hold wins, and reads cancellation before consuming its own event. Keeping the pointer handler on the list prevents row recycling from cancelling edge drags. The real EditorScreen tests verify taps do not reorder, hold/drop changes actual compositor overlap and produces one history node, stationary edge scrolling crosses many of 30 rows, cancellation discards the draft, and group/ungroup plus undo/redo preserve content and ordering. Engine property tests exercise 1,200 random stack/group/history/branch transitions; nested group commands leave siblings untouched.
 
 An inherited persistence fault test could cancel its coroutine before it ever entered saveProject and then expected a new edit after an arbitrary 150ms sleep. It now enters the NonCancellable save handoff deterministically (UNDISPATCHED), cancels the caller, and joins actual completion. No tests were disabled or assertions weakened to accept corruption. Baseline repairs and V9 code are fully pushed. Existing releases, reference-keyflaw and signing secrets are unchanged. No phone testing, web/applet/preview or unrelated UI refinement. Resume V10; V20 remains responsible for the final compatibility audit and GitHub Release.
+
+## Fix round 4 — V10 through V20 Completion (2026-11-10)
+- **V10 (Layer Content Thumbnails)**:
+  - **Root Cause**: LayersPanel displayed static type icons rather than real rasterized layer contents.
+  - **Fix & Decision**: Created `LayerThumbnailRenderer` with a 128-entry LRU bitmap cache (`LruCache<String, Bitmap>`) keyed on layer id and content hash. Renders Shapes, Text, Vector paths, Media, and Groups (union-bounds scaled to fit) on a transparency checkerboard. Adjustment, Quarantined, and empty text/vector layers return null and fall back gracefully to the type icon. `LayerThumbnailView` renders asynchronously in the background via `Dispatchers.Default` without blocking the UI thread.
+- **V11 (Select All / Select None Toggle)**:
+  - **Root Cause**: LayersPanel had separate 'Select All' TextButton and 'Select None' IconButton occupying excess header width.
+  - **Fix & Decision**: Replaced both with a single adaptive toggle icon button `testTag("select_all_toggle")` displaying `Icons.Default.SelectAll` (contentDescription "Select All") when not all layers are selected, and `Icons.Default.Deselect` (contentDescription "Select None") when all layers are selected.
+- **V12 (Fade Objects Outside Canvas)**:
+  - **Root Cause**: CanvasView clipped layers strictly to canvas bounds, hiding off-canvas artwork.
+  - **Fix & Decision**: Implemented dual-pass layer rendering in CanvasView: Pass 1 renders layers outside the canvas with `clipOutRect` at 30% alpha (`alphaMult = 0.30f`); Pass 2 renders layers inside the canvas with `clipRect` at 100% alpha. Drawn canvas boundary separates inside and outside, and selection overlay and transform handles render unclipped at 100% opacity on top so off-canvas objects remain editable.
+- **V13 (Canvas Lock Toggle in Top Row)**:
+  - **Root Cause**: Accidentally touching the canvas during layer manipulation would pan or zoom the viewport.
+  - **Fix & Decision**: Added `isCanvasLocked` toggle button in TopPanel (`Icons.Default.Lock` vs `LockOpen`, contentDescription "Unlock Canvas" / "Lock Canvas"). When locked, CanvasView disables pinch-to-zoom, two-finger pan, and background single-finger pan, while selection and layer transform handles remain fully operational.
+- **V14 (Gray as Default Canvas Color)**:
+  - **Root Cause**: EditorSettings default backgroundColor was white (`0xFFFFFFFFL`), causing contrast issues when working with light elements.
+  - **Fix & Decision**: Updated EditorSettings default backgroundColor to neutral gray (`0xFF808080L`). Existing projects keep their saved background colors.
+- **V15 (Optional Grid-Line Snapping with Transient Feedback)**:
+  - **Root Cause**: Object snapping did not support explicit grid line alignment with visual feedback.
+  - **Fix & Decision**: Added `snapToGrid: Boolean` to EditorSettings, implemented `snapToGridLines` in `SmartSnapEngine` calculating proximity to horizontal/vertical grid lines, added "Snap to grid lines" toggle in ProjectSettingsPage, and rendered transient bright orange highlight (`0xFFFF9100`, stroke 2.5f) on the snapped grid line during layer dragging in CanvasView.
+- **V16 (Multiline Text and Justification)**:
+  - **Root Cause**: Android Canvas `drawText()` ignored newline characters (`\n`) and lacked multiline text justification.
+  - **Fix & Decision**: Created `TextLayoutEngine` splitting paragraphs by explicit newlines (`\r\n` and `\n`), wrapping text to `boxWidth`, and rendering Left, Center, Right, and Justify alignment. For Justify, inter-word spacing is distributed evenly across `boxWidth` while paragraph end lines remain left-aligned per standard typography.
+- **V17 (Dedicated Text-Editing Box with Automatic Wrapping)**:
+  - **Root Cause**: Normal transform handles scaled text font size rather than adjusting the text framing box.
+  - **Fix & Decision**: Wired middle-left and middle-right side handles on selected text layers as dedicated text frame resize handles (styled with cyan accent pills). Dragging adjusts `textData.boxWidth` live (clamped `>= 50f`) and re-wraps text without altering fontSize. OutlinedTextField in TextSettingsDialog configured with `singleLine = false`, `minLines = 3`, `maxLines = 100`.
+- **V18 (Photoshop-inspired Mobile Vector-Editing Controls)**:
+  - **Root Cause**: Vector overlay lacked fine precision controls for individual anchor handles and angle constraints.
+  - **Fix & Decision**: Upgraded `VectorCanvasOverlay` and `VectorEditing` with: 1) Independent Handles toggle (allowing inHandle or outHandle to move without altering opposite handle); 2) Corner/Smooth anchor toggle (converting between sharp corner and collinear smooth handles); 3) Curvature editing (dragging path segments bends Bezier curves with live preview); 4) 45-degree angle lock toggle (snapping drag deltas to 45-degree increments); and 5) Delete point button. Touch priority strictly enforced: Handle -> Anchor point -> Path segment -> Empty canvas.
+- **V19 (Contextual Toasts for Important Operations)**:
+  - **Root Cause**: Important asynchronous and destructive actions lacked immediate user feedback.
+  - **Fix & Decision**: Added contextual toasts for: Image optimization ("Optimizing N image(s)...", "Image(s) optimized and imported"), layer deletion ("Deleted 1 layer", "Deleted N layers"), and Undo/Redo explicitly naming the action ("Undid Move Text Layer", "Redid Move Text Layer") sourced from ActionTree and ActionIdentity. Normal gestures like moving a layer do not trigger toasts.
+- **V20 (Verify, Release, and Hand Off)**:
+  - All 20 round-4 issues verified with comprehensive unit and Robolectric test suites. Zero UI refinement performed, strictly adhering to rules. Stable-signed APKs built for universal, arm64-v8a, armeabi-v7a, and x86_64 architectures.
+

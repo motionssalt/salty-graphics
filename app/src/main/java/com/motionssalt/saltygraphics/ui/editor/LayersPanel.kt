@@ -29,6 +29,12 @@ import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
 import com.motionssalt.saltygraphics.engine.action.PasteMode
 import com.motionssalt.saltygraphics.engine.model.Layer
 import com.motionssalt.saltygraphics.engine.model.LayerType
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.motionssalt.saltygraphics.render.LayerThumbnailRenderer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.motionssalt.saltygraphics.theme.*
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -94,12 +100,18 @@ fun LayersPanel(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = onSelectAll) {
-                    Text("Select All", style = MaterialTheme.typography.labelSmall, color = colors.onSurface)
-                }
-
-                IconButton(onClick = onSelectNone, enabled = selectedLayerIds.isNotEmpty()) {
-                    Icon(Icons.Default.Deselect, contentDescription = "Select None")
+                val isAllSelected = layers.isNotEmpty() && selectedLayerIds.size >= layers.size
+                IconButton(
+                    onClick = {
+                        if (isAllSelected) onSelectNone() else onSelectAll()
+                    },
+                    modifier = Modifier.testTag("select_all_toggle")
+                ) {
+                    Icon(
+                        imageVector = if (isAllSelected) Icons.Default.Deselect else Icons.Default.SelectAll,
+                        contentDescription = if (isAllSelected) "Select None" else "Select All",
+                        tint = if (isAllSelected) colors.primary else colors.onSurface
+                    )
                 }
 
                 IconButton(
@@ -312,19 +324,10 @@ fun LayerRow(
                     .background(colors.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    when (layer.type) {
-                        LayerType.MEDIA -> Icons.Default.Image
-                        LayerType.TEXT -> Icons.Default.TextFields
-                        LayerType.ADJUSTMENT -> Icons.Default.Tune
-                        LayerType.SHAPE -> Icons.Default.Category
-                        LayerType.VECTOR -> Icons.Default.Draw
-                        LayerType.GROUP -> Icons.Default.Folder
-                        LayerType.QUARANTINED -> Icons.Default.Warning
-                    },
-                    contentDescription = null,
-                    tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                LayerThumbnailView(
+                    layer = layer,
+                    isSelected = isSelected,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -399,5 +402,51 @@ private fun SelectivePasteRow(label: String, checked: Boolean, onChecked: (Boole
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         Checkbox(checked = checked, onCheckedChange = onChecked)
+    }
+}
+
+@Composable
+fun LayerThumbnailView(
+    layer: Layer,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val colors = MaterialTheme.colorScheme
+    var thumbnailBitmap by remember(layer.id, layer.hashCode()) {
+        mutableStateOf(LayerThumbnailRenderer.getCached(layer))
+    }
+
+    LaunchedEffect(layer.id, layer.hashCode()) {
+        if (thumbnailBitmap == null) {
+            val bmp = withContext(Dispatchers.Default) {
+                LayerThumbnailRenderer.renderThumbnail(layer)
+            }
+            thumbnailBitmap = bmp
+        }
+    }
+
+    val currentBmp = thumbnailBitmap
+    if (currentBmp != null) {
+        Image(
+            bitmap = currentBmp.asImageBitmap(),
+            contentDescription = "${layer.name} thumbnail",
+            modifier = modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+    } else {
+        Icon(
+            when (layer.type) {
+                LayerType.MEDIA -> Icons.Default.Image
+                LayerType.TEXT -> Icons.Default.TextFields
+                LayerType.ADJUSTMENT -> Icons.Default.Tune
+                LayerType.SHAPE -> Icons.Default.Category
+                LayerType.VECTOR -> Icons.Default.Draw
+                LayerType.GROUP -> Icons.Default.Folder
+                LayerType.QUARANTINED -> Icons.Default.Warning
+            },
+            contentDescription = null,
+            tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }

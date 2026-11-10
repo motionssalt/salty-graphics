@@ -28,7 +28,7 @@ class SelectionHistoryRegressionTest : SelectionPanelFixture() {
                 compose.onNodeWithText("Left shape").performClick()
                 compose.onNodeWithText("Right shape").performClick()
             }
-            compose.onNodeWithText("Select All").performClick()
+            compose.onNodeWithContentDescription("Select All").performClick()
             selection(2)
             compose.onNodeWithContentDescription("Select None").performClick()
             selection(0)

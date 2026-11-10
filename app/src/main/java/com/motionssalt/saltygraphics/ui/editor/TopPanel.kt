@@ -41,7 +41,9 @@ fun TopPanel(
     onReset100Percent: () -> Unit,
     onToggleGrid: () -> Unit,
     onGridSizeChange: (Int) -> Unit,
-    onSaveSgClick: () -> Unit = {}
+    onSaveSgClick: () -> Unit = {},
+    isCanvasLocked: Boolean = false,
+    onToggleCanvasLock: () -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     var showViewModeMenu by remember { mutableStateOf(false) }
@@ -83,34 +85,38 @@ fun TopPanel(
                         modifier = Modifier.background(colors.surfaceVariant)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Zoom In (+)", color = colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.ZoomIn, contentDescription = null, tint = colors.primary) },
+                            text = { Text("Zoom In (+)", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.ZoomIn, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
+                            enabled = !isCanvasLocked,
                             onClick = {
-                                onZoomIn()
+                                if (!isCanvasLocked) onZoomIn()
                                 showViewModeMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Zoom Out (-)", color = colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.ZoomOut, contentDescription = null, tint = colors.primary) },
+                            text = { Text("Zoom Out (-)", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.ZoomOut, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
+                            enabled = !isCanvasLocked,
                             onClick = {
-                                onZoomOut()
+                                if (!isCanvasLocked) onZoomOut()
                                 showViewModeMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Fit to Screen", color = colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.FitScreen, contentDescription = null, tint = colors.primary) },
+                            text = { Text("Fit to Screen", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.FitScreen, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
+                            enabled = !isCanvasLocked,
                             onClick = {
-                                onFitToScreen()
+                                if (!isCanvasLocked) onFitToScreen()
                                 showViewModeMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("100% Zoom", color = colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.Fullscreen, contentDescription = null, tint = colors.primary) },
+                            text = { Text("100% Zoom", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
+                            leadingIcon = { Icon(Icons.Default.Fullscreen, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
+                            enabled = !isCanvasLocked,
                             onClick = {
-                                onReset100Percent()
+                                if (!isCanvasLocked) onReset100Percent()
                                 showViewModeMenu = false
                             }
                         )
@@ -137,6 +143,18 @@ fun TopPanel(
                             )
                         }
                     }
+                }
+
+                // V13: Canvas Lock Toggle
+                IconButton(
+                    onClick = onToggleCanvasLock,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isCanvasLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                        contentDescription = if (isCanvasLocked) "Unlock Canvas" else "Lock Canvas",
+                        tint = if (isCanvasLocked) colors.secondary else colors.onSurfaceVariant
+                    )
                 }
 
                 // Preview Quality Badge / Button (T13: distinct from zoom with icon and fractional label)

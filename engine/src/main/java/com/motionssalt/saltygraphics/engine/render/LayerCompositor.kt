@@ -247,44 +247,39 @@ object LayerCompositor {
                 val textData = layer.textData ?: TextLayerData()
                 val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     textSize = textData.fontSize
-                    textAlign = when (textData.justification) {
-                        TextJustification.LEFT -> Paint.Align.LEFT
-                        TextJustification.RIGHT -> Paint.Align.RIGHT
-                        else -> Paint.Align.CENTER
-                    }
                     isFakeBoldText = textData.isBold
                     if (textData.isItalic) textSkewX = -0.25f
-                }
-                val fm = textPaint.fontMetrics
-                val textY = -(fm.descent + fm.ascent) / 2f
-                val x = when (textData.justification) {
-                    TextJustification.LEFT -> -textData.boxWidth / 2f
-                    TextJustification.RIGHT -> textData.boxWidth / 2f
-                    else -> 0f
+                    if (textData.letterSpacing != 0f) letterSpacing = textData.letterSpacing / 1000f
                 }
                 val bounds = RectF(-textData.boxWidth / 2f, -textData.boxHeight / 2f, textData.boxWidth / 2f, textData.boxHeight / 2f)
 
-                // Shadow for text
+                var shadowPaint: Paint? = null
                 if (shadow.isEnabled) {
-                    val shadowPaint = Paint(textPaint)
-                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                        canvas.drawText(textData.text, x + shadow.offsetX, textY + shadow.offsetY, shadowPaint)
+                    val p = Paint(textPaint)
+                    if (FillRenderer.configureShadowPaint(p, shadow)) {
+                        shadowPaint = p
                     }
                 }
 
-                // Fill for text
-                if (FillRenderer.configureFillPaint(textPaint, fill, bounds)) {
-                    canvas.drawText(textData.text, x, textY, textPaint)
-                } else {
+                if (!FillRenderer.configureFillPaint(textPaint, fill, bounds)) {
                     textPaint.color = textData.color.toInt()
-                    canvas.drawText(textData.text, x, textY, textPaint)
                 }
 
-                // Stroke / Outline for text
-                val strokePaint = Paint(textPaint)
-                if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                    canvas.drawText(textData.text, x, textY, strokePaint)
+                var strokePaint: Paint? = null
+                if (stroke.isEnabled) {
+                    val p = Paint(textPaint)
+                    if (FillRenderer.configureStrokePaint(p, stroke)) {
+                        strokePaint = p
+                    }
                 }
+
+                val followPath = if (textData.followPathLayerId != null && document != null) {
+                    document.findLayerById(textData.followPathLayerId)?.let { pathLayer ->
+                        pathLayer.vectorPathData?.let { buildVectorPath(it) }
+                    }
+                } else null
+
+                TextLayoutEngine.drawTextLayout(canvas, textData, textPaint, strokePaint, shadowPaint, followPath)
             }
             LayerType.MEDIA -> {
                 val mw = layer.mediaWidth ?: 300f
@@ -484,7 +479,7 @@ object LayerCompositor {
         return finalBitmap
     }
 
-    private fun buildVectorPath(data: VectorPathData): Path {
+    fun buildVectorPath(data: VectorPathData): Path {
         val path = Path()
         val points = data.points
         if (points.isNotEmpty()) {

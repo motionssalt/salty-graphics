@@ -13,7 +13,49 @@ object VectorEditing {
 
     fun toggleSmooth(p: BezierPoint): BezierPoint = if (p.hasInHandle || p.hasOutHandle) {
         BezierPoint(p.x, p.y)
-    } else p.copy(inHandleX = p.x - 40f, outHandleX = p.x + 40f)
+    } else p.copy(inHandleX = p.x - 40f, inHandleY = p.y, outHandleX = p.x + 40f, outHandleY = p.y)
+
+    fun makeCorner(p: BezierPoint): BezierPoint = BezierPoint(p.x, p.y)
+
+    fun makeSmooth(p: BezierPoint): BezierPoint {
+        if (p.hasInHandle || p.hasOutHandle) {
+            // Align outHandle with opposite of inHandle, or vice versa
+            if (p.hasInHandle && p.hasOutHandle) {
+                val inDx = p.inHandleX - p.x
+                val inDy = p.inHandleY - p.y
+                val inDist = hypot(inDx, inDy)
+                val outDx = p.outHandleX - p.x
+                val outDy = p.outHandleY - p.y
+                val outDist = hypot(outDx, outDy)
+                if (inDist > 0.001f) {
+                    val scale = if (outDist > 0.001f) outDist / inDist else 1f
+                    return p.copy(outHandleX = p.x - inDx * scale, outHandleY = p.y - inDy * scale)
+                }
+            } else if (p.hasInHandle) {
+                val inDx = p.inHandleX - p.x
+                val inDy = p.inHandleY - p.y
+                return p.copy(outHandleX = p.x - inDx, outHandleY = p.y - inDy)
+            } else {
+                val outDx = p.outHandleX - p.x
+                val outDy = p.outHandleY - p.y
+                return p.copy(inHandleX = p.x - outDx, inHandleY = p.y - outDy)
+            }
+        }
+        return p.copy(inHandleX = p.x - 40f, inHandleY = p.y, outHandleX = p.x + 40f, outHandleY = p.y)
+    }
+
+    /** Snap handle or point delta to nearest 45 degree angle */
+    fun snapTo45Degrees(originX: Float, originY: Float, targetX: Float, targetY: Float): Pair<Float, Float> {
+        val dx = targetX - originX
+        val dy = targetY - originY
+        val dist = hypot(dx, dy)
+        if (dist < 0.001f) return targetX to targetY
+        val angleRad = atan2(dy, dx)
+        val angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
+        val snappedDeg = (Math.round(angleDeg / 45f) * 45).toFloat()
+        val snappedRad = Math.toRadians(snappedDeg.toDouble())
+        return (originX + dist * cos(snappedRad)).toFloat() to (originY + dist * sin(snappedRad)).toFloat()
+    }
 
     fun bend(p: BezierPoint, x: Float, y: Float): BezierPoint = p.copy(
         inHandleX = 2 * p.x - x, inHandleY = 2 * p.y - y, outHandleX = x, outHandleY = y)

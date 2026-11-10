@@ -142,8 +142,12 @@ data class Layer(
             LayerType.SHAPE -> shapeData?.width ?: 200f
             LayerType.TEXT -> {
                 textData?.let {
+                    val longestLineLen = it.text.split("\r\n", "\n").maxOfOrNull { l -> l.length } ?: 1
                     val charW = it.fontSize * 0.6f
-                    maxOf(100f, it.text.length * charW)
+                    when (it.boxMode) {
+                        TextBoxMode.FREE -> maxOf(100f, longestLineLen * charW)
+                        else -> maxOf(100f, it.boxWidth)
+                    }
                 } ?: 400f
             }
             LayerType.MEDIA -> mediaWidth ?: 400f
@@ -163,7 +167,16 @@ data class Layer(
     val localHeight: Float
         get() = when (type) {
             LayerType.SHAPE -> shapeData?.height ?: 200f
-            LayerType.TEXT -> (textData?.fontSize ?: 64f) * 1.4f
+            LayerType.TEXT -> {
+                textData?.let {
+                    val lineCount = it.text.split("\r\n", "\n").size.coerceAtLeast(1)
+                    val singleLineH = it.fontSize * (it.lineSpacing / 100f)
+                    when (it.boxMode) {
+                        TextBoxMode.FREE -> maxOf(singleLineH, lineCount * singleLineH)
+                        else -> maxOf(it.boxHeight, lineCount * singleLineH)
+                    }
+                } ?: 90f
+            }
             LayerType.MEDIA -> mediaHeight ?: 400f
             LayerType.VECTOR -> {
                 val pts = editablePaths.flatMap { it.points }
@@ -181,12 +194,13 @@ data class Layer(
 
 @Serializable
 data class EditorSettings(
-    val backgroundColor: Long = 0xFF000000L,
+    val backgroundColor: Long = 0xFF808080L, // Neutral gray default canvas color (V14)
     val showGrid: Boolean = false,
     val gridSize: Int = 20,
     val gridColor: Long = 0x66808080L,
     val isSquareGrid: Boolean = false, // When false (default), grid matches canvas aspect ratio so last row/col is not cropped (T26)
-    val snapEnabled: Boolean = false,
+    val snapEnabled: Boolean = false, // General object / Smart Guides snapping
+    val snapToGrid: Boolean = false, // V15: Optional grid-line snapping separate from general snapping
     val snapTolerancePx: Float = 8f,
     val defaultPreviewQuality: com.motionssalt.saltygraphics.engine.render.PreviewQuality = com.motionssalt.saltygraphics.engine.render.PreviewQuality.HIGH
 )

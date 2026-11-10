@@ -67,10 +67,17 @@ fun ProjectSettingsPage(
             }
         )
         ToggleControl(
-            label = "Snap",
+            label = "Snap to objects",
             checked = settings.snapEnabled,
             onCheckedChange = { snap ->
                 onUpdateSetting(ActionIdentity(if (snap) "Enable" else "Disable", "Snap")) { it.copy(snapEnabled = snap) }
+            }
+        )
+        ToggleControl(
+            label = "Snap to grid lines",
+            checked = settings.snapToGrid,
+            onCheckedChange = { snapGrid ->
+                onUpdateSetting(ActionIdentity(if (snapGrid) "Enable" else "Disable", "Snap to Grid")) { it.copy(snapToGrid = snapGrid) }
             }
         )
         if (settings.snapEnabled) {

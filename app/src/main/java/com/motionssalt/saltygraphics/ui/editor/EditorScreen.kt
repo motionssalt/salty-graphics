@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -56,6 +57,7 @@ fun EditorScreen(
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     var showGrid by remember { mutableStateOf(false) }
     var gridSize by remember { mutableStateOf(20) }
+    var isCanvasLocked by rememberSaveable { mutableStateOf(false) }
 
     // Panel visibility states
     var isLayersPanelOpen by remember { mutableStateOf(false) }
@@ -188,6 +190,7 @@ fun EditorScreen(
     ) { uris ->
         val currentDoc = projectDocument ?: return@rememberLauncherForActivityResult
         if (uris.isNotEmpty()) {
+            Toast.makeText(context, "Optimizing ${uris.size} image(s)...", Toast.LENGTH_SHORT).show()
             val result = MediaImporter.importMediaFromUris(
                 context = context,
                 projectId = currentDoc.id,
@@ -202,6 +205,8 @@ fun EditorScreen(
                 }
                 recordAndAutoSave("Import Media (${result.importedLayers.size})", updatedDoc)
                 selectedLayerIds = setOf(result.importedLayers.last().id)
+                val count = result.importedLayers.size
+                Toast.makeText(context, "Image${if (count > 1) "s" else ""} optimized and imported", Toast.LENGTH_SHORT).show()
             }
             if (result.failureReasons.isNotEmpty()) {
                 Toast.makeText(context, result.failureReasons.first(), Toast.LENGTH_SHORT).show()
@@ -271,6 +276,8 @@ fun EditorScreen(
                 canRedo = tree.canRedo,
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
+                isCanvasLocked = isCanvasLocked,
+                onToggleCanvasLock = { isCanvasLocked = !isCanvasLocked },
                 onNavigateBack = {
                     if (activeGroupId != null) {
                         activeGroupId = null
@@ -286,13 +293,17 @@ fun EditorScreen(
                     }
                 },
                 onUndoClick = {
+                    val actionName = tree.undoActionName ?: "action"
                     if (tree.undo()) {
                         restoreHistoryDocument(tree.currentDocument)
+                        Toast.makeText(context, "Undid $actionName", Toast.LENGTH_SHORT).show()
                     }
                 },
                 onRedoClick = {
+                    val actionName = tree.redoActionName ?: "action"
                     if (tree.redo()) {
                         restoreHistoryDocument(tree.currentDocument)
+                        Toast.makeText(context, "Redid $actionName", Toast.LENGTH_SHORT).show()
                     }
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
@@ -339,6 +350,7 @@ fun EditorScreen(
                 zoom = zoom,
                 panOffset = panOffset,
                 previewQuality = doc.editorSettings.defaultPreviewQuality,
+                isCanvasLocked = isCanvasLocked,
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
                 onZoomPanChange = { newZoom, newPan ->
@@ -367,6 +379,18 @@ fun EditorScreen(
                         val updated=transforms.entries.fold(live) { d,(id,t) -> SelectionGeometry.apply(d,id,t) }
                         // Compare to the committed history state, not the last preview frame.
                         if(updated.layers!=actionTree?.currentDocument?.layers) recordAndAutoSave("Transform Layer",updated)
+                    }
+                },
+                onUpdateTextData = { layerId, newTextData ->
+                    projectDocument?.let { cur ->
+                        projectDocument = cur.updateLayer(layerId) { it.copy(textData = newTextData) }
+                    }
+                },
+                onCommitTextData = { layerId, finalTextData ->
+                    val live = projectDocument
+                    if (live != null) {
+                        val updated = live.updateLayer(layerId) { it.copy(textData = finalTextData) }
+                        recordAndAutoSave("Resize Text Box", updated)
                     }
                 }
             )
@@ -410,13 +434,15 @@ fun EditorScreen(
                         },
                         onDeleteLayers = { ids ->
                             val currentDoc = doc
-                            if (currentDoc != null) {
+                            if (currentDoc != null && ids.isNotEmpty()) {
                                 var updated: ProjectDocument = currentDoc
                                 for (id in ids) {
                                     updated = updated.removeLayer(id)
                                 }
                                 selectedLayerIds = emptySet()
                                 recordAndAutoSave("Delete Layers", updated)
+                                val count = ids.size
+                                Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
                             }
                         },
                         onRenameLayer = { id, newName ->
@@ -610,9 +636,13 @@ fun EditorScreen(
                     }
                 },
                 onDelete = {
+                    val count = selectedLayerIds.size
                     val updated = selectedLayerIds.fold(doc) { d, id -> d.removeLayer(id) }
                     selectedLayerIds = emptySet()
                     recordAndAutoSave("Delete Layers", updated)
+                    if (count > 0) {
+                        Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
 

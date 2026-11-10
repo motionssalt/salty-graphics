@@ -43,6 +43,7 @@ import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.engine.render.LayerCompositor
 import com.motionssalt.saltygraphics.engine.render.FillRenderer
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
+import com.motionssalt.saltygraphics.engine.render.TextLayoutEngine
 import com.motionssalt.saltygraphics.media.MediaCache
 import com.motionssalt.saltygraphics.theme.*
 import kotlin.math.*
@@ -89,8 +90,11 @@ fun CanvasView(
     onCommitLayerTransform: ((String, Transform2D) -> Unit)? = null,
     modifier: Modifier = Modifier,
     previewQuality: PreviewQuality = PreviewQuality.FULL,
+    isCanvasLocked: Boolean = false,
     onUpdateLayerTransforms: ((Map<String, Transform2D>) -> Unit)? = null,
-    onCommitLayerTransforms: ((Map<String, Transform2D>) -> Unit)? = null
+    onCommitLayerTransforms: ((Map<String, Transform2D>) -> Unit)? = null,
+    onUpdateTextData: ((String, TextLayerData) -> Unit)? = null,
+    onCommitTextData: ((String, TextLayerData) -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -106,6 +110,8 @@ fun CanvasView(
     var rotatingAnglePill by remember { mutableStateOf<String?>(null) }
     var rotatingPillPosition by remember { mutableStateOf<Offset?>(null) }
     var activeSmartGuides by remember { mutableStateOf<List<SmartGuideLine>>(emptyList()) }
+    var activeSnappedGridX by remember { mutableStateOf<Float?>(null) }
+    var activeSnappedGridY by remember { mutableStateOf<Float?>(null) }
 
     // Use rememberUpdatedState to avoid gesture coroutine teardown on rapid zoom/pan changes
     val currentZoom by rememberUpdatedState(zoom)
@@ -113,11 +119,14 @@ fun CanvasView(
     val currentDoc by rememberUpdatedState(document)
     val currentSelectedIds by rememberUpdatedState(selectedLayerIds)
     val currentFit by rememberUpdatedState(fit)
+    val canvasLocked by rememberUpdatedState(isCanvasLocked)
 
     val updateTransform by rememberUpdatedState(onUpdateLayerTransform)
     val commitTransform by rememberUpdatedState(onCommitLayerTransform)
     val updateTransforms by rememberUpdatedState(onUpdateLayerTransforms)
     val commitTransforms by rememberUpdatedState(onCommitLayerTransforms)
+    val updateTextData by rememberUpdatedState(onUpdateTextData)
+    val commitTextData by rememberUpdatedState(onCommitTextData)
     val selectLayer by rememberUpdatedState(onSelectLayer)
     val changeZoomPan by rememberUpdatedState(onZoomPanChange)
     val selectedLayer = remember(document, selectedLayerIds) { selectionProxy(context, document, selectedLayerIds) }
@@ -145,7 +154,10 @@ fun CanvasView(
                     var target = selectionProxy(context,activeDoc,currentSelectedIds)
                     var bounds = target?.let { selectionBounds(context,activeDoc,it) }
                     var handle = SelectionHandle.NONE
+                    var isTextFrameDrag = false
+                    var textStartBoxWidth = 0f
                     var ids = currentSelectedIds
+                    val isSelectedTextLayer = target != null && target.type == LayerType.TEXT && target.textData != null
                     if(target != null && bounds != null && !target.isLocked) {
                         val t=target.transform; val box=bounds
                         val local=VectorEditing.toLocal(downPoint.x,downPoint.y,t)
@@ -159,8 +171,15 @@ fun CanvasView(
                                 if(h.y<0) box.top else if(h.y>0) box.bottom else box.center.y),t)
                             h to hypot(point.x-downPoint.x,point.y-downPoint.y)*effZoom
                         }
-                        handle=candidates.filter { it.second<=touchRadius }.minByOrNull { it.second }?.first
-                            ?: if(local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
+                        val closest = candidates.filter { it.second<=touchRadius }.minByOrNull { it.second }?.first
+                        if (isSelectedTextLayer && (closest == SelectionHandle.MIDDLE_LEFT || closest == SelectionHandle.MIDDLE_RIGHT)) {
+                            handle = closest
+                            isTextFrameDrag = true
+                            textStartBoxWidth = target.textData!!.boxWidth
+                        } else {
+                            handle = closest
+                                ?: if(local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
+                        }
                     }
                     if(handle==SelectionHandle.NONE) {
                         // Hit-test from topmost layer (index 0 = top of panel = topmost on canvas)
@@ -213,11 +232,21 @@ fun CanvasView(
                                 val cancelled=event.changes.any { it.isConsumed }
                                 if(cancelled && transform!=start) preview(start)
                                 // A tap is selection, not a transform/history command.
-                                if(!cancelled && !multiTouch && transform!=start) {
+                                if(!cancelled && !multiTouch && isTextFrameDrag && targetId != null) {
+                                    val currentTextData = activeDoc.findLayerById(targetId)?.textData
+                                    if (currentTextData != null) {
+                                        commitTextData?.invoke(targetId, currentTextData)
+                                    }
+                                } else if(!cancelled && !multiTouch && transform!=start) {
                                     val batch=values(transform)
                                     if(commitTransforms!=null) commitTransforms!!.invoke(batch)
                                     else batch.forEach { (id,t) -> (commitTransform ?: updateTransform).invoke(id,t) }
                                 } else if(!cancelled && !multiTouch && handle==SelectionHandle.NONE && dragDistance<touchSlop) selectLayer(null)
+                                activeSmartGuides = emptyList()
+                                activeSnappedGridX = null
+                                activeSnappedGridY = null
+                                rotatingAnglePill = null
+                                rotatingPillPosition = null
                                 finished=true
                                 break
                             }
@@ -226,7 +255,7 @@ fun CanvasView(
                                 multiTouch=true
                                 val a=pressed[0].position; val b=pressed[1].position
                                 val distance=(a-b).getDistance();val centroid=(a+b)/2f
-                                if(pinchDistance>0f && distance>0f) {
+                                if(!canvasLocked && pinchDistance>0f && distance>0f) {
                                     val factor=(distance/pinchDistance).coerceIn(.8f,1.25f)
                                     val newZoom=(currentZoom*factor).coerceIn(.1f,10f)
                                     // Keep the artwork under the pinch centroid stationary.
@@ -243,7 +272,23 @@ fun CanvasView(
                             val delta=change.position-last
                             dragDistance+=delta.getDistance()
                             if(handle==SelectionHandle.NONE) {
-                                if(dragDistance>=touchSlop) {changeZoomPan(currentZoom,currentPan+delta);change.consume()}
+                                if(!canvasLocked && dragDistance>=touchSlop) {changeZoomPan(currentZoom,currentPan+delta);change.consume()}
+                            } else if(isTextFrameDrag && targetId != null && bounds != null && dragDistance>=touchSlop) {
+                                val currentPoint = documentPoint(change.position)
+                                val t = start
+                                val localCurrent = VectorEditing.toLocal(currentPoint.x, currentPoint.y, t)
+                                val localDown = VectorEditing.toLocal(downPoint.x, downPoint.y, t)
+                                val dx = localCurrent.first - localDown.first
+                                val newBoxW = if (handle == SelectionHandle.MIDDLE_RIGHT) {
+                                    max(50f, textStartBoxWidth + (dx * 2f))
+                                } else {
+                                    max(50f, textStartBoxWidth - (dx * 2f))
+                                }
+                                val layerText = activeDoc.findLayerById(targetId)?.textData
+                                if (layerText != null) {
+                                    updateTextData?.invoke(targetId, layerText.copy(boxWidth = newBoxW, boxMode = TextBoxMode.PARAGRAPH))
+                                }
+                                change.consume()
                             } else if(bounds!=null && dragDistance>=touchSlop) {
                                 var rawTransform = SelectionGeometry.drag(start,bounds,handle,downPoint,documentPoint(change.position))
                                 
@@ -276,6 +321,26 @@ fun CanvasView(
                                     }
                                 } else {
                                     activeSmartGuides = emptyList()
+                                }
+
+                                // V15: Optional grid-line snapping with transient feedback
+                                if (activeDoc.editorSettings.snapToGrid && handle == SelectionHandle.BODY) {
+                                    val gridSnap = SmartSnapEngine.snapToGridLines(
+                                        targetBounds = bounds,
+                                        targetTransform = rawTransform,
+                                        canvasWidth = activeDoc.canvasSize.width.toFloat(),
+                                        canvasHeight = activeDoc.canvasSize.height.toFloat(),
+                                        gridSize = activeDoc.editorSettings.gridSize,
+                                        isSquareGrid = activeDoc.editorSettings.isSquareGrid,
+                                        effectiveZoom = effZoom,
+                                        tolerancePx = activeDoc.editorSettings.snapTolerancePx
+                                    )
+                                    rawTransform = gridSnap.snappedTransform
+                                    activeSnappedGridX = gridSnap.snappedGridX
+                                    activeSnappedGridY = gridSnap.snappedGridY
+                                } else if (!activeDoc.editorSettings.snapToGrid) {
+                                    activeSnappedGridX = null
+                                    activeSnappedGridY = null
                                 }
 
                                 transform = rawTransform
@@ -320,27 +385,41 @@ fun CanvasView(
                 drawRect(safeColor(document.editorSettings.backgroundColor), topLeft, Size(scaledW, scaledH))
             }
 
-            // Gridlines (T26: Square toggle and canvas-matched aspect ratio)
+            // Gridlines (T26: Square toggle and canvas-matched aspect ratio; V15: Snapping transient feedback)
             if (showGrid && gridSize > 0) {
                 val gridColor = safeColor(document.editorSettings.gridColor)
+                val snapHighlightColor = Color(0xFFFF9100)
                 if (document.editorSettings.isSquareGrid) {
                     // Square grid mode: equal-sized cells
                     val cellPx = gridSize * effectiveZoom
                     if (cellPx > 4f) {
                         var x = topLeft.x
                         while (x <= topLeft.x + scaledW + 0.1f) {
-                            drawLine(color = gridColor, start = Offset(x, topLeft.y), end = Offset(x, topLeft.y + scaledH), strokeWidth = 1f)
+                            val docX = (x - center.x) / effectiveZoom
+                            val isSnapped = activeSnappedGridX != null && abs(docX - activeSnappedGridX!!) < (4f / effectiveZoom)
+                            drawLine(
+                                color = if (isSnapped) snapHighlightColor else gridColor,
+                                start = Offset(x, topLeft.y),
+                                end = Offset(x, topLeft.y + scaledH),
+                                strokeWidth = if (isSnapped) 2.5f else 1f
+                            )
                             x += cellPx
                         }
                         var y = topLeft.y
                         while (y <= topLeft.y + scaledH + 0.1f) {
-                            drawLine(color = gridColor, start = Offset(topLeft.x, y), end = Offset(topLeft.x + scaledW, y), strokeWidth = 1f)
+                            val docY = (y - center.y) / effectiveZoom
+                            val isSnapped = activeSnappedGridY != null && abs(docY - activeSnappedGridY!!) < (4f / effectiveZoom)
+                            drawLine(
+                                color = if (isSnapped) snapHighlightColor else gridColor,
+                                start = Offset(topLeft.x, y),
+                                end = Offset(topLeft.x + scaledW, y),
+                                strokeWidth = if (isSnapped) 2.5f else 1f
+                            )
                             y += cellPx
                         }
                     }
                 } else {
                     // Default mode: match grid's aspect ratio to the canvas so lines wrap corner to corner
-                    // and final row/column is never cropped!
                     val cols = maxOf(1, (canvasW / gridSize).roundToInt())
                     val rows = maxOf(1, (canvasH / gridSize).roundToInt())
                     val colSpacing = scaledW / cols
@@ -348,37 +427,40 @@ fun CanvasView(
                     if (colSpacing > 2f && rowSpacing > 2f) {
                         for (c in 0..cols) {
                             val x = topLeft.x + c * colSpacing
-                            drawLine(color = gridColor, start = Offset(x, topLeft.y), end = Offset(x, topLeft.y + scaledH), strokeWidth = 1f)
+                            val docX = (x - center.x) / effectiveZoom
+                            val isSnapped = activeSnappedGridX != null && abs(docX - activeSnappedGridX!!) < (4f / effectiveZoom)
+                            drawLine(
+                                color = if (isSnapped) snapHighlightColor else gridColor,
+                                start = Offset(x, topLeft.y),
+                                end = Offset(x, topLeft.y + scaledH),
+                                strokeWidth = if (isSnapped) 2.5f else 1f
+                            )
                         }
                         for (r in 0..rows) {
                             val y = topLeft.y + r * rowSpacing
-                            drawLine(color = gridColor, start = Offset(topLeft.x, y), end = Offset(topLeft.x + scaledW, y), strokeWidth = 1f)
+                            val docY = (y - center.y) / effectiveZoom
+                            val isSnapped = activeSnappedGridY != null && abs(docY - activeSnappedGridY!!) < (4f / effectiveZoom)
+                            drawLine(
+                                color = if (isSnapped) snapHighlightColor else gridColor,
+                                start = Offset(topLeft.x, y),
+                                end = Offset(topLeft.x + scaledW, y),
+                                strokeWidth = if (isSnapped) 2.5f else 1f
+                            )
                         }
                     }
                 }
             }
 
-            // Canvas Border
-            drawRect(
-                color = colors.outline,
-                topLeft = topLeft,
-                size = Size(scaledW, scaledH),
-                style = Stroke(width = 1.5f)
-            )
+            fun drawActiveLayers(nativeCanvas: NativeCanvas, alphaMult: Float = 1.0f) {
+                for (layer in document.activeLayers.asReversed()) {
+                    if (!layer.isVisible) continue
+                    if (layer.type == LayerType.ADJUSTMENT) continue // Adjustment layers draw no direct shape
 
-            // Render Layers Bottom to Top using isolated saveLayer compositing
-            for (layer in document.activeLayers.asReversed()) {
-                if (!layer.isVisible) continue
-                if (layer.type == LayerType.ADJUSTMENT) continue // Adjustment layers draw no direct shape
-
-                val layerCenterX = center.x + (layer.transform.translationX * effectiveZoom)
-                val layerCenterY = center.y + (layer.transform.translationY * effectiveZoom)
-
-                drawIntoCanvas { composeCanvas ->
-                    val nativeCanvas = composeCanvas.nativeCanvas
+                    val layerCenterX = center.x + (layer.transform.translationX * effectiveZoom)
+                    val layerCenterY = center.y + (layer.transform.translationY * effectiveZoom)
 
                     val layerPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
-                        alpha = (layer.opacity * 255).roundToInt().coerceIn(0, 255)
+                        alpha = (layer.opacity * 255 * alphaMult).roundToInt().coerceIn(0, 255)
                         LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
                     }
 
@@ -468,7 +550,7 @@ fun CanvasView(
                             }
                             val pathLayer = if (textData.followPathLayerId != null) document.findLayerById(textData.followPathLayerId!!) else null
                             val vectorPath = pathLayer?.vectorPathData ?: pathLayer?.shapeData?.toVectorPath()
-                            if (vectorPath != null && vectorPath.points.size >= 2) {
+                            val nativePath = if (vectorPath != null && vectorPath.points.size >= 2) {
                                 val path = nativeVectorPath(vectorPath)
                                 val targetMatrix = android.graphics.Matrix().apply {
                                     setTranslate(pathLayer!!.transform.translationX, pathLayer.transform.translationY)
@@ -485,57 +567,35 @@ fun CanvasView(
                                     inverse.preConcat(targetMatrix)
                                     path.transform(inverse)
                                 }
-                                val measure = android.graphics.PathMeasure(path, false)
-                                val pathLen = measure.length
-                                val hOffset = pathLen * textData.pathOffsetPercent
-                                if (shadow.isEnabled) {
-                                    val shadowPaint = NativePaint(paint)
-                                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                                        nativeCanvas.drawTextOnPath(textData.text, path, hOffset + shadow.offsetX, shadow.offsetY, shadowPaint)
-                                    }
+                                path
+                            } else null
+
+                            var strokePaint: NativePaint? = null
+                            if (stroke.isEnabled && stroke.width > 0f) {
+                                strokePaint = NativePaint(paint)
+                                FillRenderer.configureStrokePaint(strokePaint, stroke)
+                            } else if (textData.hasOutline) {
+                                strokePaint = NativePaint(paint).apply {
+                                    style = NativePaint.Style.STROKE
+                                    strokeWidth = textData.outlineWidth
+                                    color = textData.outlineColor.toInt()
                                 }
-                                if (stroke.isEnabled && stroke.width > 0f) {
-                                    val strokePaint = NativePaint(paint)
-                                    if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                                        nativeCanvas.drawTextOnPath(textData.text, path, hOffset, 0f, strokePaint)
-                                    }
-                                } else if (textData.hasOutline) {
-                                    val outlinePaint = NativePaint(paint).apply {
-                                        style = NativePaint.Style.STROKE
-                                        strokeWidth = textData.outlineWidth
-                                        color = textData.outlineColor.toInt()
-                                    }
-                                    nativeCanvas.drawTextOnPath(textData.text, path, hOffset, 0f, outlinePaint)
-                                }
-                                nativeCanvas.drawTextOnPath(textData.text, path, hOffset, 0f, paint)
-                            } else {
-                                val x = when (textData.justification) {
-                                    TextJustification.LEFT -> -textData.boxWidth / 2f
-                                    TextJustification.RIGHT -> textData.boxWidth / 2f
-                                    else -> 0f
-                                }
-                                val y = (paint.descent() + paint.ascent()) / -2f
-                                if (shadow.isEnabled) {
-                                    val shadowPaint = NativePaint(paint)
-                                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                                        nativeCanvas.drawText(textData.text, x + shadow.offsetX, y + shadow.offsetY, shadowPaint)
-                                    }
-                                }
-                                if (stroke.isEnabled && stroke.width > 0f) {
-                                    val strokePaint = NativePaint(paint)
-                                    if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                                        nativeCanvas.drawText(textData.text, x, y, strokePaint)
-                                    }
-                                } else if (textData.hasOutline) {
-                                    val outlinePaint = NativePaint(paint).apply {
-                                        style = NativePaint.Style.STROKE
-                                        strokeWidth = textData.outlineWidth
-                                        color = textData.outlineColor.toInt()
-                                    }
-                                    nativeCanvas.drawText(textData.text, x, y, outlinePaint)
-                                }
-                                nativeCanvas.drawText(textData.text, x, y, paint)
                             }
+
+                            var shadowPaint: NativePaint? = null
+                            if (shadow.isEnabled) {
+                                shadowPaint = NativePaint(paint)
+                                FillRenderer.configureShadowPaint(shadowPaint, shadow)
+                            }
+
+                            TextLayoutEngine.drawTextLayout(
+                                canvas = nativeCanvas,
+                                textData = textData,
+                                textPaint = paint,
+                                strokePaint = strokePaint,
+                                shadowPaint = shadowPaint,
+                                path = nativePath
+                            )
                         }
                         LayerType.MEDIA -> {
                             val fill = layer.effectiveFill
@@ -684,6 +744,35 @@ fun CanvasView(
                     nativeCanvas.restore() // Restores saveLayer, blending into canvas backdrop
                 }
             }
+
+            drawIntoCanvas { composeCanvas ->
+                val nativeCanvas = composeCanvas.nativeCanvas
+
+                // V12: Outside canvas: objects outside the canvas stay visible but very faint (30% opacity)
+                nativeCanvas.save()
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    nativeCanvas.clipOutRect(topLeft.x, topLeft.y, topLeft.x + scaledW, topLeft.y + scaledH)
+                } else {
+                    nativeCanvas.clipRect(topLeft.x, topLeft.y, topLeft.x + scaledW, topLeft.y + scaledH, android.graphics.Region.Op.DIFFERENCE)
+                }
+                drawActiveLayers(nativeCanvas, alphaMult = 0.30f)
+                nativeCanvas.restore()
+
+                // V12: Inside canvas: objects rendered at normal 100% opacity, strictly clipped to canvas
+                nativeCanvas.save()
+                nativeCanvas.clipRect(topLeft.x, topLeft.y, topLeft.x + scaledW, topLeft.y + scaledH)
+                drawActiveLayers(nativeCanvas, alphaMult = 1.0f)
+                nativeCanvas.restore()
+            }
+
+            // Canvas Border (distinct boundary between full opacity inside and faint outside)
+            drawRect(
+                color = colors.outline,
+                topLeft = topLeft,
+                size = Size(scaledW, scaledH),
+                style = Stroke(width = 1.5f)
+            )
+
             // Draw selection last so it remains legible over every layer/background.
             // Adjustment layers have no canvas selection box or handles (T12)
             if(selectedLayer!=null && selectedLayer.type != LayerType.ADJUSTMENT && selectedBounds!=null) {
@@ -706,8 +795,23 @@ fun CanvasView(
                         }
                         listOf(Offset(-halfW,-halfH),Offset(halfW,-halfH),Offset(halfW,halfH),Offset(-halfW,halfH))
                             .forEach { handle(it,9.dp.toPx()) }
-                        listOf(Offset(0f,-halfH),Offset(0f,halfH),Offset(-halfW,0f),Offset(halfW,0f))
+                        listOf(Offset(0f,-halfH),Offset(0f,halfH))
                             .forEach { handle(it,6.dp.toPx()) }
+                        if (selectedLayer.type == LayerType.TEXT) {
+                            // Text box frame width resize handles: rounded pill style with cyan accent
+                            fun textSideHandle(p: Offset) {
+                                val pillW = 6.dp.toPx()
+                                val pillH = 16.dp.toPx()
+                                val top = p - Offset(pillW / 2f, pillH / 2f)
+                                drawRoundRect(Color.Black, top, Size(pillW, pillH), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()))
+                                drawRoundRect(Color(0xFF00E5FF), top + Offset(1.dp.toPx(), 1.dp.toPx()), Size(pillW - 2.dp.toPx(), pillH - 2.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()))
+                            }
+                            textSideHandle(Offset(-halfW, 0f))
+                            textSideHandle(Offset(halfW, 0f))
+                        } else {
+                            listOf(Offset(-halfW,0f),Offset(halfW,0f))
+                                .forEach { handle(it,6.dp.toPx()) }
+                        }
                         val rotate=Offset(0f,-halfH-32.dp.toPx())
                         drawLine(Color.Black,Offset(0f,-halfH),rotate,3.dp.toPx())
                         drawLine(Color.White,Offset(0f,-halfH),rotate,1.dp.toPx())
@@ -821,14 +925,7 @@ private fun drawLayerMask(
                 xfermode = maskPaint.xfermode
                 colorFilter = maskPaint.colorFilter
             }
-            val fm = textPaint.fontMetrics
-            val textY = -(fm.descent + fm.ascent) / 2f
-            val x = when (textData.justification) {
-                TextJustification.LEFT -> -textData.boxWidth / 2f
-                TextJustification.RIGHT -> textData.boxWidth / 2f
-                else -> 0f
-            }
-            canvas.drawText(textData.text, x, textY, textPaint)
+            TextLayoutEngine.drawTextLayout(canvas, textData, textPaint)
         }
         LayerType.MEDIA -> {
             val mediaAsset = layer.mediaAssetPath

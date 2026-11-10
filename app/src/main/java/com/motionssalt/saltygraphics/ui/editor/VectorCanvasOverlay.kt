@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,6 +51,10 @@ fun VectorCanvasOverlay(
     val latestCommit by rememberUpdatedState(onCommit)
     val colors = MaterialTheme.colorScheme
 
+    // V18 Controls
+    var independentHandles by remember { mutableStateOf(false) }
+    var angleLock45 by remember { mutableStateOf(false) }
+
     val current = draft ?: layer
     val index = pathIndex.coerceIn(0, (current.editablePaths.size - 1).coerceAtLeast(0))
     val path = current.editablePaths.getOrNull(index) ?: VectorPathData()
@@ -70,7 +75,7 @@ fun VectorCanvasOverlay(
     }
 
     Box(Modifier.fillMaxSize().onSizeChanged { viewport = it }) {
-        Canvas(Modifier.fillMaxSize().testTag("vector_handles").pointerInput(layer.id, pathIndex, tool, scale, pan) {
+        Canvas(Modifier.fillMaxSize().testTag("vector_handles").pointerInput(layer.id, pathIndex, tool, scale, pan, independentHandles, angleLock45) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val original = latestLayer
@@ -129,7 +134,7 @@ fun VectorCanvasOverlay(
 
                 val (x, y) = local(down.position)
 
-                // Priority 3: Path Segments
+                // Priority 3: Path Segments (Curvature editing)
                 if (pointIndex < 0 && working.points.size >= 2) {
                     val count = if (working.isClosed) working.points.size else working.points.size - 1
                     for (i in 0 until count) {
@@ -193,12 +198,35 @@ fun VectorCanvasOverlay(
                         }
                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
                         if (change.pressed && pointIndex >= 0 && (tool == VectorTool.SELECT || tool == VectorTool.ADD)) {
-                            val (mx, my) = local(change.position)
+                            val (rawMx, rawMy) = local(change.position)
                             val p = working.points.getOrNull(pointIndex)
                             if (p != null) {
+                                val (mx, my) = if (angleLock45) {
+                                    VectorEditing.snapTo45Degrees(p.x, p.y, rawMx, rawMy)
+                                } else {
+                                    rawMx to rawMy
+                                }
                                 val next = when (handle) {
-                                    -1 -> p.copy(inHandleX = mx, inHandleY = my)
-                                    1 -> p.copy(outHandleX = mx, outHandleY = my)
+                                    -1 -> {
+                                        if (independentHandles) {
+                                            p.copy(inHandleX = mx, inHandleY = my)
+                                        } else {
+                                            // Mirrored handle move
+                                            val dx = mx - p.x
+                                            val dy = my - p.y
+                                            p.copy(inHandleX = mx, inHandleY = my, outHandleX = p.x - dx, outHandleY = p.y - dy)
+                                        }
+                                    }
+                                    1 -> {
+                                        if (independentHandles) {
+                                            p.copy(outHandleX = mx, outHandleY = my)
+                                        } else {
+                                            // Mirrored handle move
+                                            val dx = mx - p.x
+                                            val dy = my - p.y
+                                            p.copy(outHandleX = mx, outHandleY = my, inHandleX = p.x - dx, inHandleY = p.y - dy)
+                                        }
+                                    }
                                     2 -> if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) VectorEditing.bend(p, mx, my) else p
                                     else -> VectorEditing.movePoint(p, mx, my)
                                 }
@@ -232,15 +260,84 @@ fun VectorCanvasOverlay(
                     drawCircle(colors.secondary, 5.dp.toPx(), h)
                 }
                 val radius = 6.dp.toPx()
-                drawRect(if (i == selectedPoint) colors.primary else colors.surface, at - Offset(radius, radius), Size(radius * 2f, radius * 2f))
-                drawRect(colors.primary, at - Offset(radius, radius), Size(radius * 2f, radius * 2f), style = Stroke(1.5.dp.toPx()))
+                val isSelected = (i == selectedPoint)
+                drawRect(if (isSelected) colors.primary else colors.surface, at - Offset(radius, radius), Size(radius * 2f, radius * 2f))
+                drawRect(if (isSelected) Color(0xFF00E5FF) else colors.primary, at - Offset(radius, radius), Size(radius * 2f, radius * 2f), style = Stroke(1.5.dp.toPx()))
             }
         }
 
+        // Top toolbar with status and Done
         Surface(Modifier.align(Alignment.TopCenter).padding(6.dp), shape = MaterialTheme.shapes.small, color = colors.surfaceContainer) {
-            Row(Modifier.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(tool.hint, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall)
                 TextButton(onClick = onDone) { Text("Done") }
+            }
+        }
+
+        // V18 Contextual Floating Controls when an anchor point is selected
+        if (selectedPoint != null && selectedPoint in path.points.indices) {
+            val selectedBezierPoint = path.points[selectedPoint]
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 76.dp)
+                    .testTag("vector_precision_controls"),
+                shape = RoundedCornerShape(16.dp),
+                color = colors.surfaceContainerHigh,
+                tonalElevation = 6.dp,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 1. Independent Handles Toggle
+                    FilterChip(
+                        selected = independentHandles,
+                        onClick = { independentHandles = !independentHandles },
+                        label = { Text("Independent", style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.testTag("toggle_independent_handles")
+                    )
+
+                    // 2. Corner / Smooth Anchor Toggle
+                    val isSmooth = selectedBezierPoint.hasInHandle || selectedBezierPoint.hasOutHandle
+                    OutlinedButton(
+                        onClick = {
+                            val newPoint = if (isSmooth) VectorEditing.makeCorner(selectedBezierPoint) else VectorEditing.makeSmooth(selectedBezierPoint)
+                            val updatedPath = path.copy(points = path.points.mapIndexed { idx, p -> if (idx == selectedPoint) newPoint else p })
+                            val paths = current.editablePaths.toMutableList()
+                            paths[index] = updatedPath
+                            latestCommit(current.withVectorPaths(paths))
+                        },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.testTag("toggle_corner_smooth")
+                    ) {
+                        Text(if (isSmooth) "To Corner" else "To Smooth", style = MaterialTheme.typography.labelSmall)
+                    }
+
+                    // 3. 45-degree angle lock toggle
+                    FilterChip(
+                        selected = angleLock45,
+                        onClick = { angleLock45 = !angleLock45 },
+                        label = { Text("45° Snap", style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.testTag("toggle_angle_lock")
+                    )
+
+                    // 4. Delete Point button
+                    IconButton(
+                        onClick = {
+                            val updatedPath = path.copy(points = path.points.filterIndexed { idx, _ -> idx != selectedPoint })
+                            val paths = current.editablePaths.toMutableList()
+                            paths[index] = updatedPath
+                            latestSelect(null)
+                            latestCommit(current.withVectorPaths(paths))
+                        },
+                        modifier = Modifier.size(32.dp).testTag("delete_vector_point")
+                    ) {
+                        Icon(androidx.compose.material.icons.Icons.Default.Delete, contentDescription = "Delete Point", tint = colors.error, modifier = Modifier.size(18.dp))
+                    }
+                }
             }
         }
     }

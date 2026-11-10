@@ -234,6 +234,18 @@ class ActionTree(
     val canRedo: Boolean
         get() = _nodes[currentNodeId]?.childrenIds?.isNotEmpty() == true
 
+    val undoActionName: String?
+        get() = _nodes[currentNodeId]?.identity?.toLabel() ?: _nodes[currentNodeId]?.description
+
+    val redoActionName: String?
+        get() {
+            val current = _nodes[currentNodeId] ?: return null
+            val nextId = preferredChildren[current.id]?.takeIf { it in current.childrenIds }
+                ?: current.childrenIds.lastOrNull() ?: return null
+            val nextNode = _nodes[nextId] ?: return null
+            return nextNode.identity?.toLabel() ?: nextNode.description
+        }
+
     /**
      * Jumps directly to ANY node across ANY branch in the tree.
      * Clipboard is untouched and survives!

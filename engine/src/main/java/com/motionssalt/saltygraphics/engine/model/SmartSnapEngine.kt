@@ -187,4 +187,141 @@ object SmartSnapEngine {
         }
         return Pair(currentDegrees, false)
     }
+
+    /**
+     * V15: Snaps moving/resizing layer to visible grid lines with transient feedback.
+     * Uses screen-pixel tolerance invariant across zoom levels.
+     */
+    fun snapToGridLines(
+        targetBounds: SelectionBounds,
+        targetTransform: Transform2D,
+        canvasWidth: Float,
+        canvasHeight: Float,
+        gridSize: Int,
+        isSquareGrid: Boolean,
+        effectiveZoom: Float,
+        tolerancePx: Float = DEFAULT_TOLERANCE_PX,
+        previouslySnappedX: Boolean = false,
+        previouslySnappedY: Boolean = false
+    ): GridSnapResult {
+        if (gridSize <= 0) return GridSnapResult(targetTransform)
+
+        val zoom = effectiveZoom.coerceAtLeast(0.001f)
+        val toleranceDocX = (tolerancePx / zoom) * (if (previouslySnappedX) HYSTERESIS_FACTOR else 1.0f)
+        val toleranceDocY = (tolerancePx / zoom) * (if (previouslySnappedY) HYSTERESIS_FACTOR else 1.0f)
+
+        val tx = targetTransform.translationX
+        val ty = targetTransform.translationY
+        val halfW = targetBounds.width * targetTransform.scaleX / 2f
+        val halfH = targetBounds.height * targetTransform.scaleY / 2f
+
+        val left = tx - halfW
+        val right = tx + halfW
+        val top = ty - halfH
+        val bottom = ty + halfH
+        val centerX = tx
+        val centerY = ty
+
+        val canvasHalfW = canvasWidth / 2f
+        val canvasHalfH = canvasHeight / 2f
+
+        val xTargets = mutableListOf<Float>()
+        val yTargets = mutableListOf<Float>()
+
+        if (isSquareGrid) {
+            val step = gridSize.toFloat()
+            var x = -canvasHalfW
+            while (x <= canvasHalfW + 0.1f) {
+                xTargets.add(x)
+                x += step
+            }
+            var y = -canvasHalfH
+            while (y <= canvasHalfH + 0.1f) {
+                yTargets.add(y)
+                y += step
+            }
+        } else {
+            val cols = maxOf(1, (canvasWidth / gridSize).roundToInt())
+            val rows = maxOf(1, (canvasHeight / gridSize).roundToInt())
+            val colSpacing = canvasWidth / cols
+            val rowSpacing = canvasHeight / rows
+            for (c in 0..cols) {
+                xTargets.add(-canvasHalfW + c * colSpacing)
+            }
+            for (r in 0..rows) {
+                yTargets.add(-canvasHalfH + r * rowSpacing)
+            }
+        }
+
+        var bestDeltaX = Float.MAX_VALUE
+        var bestSnapX: Float? = null
+        var snappedLineX: Float? = null
+
+        for (targetX in xTargets) {
+            val dCenter = targetX - centerX
+            if (abs(dCenter) < abs(bestDeltaX) && abs(dCenter) <= toleranceDocX) {
+                bestDeltaX = dCenter
+                bestSnapX = tx + dCenter
+                snappedLineX = targetX
+            }
+            val dLeft = targetX - left
+            if (abs(dLeft) < abs(bestDeltaX) && abs(dLeft) <= toleranceDocX) {
+                bestDeltaX = dLeft
+                bestSnapX = tx + dLeft
+                snappedLineX = targetX
+            }
+            val dRight = targetX - right
+            if (abs(dRight) < abs(bestDeltaX) && abs(dRight) <= toleranceDocX) {
+                bestDeltaX = dRight
+                bestSnapX = tx + dRight
+                snappedLineX = targetX
+            }
+        }
+
+        var bestDeltaY = Float.MAX_VALUE
+        var bestSnapY: Float? = null
+        var snappedLineY: Float? = null
+
+        for (targetY in yTargets) {
+            val dCenter = targetY - centerY
+            if (abs(dCenter) < abs(bestDeltaY) && abs(dCenter) <= toleranceDocY) {
+                bestDeltaY = dCenter
+                bestSnapY = ty + dCenter
+                snappedLineY = targetY
+            }
+            val dTop = targetY - top
+            if (abs(dTop) < abs(bestDeltaY) && abs(dTop) <= toleranceDocY) {
+                bestDeltaY = dTop
+                bestSnapY = ty + dTop
+                snappedLineY = targetY
+            }
+            val dBottom = targetY - bottom
+            if (abs(dBottom) < abs(bestDeltaY) && abs(dBottom) <= toleranceDocY) {
+                bestDeltaY = dBottom
+                bestSnapY = ty + dBottom
+                snappedLineY = targetY
+            }
+        }
+
+        val finalTransform = targetTransform.copy(
+            translationX = bestSnapX ?: tx,
+            translationY = bestSnapY ?: ty
+        )
+
+        return GridSnapResult(
+            snappedTransform = finalTransform,
+            snappedGridX = snappedLineX,
+            snappedGridY = snappedLineY,
+            didSnapX = bestSnapX != null,
+            didSnapY = bestSnapY != null
+        )
+    }
 }
+
+data class GridSnapResult(
+    val snappedTransform: Transform2D,
+    val snappedGridX: Float? = null,
+    val snappedGridY: Float? = null,
+    val didSnapX: Boolean = false,
+    val didSnapY: Boolean = false
+)
