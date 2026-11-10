@@ -282,8 +282,8 @@ abstract class FillEditorFixture {
             compose.onNodeWithContentDescription("Close Fill").assertIsDisplayed()
             compose.onNodeWithContentDescription("Close Fill").performClick()
             compose.onNodeWithText("Border & Shadow").performClick()
-            compose.onNodeWithText("Stroke", useUnmergedTree = true).assertExists()
-            compose.onNodeWithText("Shadow", useUnmergedTree = true).assertExists()
+            compose.onNodeWithText("Stroke / Outline", useUnmergedTree = true).assertExists()
+            compose.onNodeWithText("Drop Shadow", useUnmergedTree = true).assertExists()
         }
     }
 
