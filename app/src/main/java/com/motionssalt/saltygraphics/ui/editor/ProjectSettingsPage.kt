@@ -87,7 +87,7 @@ fun ProjectSettingsPage(
                 unit = "px"
             )
         }
-        val qualityOptions = listOf(PreviewQuality.QUARTER, PreviewQuality.HALF, PreviewQuality.THREE_QUARTERS, PreviewQuality.FULL)
+        val qualityOptions = listOf(PreviewQuality.QUARTER, PreviewQuality.HALF, PreviewQuality.TWO_THIRDS, PreviewQuality.FULL)
         DropdownControl(
             label = "Default preview quality",
             options = qualityOptions.map { it.displayName },

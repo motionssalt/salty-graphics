@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V4",
+  "current_phase": "fix_round_4/V7",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -747,20 +747,20 @@
       {
         "id": "V4",
         "title": "One shared control engine used everywhere (including home-screen switches)",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Raw Material Switch and Slider components were inconsistently used in BorderShadowDialog (stroke enable, dashed style, drop shadow), SettingsScreen (system default scale, UI scale slider), ExportScreen (quality slider), and BlendingMaskDialog (opacity slider). Fix: Replaced all raw Switch invocations with SaltySwitch (or ToggleControl), and all raw Slider invocations with ProgressSliderControl (with clickable reset label and ValueEditorDialog tap-to-edit). Created ControlEngineArchitectureTest scanning all app source files outside ui.controls to strictly enforce zero raw Switch/Slider usage, and verified dynamic control definition registration and instantiation."
       },
       {
         "id": "V5",
         "title": "Remove haptic feedback from scroll controls",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: RulerSlider.kt fired CLOCK_TICK haptic ticks on every scroll/scrub step and KEYBOARD_TAP on label tap; ProgressSliderControl.kt fired KEYBOARD_TAP on reset. Fix: Removed all performHapticFeedback and HapticFeedbackConstants calls from RulerSlider.kt and ProgressSliderControl.kt. Verified with testScrollControlsHaveZeroHapticCalls confirming zero haptic feedback references."
       },
       {
         "id": "V6",
         "title": "Preview quality: one shared state, correct labels, real effect",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: Preview quality had disconnected local mutableStateOf in EditorScreen that did not synchronize with doc.editorSettings.defaultPreviewQuality; top-panel button displayed redundant 'Preview: ' prefix; and levels lacked 2/3. Fix: Unified preview quality to doc.editorSettings.defaultPreviewQuality as the single source of truth across TopPanel, ProjectSettingsPage, and CanvasView; updated TopPanel button to show only the fractional label ('1/4', '1/2', '2/3', 'Full'); updated PreviewQuality enum to include TWO_THIRDS ('2/3', 0.667f) cycling Full -> 1/4 -> 1/2 -> 2/3 -> Full; updated PreviewQualityTest."
       },
       {
         "id": "V7",

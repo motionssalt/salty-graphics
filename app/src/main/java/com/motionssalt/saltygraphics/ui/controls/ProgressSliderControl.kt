@@ -33,8 +33,10 @@ fun ProgressSliderControl(
     val formattedValue = remember(value, step, unit) {
         val numStr = if (step >= 1f && value % 1f == 0f) {
             value.toInt().toString()
-        } else if (unit == "%") {
+        } else if (unit == "%" && maxValue <= 1.5f) {
             (value * 100).toInt().toString()
+        } else if (step >= 0.1f) {
+            String.format(java.util.Locale.US, "%.1f", value).trimEnd('0').trimEnd('.')
         } else {
             String.format(java.util.Locale.US, "%.2f", value).trimEnd('0').trimEnd('.')
         }
@@ -53,9 +55,6 @@ fun ProgressSliderControl(
         Surface(
             onClick = {
                 onValueChange(defaultValue)
-                try {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                } catch (_: Throwable) {}
             },
             shape = RoundedCornerShape(6.dp),
             color = Color.Transparent,

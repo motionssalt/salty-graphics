@@ -19,6 +19,7 @@ import com.motionssalt.saltygraphics.engine.action.ActionIdentity
 import com.motionssalt.saltygraphics.engine.action.ActionTree
 import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
 import com.motionssalt.saltygraphics.engine.action.PasteMode
+import com.motionssalt.saltygraphics.engine.effect.EffectRegistry
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
 import kotlinx.coroutines.launch
@@ -53,9 +54,6 @@ fun EditorScreen(
     var showGrid by remember { mutableStateOf(false) }
     var gridSize by remember { mutableStateOf(20) }
 
-    // Preview quality state
-    var previewQuality by remember { mutableStateOf(PreviewQuality.HIGH) }
-
     // Panel visibility states
     var isLayersPanelOpen by remember { mutableStateOf(false) }
     var isTransformPanelOpen by remember { mutableStateOf(false) }
@@ -84,7 +82,6 @@ fun EditorScreen(
         loadState.value=result
         if(result is ProjectLoadState.Loaded) {
             val loaded=result.result.document
-            previewQuality=loaded.editorSettings.defaultPreviewQuality
             projectDocument=loaded
             actionTree=result.result.historySnapshot?.let {ActionTree.fromSnapshot(it,loaded)} ?: ActionTree(loaded)
         }
@@ -262,7 +259,7 @@ fun EditorScreen(
     Scaffold(
         topBar = {
             TopPanel(
-                previewQuality = previewQuality,
+                previewQuality = doc.editorSettings.defaultPreviewQuality,
                 canUndo = tree.canUndo,
                 canRedo = tree.canRedo,
                 showGrid = doc.editorSettings.showGrid,
@@ -275,7 +272,12 @@ fun EditorScreen(
                     }
                 },
                 onToggleLayers = { isLayersPanelOpen = !isLayersPanelOpen },
-                onPreviewQualityClick = { previewQuality = previewQuality.next() },
+                onPreviewQualityClick = {
+                    val next = doc.editorSettings.defaultPreviewQuality.next()
+                    recordSettingChange(ActionIdentity("Change", "Preview Quality")) {
+                        it.copy(defaultPreviewQuality = next)
+                    }
+                },
                 onUndoClick = {
                     if (tree.undo()) {
                         restoreHistoryDocument(tree.currentDocument)
@@ -329,7 +331,7 @@ fun EditorScreen(
                 selectedLayerIds = selectedLayerIds,
                 zoom = zoom,
                 panOffset = panOffset,
-                previewQuality = previewQuality,
+                previewQuality = doc.editorSettings.defaultPreviewQuality,
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
                 onZoomPanChange = { newZoom, newPan ->

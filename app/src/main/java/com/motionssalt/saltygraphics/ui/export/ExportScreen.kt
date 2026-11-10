@@ -2,6 +2,7 @@ package com.motionssalt.saltygraphics.ui.export
 
 import com.motionssalt.saltygraphics.data.StorageManager
 import com.motionssalt.saltygraphics.media.MediaCache
+import com.motionssalt.saltygraphics.ui.controls.ProgressSliderControl
 import com.motionssalt.saltygraphics.engine.model.ShapeType
 import android.graphics.RectF
 import android.os.Build
@@ -308,12 +309,15 @@ fun ExportScreen(
 
                 if (selectedFormat != ExportFormat.PNG) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Quality: ${exportQualityPercent.toInt()}%", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
-                    Slider(
+                    ProgressSliderControl(
+                        label = "Quality",
                         value = exportQualityPercent,
                         onValueChange = { exportQualityPercent = it },
-                        valueRange = 10f..100f,
-                        colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
+                        minValue = 10f,
+                        maxValue = 100f,
+                        defaultValue = 90f,
+                        step = 1f,
+                        unit = "%"
                     )
                 }
             }

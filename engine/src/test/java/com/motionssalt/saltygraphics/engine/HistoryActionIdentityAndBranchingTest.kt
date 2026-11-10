@@ -156,8 +156,12 @@ class HistoryActionIdentityAndBranchingTest {
         // Jumping back to Node Create C restores Layer A and Layer C
         tree.jumpTo(nodeCreateC.id)
         assertEquals(2, tree.currentDocument.layers.size)
-        assertEquals("layerA", tree.currentDocument.layers[0].id)
-        assertEquals("layerC", tree.currentDocument.layers[1].id)
+        // With V2 layer stacking, new layers are added at index 0 (top of stack)
+        val branchLayerIds = tree.currentDocument.layers.map { it.id }
+        assertTrue(branchLayerIds.contains("layerA"))
+        assertTrue(branchLayerIds.contains("layerC"))
+        assertEquals("layerC", tree.currentDocument.layers[0].id)
+        assertEquals("layerA", tree.currentDocument.layers[1].id)
     }
 
     @Test
@@ -230,26 +234,28 @@ class HistoryActionIdentityAndBranchingTest {
         val historyStates = mutableListOf<EditorSettings>()
         historyStates.add(expectedSettings)
 
-        // Apply 60 randomized per-property updates
+        // Apply 60 randomized per-property updates, each mutating to a distinct value
         repeat(60) {
             val propertyIndex = rng.nextInt(8)
             when (propertyIndex) {
                 0 -> {
-                    val color = 0xFF000000L or (rng.nextLong(0xFFFFFF) and 0xFFFFFFL)
+                    var color = 0xFF000000L or (rng.nextLong(0xFFFFFF) and 0xFFFFFFL)
+                    if (color == expectedSettings.backgroundColor) color = color xor 0x00A5A5A5L
                     expectedSettings = expectedSettings.copy(backgroundColor = color)
                     tree.recordCommand(ActionIdentity("Change", "Canvas", "color")) {
                         it.updateEditorSettings { s -> s.copy(backgroundColor = color) }
                     }
                 }
                 1 -> {
-                    val show = rng.nextBoolean()
+                    val show = !expectedSettings.showGrid
                     expectedSettings = expectedSettings.copy(showGrid = show)
                     tree.recordCommand(ActionIdentity(if (show) "Show" else "Hide", "Gridlines")) {
                         it.updateEditorSettings { s -> s.copy(showGrid = show) }
                     }
                 }
                 2 -> {
-                    val size = rng.nextInt(5, 200)
+                    var size = rng.nextInt(5, 200)
+                    if (size == expectedSettings.gridSize) size = if (size > 100) size - 10 else size + 10
                     val verb = if (size >= expectedSettings.gridSize) "Increase" else "Decrease"
                     expectedSettings = expectedSettings.copy(gridSize = size)
                     tree.recordCommand(ActionIdentity(verb, "Grid", "size")) {
@@ -257,35 +263,36 @@ class HistoryActionIdentityAndBranchingTest {
                     }
                 }
                 3 -> {
-                    val color = 0xFF000000L or (rng.nextLong(0xFFFFFF) and 0xFFFFFFL)
+                    var color = 0xFF000000L or (rng.nextLong(0xFFFFFF) and 0xFFFFFFL)
+                    if (color == expectedSettings.gridColor) color = color xor 0x005A5A5AL
                     expectedSettings = expectedSettings.copy(gridColor = color)
                     tree.recordCommand(ActionIdentity("Change", "Grid", "color")) {
                         it.updateEditorSettings { s -> s.copy(gridColor = color) }
                     }
                 }
                 4 -> {
-                    val sq = rng.nextBoolean()
+                    val sq = !expectedSettings.isSquareGrid
                     expectedSettings = expectedSettings.copy(isSquareGrid = sq)
                     tree.recordCommand(ActionIdentity("Toggle", "Square Grid")) {
                         it.updateEditorSettings { s -> s.copy(isSquareGrid = sq) }
                     }
                 }
                 5 -> {
-                    val snap = rng.nextBoolean()
+                    val snap = !expectedSettings.snapEnabled
                     expectedSettings = expectedSettings.copy(snapEnabled = snap)
                     tree.recordCommand(ActionIdentity(if (snap) "Enable" else "Disable", "Snap")) {
                         it.updateEditorSettings { s -> s.copy(snapEnabled = snap) }
                     }
                 }
                 6 -> {
-                    val tol = rng.nextFloat() * 30f + 2f
+                    val tol = expectedSettings.snapTolerancePx + rng.nextFloat() * 5f + 1f
                     expectedSettings = expectedSettings.copy(snapTolerancePx = tol)
                     tree.recordCommand(ActionIdentity("Adjust", "Snap", "tolerance")) {
                         it.updateEditorSettings { s -> s.copy(snapTolerancePx = tol) }
                     }
                 }
                 7 -> {
-                    val qualities = PreviewQuality.values()
+                    val qualities = PreviewQuality.values().filter { it != expectedSettings.defaultPreviewQuality }
                     val pq = qualities[rng.nextInt(qualities.size)]
                     expectedSettings = expectedSettings.copy(defaultPreviewQuality = pq)
                     tree.recordCommand(ActionIdentity("Change", "Preview Quality")) {

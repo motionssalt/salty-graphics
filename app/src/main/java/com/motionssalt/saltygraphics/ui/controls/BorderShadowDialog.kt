@@ -99,7 +99,7 @@ fun BorderShadowDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("Stroke / Outline", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                            Switch(
+                            SaltySwitch(
                                 checked = currentStroke.isEnabled,
                                 onCheckedChange = { en ->
                                     val updated = currentStroke.copy(isEnabled = en)
@@ -182,7 +182,7 @@ fun BorderShadowDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Dashed Style", style = MaterialTheme.typography.bodySmall)
-                                Switch(
+                                SaltySwitch(
                                     checked = currentStroke.isDashed,
                                     onCheckedChange = { dashed ->
                                         val updated = currentStroke.copy(isDashed = dashed)
@@ -238,7 +238,7 @@ fun BorderShadowDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("Drop Shadow", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                            Switch(
+                            SaltySwitch(
                                 checked = currentShadow.isEnabled,
                                 onCheckedChange = { en ->
                                     val updated = currentShadow.copy(isEnabled = en)

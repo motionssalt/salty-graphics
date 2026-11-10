@@ -157,8 +157,8 @@ fun TopPanel(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "Preview: ${previewQuality.displayName}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            text = previewQuality.displayName,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
                             color = colors.onSurface
                         )
                     }

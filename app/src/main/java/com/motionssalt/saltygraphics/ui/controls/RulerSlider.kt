@@ -60,8 +60,6 @@ fun RulerSlider(
         }
     }
 
-    var lastHapticTime by remember { mutableLongStateOf(0L) }
-
     val formattedValue = remember(value, step, unit) {
         val numStr = if (step >= 1f && value % 1f == 0f) {
             value.toInt().toString()
@@ -95,13 +93,6 @@ fun RulerSlider(
 
         if (snapped != value) {
             currentOnValueChange(snapped)
-            val now = System.currentTimeMillis()
-            if (now - lastHapticTime > 40L) {
-                lastHapticTime = now
-                try {
-                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                } catch (_: Throwable) {}
-            }
         }
     }
 
@@ -119,9 +110,6 @@ fun RulerSlider(
                 internalValue = currentDefault
                 currentOnValueChange(currentDefault)
                 currentOnCommit?.invoke()
-                try {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                } catch (_: Throwable) {}
             },
             shape = RoundedCornerShape(6.dp),
             color = Color.Transparent,

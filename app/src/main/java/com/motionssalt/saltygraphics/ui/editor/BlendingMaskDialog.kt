@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
+import com.motionssalt.saltygraphics.ui.controls.ProgressSliderControl
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -137,22 +138,18 @@ fun BlendingPage(
         ) {
             // 1. Opacity Slider
             Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Opacity", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
-                    Text("${(activeOpacity * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium, color = colors.primary, fontWeight = FontWeight.Bold)
-                }
-                Slider(
+                ProgressSliderControl(
+                    label = "Opacity",
                     value = activeOpacity,
                     onValueChange = {
                         activeOpacity = it
                         onBlendChange(activeBlendMode, it)
                     },
-                    valueRange = 0f..1f,
-                    colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary)
+                    minValue = 0f,
+                    maxValue = 1f,
+                    defaultValue = 1f,
+                    step = 0.01f,
+                    unit = "%"
                 )
             }
 

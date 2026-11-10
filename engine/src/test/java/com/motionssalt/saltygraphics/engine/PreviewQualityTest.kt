@@ -16,6 +16,9 @@ class PreviewQualityTest {
         assertEquals("1/2", PreviewQuality.HALF.displayName)
         assertEquals(0.50f, PreviewQuality.HALF.scaleFactor, 0.001f)
 
+        assertEquals("2/3", PreviewQuality.TWO_THIRDS.displayName)
+        assertEquals(0.667f, PreviewQuality.TWO_THIRDS.scaleFactor, 0.005f)
+
         assertEquals("3/4", PreviewQuality.THREE_QUARTERS.displayName)
         assertEquals(0.75f, PreviewQuality.THREE_QUARTERS.scaleFactor, 0.001f)
 
@@ -26,8 +29,8 @@ class PreviewQualityTest {
     @Test
     fun testPreviewQualityCycleOrder() {
         assertEquals(PreviewQuality.HALF, PreviewQuality.QUARTER.next())
-        assertEquals(PreviewQuality.THREE_QUARTERS, PreviewQuality.HALF.next())
-        assertEquals(PreviewQuality.FULL, PreviewQuality.THREE_QUARTERS.next())
+        assertEquals(PreviewQuality.TWO_THIRDS, PreviewQuality.HALF.next())
+        assertEquals(PreviewQuality.FULL, PreviewQuality.TWO_THIRDS.next())
         assertEquals(PreviewQuality.QUARTER, PreviewQuality.FULL.next())
     }
 

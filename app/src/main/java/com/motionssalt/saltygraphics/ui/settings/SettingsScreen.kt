@@ -4,6 +4,7 @@ import com.motionssalt.saltygraphics.data.StorageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.motionssalt.saltygraphics.ui.controls.ProgressSliderControl
 import com.motionssalt.saltygraphics.ui.controls.SaltySwitch
 
 import android.content.Intent
@@ -198,33 +199,23 @@ fun SettingsScreen(
                             color = colors.onSurfaceVariant
                         )
                     }
-                    Switch(
+                    SaltySwitch(
                         checked = useSystemDefault,
-                        onCheckedChange = { settingsManager.setUseSystemDefault(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = colors.primary,
-                            checkedTrackColor = colors.surfaceVariant
-                        )
+                        onCheckedChange = { settingsManager.setUseSystemDefault(it) }
                     )
                 }
 
                 if (!useSystemDefault) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        "UI Scale: ${(uiScale * 100).toInt()}%",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurface
-                    )
-                    Slider(
+                    ProgressSliderControl(
+                        label = "UI Scale",
                         value = uiScale,
                         onValueChange = { settingsManager.setUiScale(it) },
-                        valueRange = 0.75f..1.50f,
-                        steps = 5,
-                        colors = SliderDefaults.colors(
-                            thumbColor = colors.primary,
-                            activeTrackColor = colors.primary,
-                            inactiveTrackColor = colors.surfaceVariant
-                        )
+                        minValue = 0.75f,
+                        maxValue = 1.50f,
+                        defaultValue = 1.0f,
+                        step = 0.05f,
+                        unit = "%"
                     )
                 }
             }
