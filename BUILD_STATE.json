@@ -848,9 +848,40 @@
     ],
     "decisions": [],
     "known_issues": [
-      "Inherited V1\u2013V8 done markers retained, but their latest CI was failing. Baseline repair under verification before V9; no release until full audit."
+      "V1\u2013V8 inherited done markers retained; baseline regression suite green, not a fresh exhaustive acceptance audit. V9 under verification; V10\u2013V20 pending. No round-4 release yet."
     ],
-    "last_updated": "2026-11-10T10:09:12.976314+00:00",
-    "last_session_note": "All baseline JVM tests passed on 7149ff1 in Actions 42795048168; APK build in progress. V9 implementation and real gesture/history tests in progress. No release, no UI refinement."
+    "last_updated": "2026-11-10T10:10:59.138307+00:00",
+    "last_session_note": "Baseline 7149ff1 verified successful Actions 42795048168 (all JVM tests + signed universal/per-ABI APK build). V9 list-owned drag implemented; now adding real-editor gesture tests including stationary edge auto-scroll, cancellation, plain taps, grouping, undo/redo, single history actions, and actual compositor overlap. V9 remains in_progress pending CI.",
+    "verification": {
+      "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
+      "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",
+      "baseline_result": "success",
+      "baseline_tests": {
+        "app/Debug": {
+          "tests": 105,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app/Release": {
+          "tests": 105,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine/Debug": {
+          "tests": 46,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine/Release": {
+          "tests": 46,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    }
   }
 }

@@ -2,6 +2,7 @@ package com.motionssalt.saltygraphics.ui.editor
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.rememberScrollState
@@ -88,6 +89,7 @@ fun LayersPanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(colors.surfaceVariant)
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically

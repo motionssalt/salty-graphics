@@ -100,7 +100,7 @@ internal fun ReorderableLayerList(
     }) {
         LazyColumn(
             state = state,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("layer_scroll"),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
