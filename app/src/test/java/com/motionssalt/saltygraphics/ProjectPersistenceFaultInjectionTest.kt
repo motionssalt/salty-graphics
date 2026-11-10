@@ -84,17 +84,19 @@ class ProjectPersistenceFaultInjectionTest {
         val repo = ProjectRepository(context)
         val doc = repo.createProject("Safe Scope Project", CanvasSize(800, 800))
 
-        // Launch in an ephemeral scope and cancel it immediately while save is triggered
+        // Enter saveProject before cancellation: a coroutine cancelled before it ever
+        // starts cannot persist an edit it has not submitted. UNDISPATCHED reaches the
+        // repository's NonCancellable IO handoff deterministically, without sleeps.
         val cancellableScope = CoroutineScope(Dispatchers.IO)
-        val saveJob = cancellableScope.launch {
+        val saveJob = cancellableScope.launch(start = CoroutineStart.UNDISPATCHED) {
             val updated = doc.copy(name = "Updated Safely")
             repo.saveProject(updated)
         }
         // Cancel the scope immediately
         cancellableScope.cancel()
 
-        // Wait a short moment for NonCancellable IO block in repository to finish
-        delay(150)
+        // Await the actual completion, not an arbitrary scheduler-dependent delay.
+        saveJob.join()
 
         // Verify project file and backup file are both intact and valid archives
         val mainFile = repo.getProjectFile(doc.id)
