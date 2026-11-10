@@ -97,22 +97,7 @@ class ProjectRepository(private val context: Context,
                     } catch (_: Throwable) {}
                 }
                 require(file.isFile) {"Project file is missing. Restore a saved .sg file or go back."}
-                val imported = try {
-                    SgProjectArchive.loadFromFile(file)
-                } catch (e: Exception) {
-                    if (backup.isFile && backup.length() > 0L) {
-                        try {
-                            val recovered = SgProjectArchive.loadFromFile(backup)
-                            backup.copyTo(file, overwrite = true)
-                            LocalDiagnostics.record(context, "openProject fallback to backup for $id")
-                            recovered
-                        } catch (_: Exception) {
-                            throw e
-                        }
-                    } else {
-                        throw e
-                    }
-                }
+                val imported = SgProjectArchive.loadFromFile(file)
                 load.phase("Restoring assets",2)
                 val assetDir=getAssetsDir(id).canonicalFile
                 for((path,bytes) in imported.assets) {
@@ -353,49 +338,29 @@ class ProjectRepository(private val context: Context,
     suspend fun getProject(id: String): ProjectDocument? = withContext(Dispatchers.IO) {
         val file = getProjectFile(id)
         val backup = getBackupFile(id)
-        if (!file.exists() && backup.exists()) {
+        if ((!file.exists() || file.length() == 0L) && backup.exists() && backup.length() > 0L) {
             try { backup.copyTo(file, overwrite = true) } catch (_: Throwable) {}
         }
-        if (!file.exists()) return@withContext null
+        if (!file.exists() || file.length() == 0L) return@withContext null
         try {
             val result = SgProjectArchive.loadFromFile(file)
             result.document
-        } catch (e: Exception) {
-            if (backup.exists() && backup.length() > 0L) {
-                try {
-                    val result = SgProjectArchive.loadFromFile(backup)
-                    backup.copyTo(file, overwrite = true)
-                    result.document
-                } catch (_: Exception) {
-                    null
-                }
-            } else {
-                null
-            }
+        } catch (_: Exception) {
+            null
         }
     }
 
     suspend fun getProjectFull(id: String): com.motionssalt.saltygraphics.engine.file.SgImportResult? = withContext(Dispatchers.IO) {
         val file = getProjectFile(id)
         val backup = getBackupFile(id)
-        if (!file.exists() && backup.exists()) {
+        if ((!file.exists() || file.length() == 0L) && backup.exists() && backup.length() > 0L) {
             try { backup.copyTo(file, overwrite = true) } catch (_: Throwable) {}
         }
-        if (!file.exists()) return@withContext null
+        if (!file.exists() || file.length() == 0L) return@withContext null
         try {
             SgProjectArchive.loadFromFile(file)
         } catch (_: Exception) {
-            if (backup.exists() && backup.length() > 0L) {
-                try {
-                    val res = SgProjectArchive.loadFromFile(backup)
-                    backup.copyTo(file, overwrite = true)
-                    res
-                } catch (_: Exception) {
-                    null
-                }
-            } else {
-                null
-            }
+            null
         }
     }
 
@@ -408,14 +373,9 @@ class ProjectRepository(private val context: Context,
             val thumbnail=getThumbnailFile(doc.id).let {if(it.exists()) it.readBytes() else null}
             val projFile = getProjectFile(doc.id)
             val backupFile = getBackupFile(doc.id)
-            if (projFile.exists() && projFile.length() > 0L) {
-                try {
-                    projFile.copyTo(backupFile, overwrite = true)
-                } catch (_: Throwable) {}
-            }
             // Essential document storage comes first; thumbnail rendering is independent work.
             SgProjectArchive.saveToFile(doc, projFile, assets, historySnapshot, thumbnail)
-            if (!backupFile.exists() && projFile.exists() && projFile.length() > 0L) {
+            if (projFile.exists() && projFile.length() > 0L) {
                 try { projFile.copyTo(backupFile, overwrite = true) } catch (_: Throwable) {}
             }
             synchronized(indexLock) {
