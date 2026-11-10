@@ -2,8 +2,8 @@
   "project": "Salty Graphics",
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
-  "status": "done",
-  "current_phase": "fix_round_4/done",
+  "status": "in_progress",
+  "current_phase": "fix_round_4/V7",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,9 +194,9 @@
     "F14"
   ],
   "next_steps": [
-    "Resume fix_round_4 at V10 layer-content thumbnails; V9 verified done in Actions 42800046457.",
-    "Complete V10–V19 in order with real code-path tests and green Actions; then V20 compatibility audit and unique stable-signed GitHub Release.",
-    "No UI refinement, preview frontend, secret commits, or modification to existing releases/reference-keyflaw."
+    "Restore green Actions baseline, then complete amended V7 in fixed panel with real UI/render tests.",
+    "Continue first unfinished queue item in order. Do not release before V25 acceptance.",
+    "No UI refinement or frontend."
   ],
   "decisions": [
     {
@@ -303,7 +303,7 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -332,7 +332,7 @@
     ],
     "decisions": [
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
-      "R6: usable portrait workspace gets 40% height clamped 260–340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280–360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
+      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
       "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
@@ -380,7 +380,7 @@
     }
   },
   "last_updated": "2026-11-10T10:42:35.202432+00:00",
-  "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. Resumed existing V1–V8 done state, repaired failing baseline, and completed V9. Code 16b2ba8 verified green Actions 42800046457: 312 JVM test executions, zero failures/errors/skips, stable-signed universal and three ABI APK artifacts. Resume first pending V10, then V11–V20 in order. No new release; do not publish until V20/full acceptance audit. No UI refinement, host preview, frontend, physical-phone testing or secret commits. Cancellation test uses deterministic save handoff and completion instead of scheduler-dependent sleeps.",
+  "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. Resumed existing V1\u2013V8 done state, repaired failing baseline, and completed V9. Code 16b2ba8 verified green Actions 42800046457: 312 JVM test executions, zero failures/errors/skips, stable-signed universal and three ABI APK artifacts. Resume first pending V10, then V11\u2013V20 in order. No new release; do not publish until V20/full acceptance audit. No UI refinement, host preview, frontend, physical-phone testing or secret commits. Cancellation test uses deterministic save handoff and completion instead of scheduler-dependent sleeps.",
   "fix_round_2": {
     "status": "done",
     "queue": [
@@ -888,9 +888,12 @@
       "V18: Vector precision controls provide floating toolbar with Independent Handles, Corner/Smooth toggle, 45-deg angle snap, and touch priority Handle -> Anchor -> Segment.",
       "V19: Contextual toasts added for image optimization, layer deletion, and undo/redo naming specific action; silent on normal drags."
     ],
-    "known_issues": [],
-    "last_updated": "2026-11-10T12:42:43.201Z",
-    "last_session_note": "Reopened queue updated with amended V7, V8, V15, and pending V20-V25. Starting V7.",
+    "known_issues": [
+      "Inherited latest HEAD 79023c6 fails Actions 42819779009; earlier successful verification is not proof of current HEAD.",
+      "Inherited V10\u2013V19 done markers require acceptance audit; latest documentation incorrectly claims all 20 items complete."
+    ],
+    "last_updated": "2026-11-10T13:22:57.805659+00:00",
+    "last_session_note": "Resumed amended brief at V7. Latest inherited HEAD 79023c6 has failing Actions 42819779009; restore passing baseline before advancing. V7/V8/V15 and V20\u2013V25 remain open. No release authorized until full acceptance verification.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",
