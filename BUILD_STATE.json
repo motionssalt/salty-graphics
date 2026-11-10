@@ -777,7 +777,7 @@
         "id": "V9",
         "title": "Layer panel: one grab handle, long-press and drag to reorder",
         "status": "in_progress",
-        "notes": "Root cause: T22 added only a decorative handle; no drag recognizer existed and arrow buttons remained. Implementing list-owned long-press drag with stationary edge scrolling, one drop commit, explicit selection checkboxes, top-first nested-group commands; acceptance CI pending. Real gesture tests in run 42796958701 caught parent-vs-LazyColumn touch priority: standard parent long-press recognizer lost the first movement to child scrolling. Use list-owned Initial-pass hold recognition, consuming only after hold wins; normal scrolling/taps remain unconsumed. Staged pointer tests now explicitly assert feedback before drop. Actions 42797987247 passed basic real drag, render-overlap, group/history and 30-row stationary auto-scroll tests; cancellation test caught Android CANCEL being synthesized by Compose as all-pointers-up. Observe ACTION_CANCEL before drop recognition to discard the reorder. V9 remains in_progress until complete CI passes."
+        "notes": "Root cause: T22 added only a decorative handle; no drag recognizer existed and arrow buttons remained. Implementing list-owned long-press drag with stationary edge scrolling, one drop commit, explicit selection checkboxes, top-first nested-group commands; acceptance CI pending. Real gesture tests in run 42796958701 caught parent-vs-LazyColumn touch priority: standard parent long-press recognizer lost the first movement to child scrolling. Use list-owned Initial-pass hold recognition, consuming only after hold wins; normal scrolling/taps remain unconsumed. Staged pointer tests now explicitly assert feedback before drop. Actions 42797987247 passed basic real drag, render-overlap, group/history and 30-row stationary auto-scroll tests; cancellation test caught Android CANCEL being synthesized by Compose as all-pointers-up. Observe ACTION_CANCEL before drop recognition to discard the reorder. V9 remains in_progress until complete CI passes. Checked upstream Compose SuspendedPointerInput onCancelPointerInput: cancellation is an already-consumed synthetic up, not necessarily a native event visible to motionEventSpy. Replaced native observer with consumed-state check before consuming our own Initial-pass events."
       },
       {
         "id": "V10",
@@ -850,8 +850,8 @@
     "known_issues": [
       "V1\u2013V8 inherited done markers retained; baseline regression suite green, not a fresh exhaustive acceptance audit. V9 under verification; V10\u2013V20 pending. No round-4 release yet."
     ],
-    "last_updated": "2026-11-10T10:25:33.591606+00:00",
-    "last_session_note": "V9 cancellation repair committed; awaiting full verification. Do not advance V10 before V9 passes. Baseline verified 302 executions and stable-signed APK builds; V9 real down/hold/drag/group/property tests pass except cancellation before this repair. Also made inherited save-cancellation test deterministic (enter save handoff UNDISPATCHED, join instead of sleep). No round-4 release and no UI refinement.",
+    "last_updated": "2026-11-10T10:32:41.601558+00:00",
+    "last_session_note": "V9 final cancellation handling uses Compose synthetic consumed-up semantics; current implementation and tests committed, awaiting CI. V10\u2013V20 not started. No round-4 release. No UI refinement or preview frontend.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",

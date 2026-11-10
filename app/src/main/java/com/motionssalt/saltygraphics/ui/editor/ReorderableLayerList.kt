@@ -15,9 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.motionEventSpy
-import androidx.compose.ui.ExperimentalComposeUiApi
-import android.view.MotionEvent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
@@ -30,7 +27,6 @@ import kotlinx.coroutines.isActive
 import kotlin.math.abs
 
 /** Gesture ownership stays on the list, never on a LazyColumn row that can be recycled mid-drag. */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun ReorderableLayerList(
     layers: List<Layer>,
@@ -81,10 +77,6 @@ internal fun ReorderableLayerList(
 
     Box(modifier.testTag("layer_list").semantics {
         stateDescription = draggedId?.let { "Reordering $it to ${target + 1}" } ?: "Layer order"
-    }.motionEventSpy { event ->
-        // Compose synthesizes an all-pointers-up event for Android ACTION_CANCEL.
-        // Observe the native cancellation before it can be mistaken for a valid drop.
-        if (event.actionMasked == MotionEvent.ACTION_CANCEL) finish(false)
     }.pointerInput(Unit) {
         // Observe before the LazyColumn's scroll recognizer. After a real hold wins,
         // consume on Initial so its first movement cannot be stolen as scrolling.
@@ -110,8 +102,12 @@ internal fun ReorderableLayerList(
                 while (draggedId != null) {
                     val event = awaitPointerEvent(PointerEventPass.Initial)
                     val pointer = event.changes.find { it.id == down.id }
+                    // onCancelPointerInput synthesizes already-consumed up changes.
+                    // Read this flag BEFORE consuming our own drag; a cancelled stream
+                    // must never become a committed drop (including test injection).
+                    val cancelled = pointer?.isConsumed == true
                     event.changes.forEach { it.consume() }
-                    if (pointer == null || event.changes.count { it.pressed } > 1) break
+                    if (pointer == null || event.changes.count { it.pressed } > 1 || cancelled) break
                     pointerY = pointer.position.y
                     updateTarget()
                     if (!pointer.pressed) {
