@@ -17,6 +17,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -145,35 +148,21 @@ fun LayersPanel(
                 }
             }
 
-            // Layer list
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                itemsIndexed(layers, key = { _, l -> l.id }) { index, layer ->
-                    val isSelected = selectedLayerIds.contains(layer.id)
-
-                    LayerRow(
-                        layer = layer,
-                        isSelected = isSelected,
-                        canMoveUp = index > 0,
-                        canMoveDown = index < layers.size - 1,
-                        onClick = { onSelectLayer(layer.id) },
-                        onLongClick = { onToggleSelectMulti(layer.id) },
-                        onToggleVisibility = { onToggleVisibility(layer.id) },
-                        onToggleLock = { onToggleLock(layer.id) },
-                        onMoveUp = { onMoveLayer(index, index - 1) },
-                        onMoveDown = { onMoveLayer(index, index + 1) },
-                        onEnterGroup = { onEnterGroup(layer.id) },
-                        onRenameClick = {
-                            layerToRename = layer
-                            renameInput = layer.name
-                        }
-                    )
-                }
+            ReorderableLayerList(
+                layers = layers,
+                onMove = onMoveLayer,
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            ) { layer, dragging ->
+                LayerRow(
+                    layer = layer,
+                    isSelected = selectedLayerIds.contains(layer.id) || dragging,
+                    onClick = { onSelectLayer(layer.id) },
+                    onLongClick = { onToggleSelectMulti(layer.id) },
+                    onToggleVisibility = { onToggleVisibility(layer.id) },
+                    onToggleLock = { onToggleLock(layer.id) },
+                    onEnterGroup = { onEnterGroup(layer.id) },
+                    onRenameClick = { layerToRename = layer; renameInput = layer.name }
+                )
             }
         }
     }
@@ -288,14 +277,10 @@ fun LayersPanel(
 fun LayerRow(
     layer: Layer,
     isSelected: Boolean,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleVisibility: () -> Unit,
     onToggleLock: () -> Unit,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
     onEnterGroup: () -> Unit,
     onRenameClick: () -> Unit
 ) {
@@ -304,7 +289,7 @@ fun LayerRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) colors.surfaceVariant else colors.background
@@ -383,29 +368,19 @@ fun LayerRow(
                 )
             }
 
-            // T22: Clear Grab Area with drag handle icon
+            // Multi-selection is explicit; long-press belongs exclusively to reordering.
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onLongClick() },
+                modifier = Modifier.size(32.dp).testTag("layer_select_${layer.id}")
+                    .semantics { contentDescription = "Select ${layer.name}" }
+            )
             Icon(
                 Icons.Default.DragHandle,
-                contentDescription = "Drag to reorder",
-                tint = colors.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier
-                    .size(24.dp)
-                    .padding(end = 4.dp)
+                contentDescription = "Hold to reorder ${layer.name}",
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier.size(32.dp).padding(4.dp).testTag("layer_handle_${layer.id}")
             )
-
-            // Step move handles
-            Column {
-                if (canMoveUp) {
-                    IconButton(onClick = onMoveUp, modifier = Modifier.size(16.dp)) {
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move Up", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                    }
-                }
-                if (canMoveDown) {
-                    IconButton(onClick = onMoveDown, modifier = Modifier.size(16.dp)) {
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move Down", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                    }
-                }
-            }
         }
     }
 }

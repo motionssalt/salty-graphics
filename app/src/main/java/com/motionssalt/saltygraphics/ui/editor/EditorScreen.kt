@@ -247,6 +247,7 @@ fun EditorScreen(
         return
     }
 
+    val panelLayers = LayerStackCommands.layers(doc, activeGroupId)
     val currentSelectedLayer = doc.findLayerById(selectedLayerIds.firstOrNull() ?: "")
 
     // A fixed pane must always have content. Requested pages are not eligible without
@@ -333,7 +334,7 @@ fun EditorScreen(
 
         ) {
             CanvasView(
-                document = vectorDraft?.let { draft -> doc.updateLayer(draft.id) { draft } } ?: doc,
+                document = (vectorDraft?.let { draft -> doc.updateLayer(draft.id) { draft } } ?: doc).copy(activeGroupId = activeGroupId),
                 selectedLayerIds = selectedLayerIds,
                 zoom = zoom,
                 panOffset = panOffset,
@@ -385,7 +386,7 @@ fun EditorScreen(
                         .fillMaxHeight()
                 ) {
                     LayersPanel(
-                        layers = doc.activeLayers,
+                        layers = panelLayers,
                         selectedLayerIds = selectedLayerIds,
                         onSelectLayer = { selectedLayerIds = setOf(it) },
                         onToggleSelectMulti = { id ->
@@ -396,7 +397,7 @@ fun EditorScreen(
                             }
                         },
                         onSelectAll = {
-                            selectedLayerIds = doc.activeLayers.map { it.id }.toSet()
+                            selectedLayerIds = panelLayers.map { it.id }.toSet()
                         },
                         onSelectNone = { selectedLayerIds = emptySet() },
                         onToggleVisibility = { id ->
@@ -436,15 +437,13 @@ fun EditorScreen(
                             }
                         },
                         onMoveLayer = { from, to ->
-                            val list = doc.activeLayers.toMutableList()
-                            val item = list.removeAt(from)
-                            list.add(to, item)
-                            val updated = if (activeGroupId == null) {
-                                doc.copy(layers = list)
-                            } else {
-                                doc.updateLayer(activeGroupId!!) { it.copy(children = list) }
+                            val source = panelLayers.getOrNull(from)?.id
+                            val destination = panelLayers.getOrNull(to)?.id
+                            if (source != null && destination != null && source != destination) {
+                                recordCommandAndAutoSave(ActionIdentity("Reorder", "Layers")) {
+                                    LayerStackCommands.reorder(it, activeGroupId, source, destination)
+                                }
                             }
-                            recordAndAutoSave("Reorder Layers", updated)
                         },
                         onEnterGroup = { groupId ->
                             activeGroupId = groupId
@@ -457,7 +456,7 @@ fun EditorScreen(
                                     id = java.util.UUID.randomUUID().toString(),
                                     name = "${target.name} Copy"
                                 )
-                                val currentList = doc.activeLayers
+                                val currentList = panelLayers
                                 val idx = currentList.indexOfFirst { it.id == id }
                                 val updatedList = currentList.toMutableList()
                                 if (idx >= 0) updatedList.add(idx, dup) else updatedList.add(0, dup)
@@ -471,41 +470,23 @@ fun EditorScreen(
                             }
                         },
                         onGroupSelected = {
-                            if (selectedLayerIds.size > 1) {
-                                val selectedLayers = doc.activeLayers.filter { selectedLayerIds.contains(it.id) }
-                                val group = Layer(
-                                    name = "Group ${doc.layers.count { it.type == LayerType.GROUP } + 1}",
-                                    type = LayerType.GROUP,
-                                    children = selectedLayers
-                                )
-                                var remaining = doc.activeLayers.filterNot { selectedLayerIds.contains(it.id) }.toMutableList()
-                                remaining.add(0, group)
-                                val updated = if (activeGroupId == null) {
-                                    doc.copy(layers = remaining)
-                                } else {
-                                    doc.updateLayer(activeGroupId!!) { it.copy(children = remaining) }
+                            val ids = selectedLayerIds
+                            if (panelLayers.count { it.id in ids } > 1) {
+                                val id = java.util.UUID.randomUUID().toString()
+                                recordCommandAndAutoSave(ActionIdentity("Group", "Layers")) {
+                                    LayerStackCommands.group(it, activeGroupId, ids, id)
                                 }
-                                selectedLayerIds = setOf(group.id)
-                                recordAndAutoSave("Group Layers", updated)
+                                selectedLayerIds = setOf(id)
                             }
                         },
                         onUngroupSelected = {
-                            val firstId = selectedLayerIds.firstOrNull()
-                            val group = if (firstId != null) doc.findLayerById(firstId) else null
-                            if (group != null && group.type == LayerType.GROUP) {
-                                val currentList = doc.activeLayers.toMutableList()
-                                val gIdx = currentList.indexOfFirst { it.id == firstId }
-                                if (gIdx >= 0) {
-                                    currentList.removeAt(gIdx)
-                                    currentList.addAll(gIdx, group.children)
-                                    val updated = if (activeGroupId == null) {
-                                        doc.copy(layers = currentList)
-                                    } else {
-                                        doc.updateLayer(activeGroupId!!) { it.copy(children = currentList) }
-                                    }
-                                    selectedLayerIds = group.children.map { it.id }.toSet()
-                                    recordAndAutoSave("Ungroup Layers", updated)
+                            val id = selectedLayerIds.singleOrNull()
+                            val group = panelLayers.find { it.id == id && it.type == LayerType.GROUP }
+                            if (group != null) {
+                                recordCommandAndAutoSave(ActionIdentity("Ungroup", "Layers")) {
+                                    LayerStackCommands.ungroup(it, activeGroupId, group.id)
                                 }
+                                selectedLayerIds = group.children.map { it.id }.toSet()
                             }
                         }
                     )
@@ -615,7 +596,7 @@ fun EditorScreen(
                             id = java.util.UUID.randomUUID().toString(),
                             name = "${target.name} Copy"
                         )
-                        val currentList = doc.activeLayers
+                        val currentList = panelLayers
                         val idx = currentList.indexOfFirst { it.id == target.id }
                         val updatedList = currentList.toMutableList()
                         if (idx >= 0) updatedList.add(idx + 1, dup) else updatedList.add(dup)
