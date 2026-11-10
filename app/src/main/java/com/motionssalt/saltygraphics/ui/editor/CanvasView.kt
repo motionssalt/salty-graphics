@@ -41,6 +41,7 @@ import android.graphics.PorterDuffXfermode
 import com.motionssalt.saltygraphics.data.FontManager
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.engine.render.LayerCompositor
+import com.motionssalt.saltygraphics.engine.render.FillRenderer
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
 import com.motionssalt.saltygraphics.media.MediaCache
 import com.motionssalt.saltygraphics.theme.*
@@ -395,43 +396,74 @@ fun CanvasView(
                             val halfW = shape.width / 2f
                             val halfH = shape.height / 2f
                             val rect = RectF(-halfW, -halfH, halfW, halfH)
+                            val shapePath = when (shape.type) {
+                                ShapeType.RECTANGLE -> NativePath().apply { addRect(rect, NativePath.Direction.CW) }
+                                ShapeType.ROUNDED_RECTANGLE -> NativePath().apply { addRoundRect(rect, shape.cornerRadius, shape.cornerRadius, NativePath.Direction.CW) }
+                                ShapeType.CIRCLE -> NativePath().apply { addOval(rect, NativePath.Direction.CW) }
+                                else -> nativeVectorPath(shape.toVectorPath())
+                            }
+                            val fill = layer.effectiveFill
+                            val stroke = layer.effectiveStroke
+                            val shadow = layer.effectiveShadow
 
-                            if (shape.hasFill) {
-                                val fillPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
-                                    color = shape.fillColor.toInt()
-                                    style = NativePaint.Style.FILL
-                                }
-                                when (shape.type) {
-                                    ShapeType.RECTANGLE -> nativeCanvas.drawRect(rect, fillPaint)
-                                    ShapeType.ROUNDED_RECTANGLE -> nativeCanvas.drawRoundRect(rect, shape.cornerRadius, shape.cornerRadius, fillPaint)
-                                    ShapeType.CIRCLE -> nativeCanvas.drawOval(rect, fillPaint)
-                                    else -> {
-                                        val path = nativeVectorPath(shape.toVectorPath())
-                                        nativeCanvas.drawPath(path, fillPaint)
-                                    }
+                            // 1. Drop Shadow
+                            if (shadow.isEnabled) {
+                                val shadowPaint = NativePaint()
+                                if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                    nativeCanvas.save()
+                                    nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
+                                    nativeCanvas.drawPath(shapePath, shadowPaint)
+                                    nativeCanvas.restore()
                                 }
                             }
-                            if (shape.hasStroke && shape.strokeWidth > 0) {
-                                val strokePaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
+
+                            // 2. Fill (solid, gradient, media)
+                            if (fill.type == FillType.MEDIA && fill.mediaAssetPath != null) {
+                                val bmp = MediaCache.getOrRequest(context, document.id, fill.mediaAssetPath)
+                                if (bmp != null) {
+                                    nativeCanvas.save()
+                                    nativeCanvas.clipPath(shapePath)
+                                    val (srcR, dstR) = FillRenderer.computeMediaPlacement(
+                                        bmp.width.toFloat(), bmp.height.toFloat(), rect, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
+                                    )
+                                    nativeCanvas.drawBitmap(bmp, android.graphics.Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, NativePaint(NativePaint.ANTI_ALIAS_FLAG))
+                                    nativeCanvas.restore()
+                                }
+                            } else {
+                                val fillPaint = NativePaint()
+                                if (FillRenderer.configureFillPaint(fillPaint, fill, rect)) {
+                                    nativeCanvas.drawPath(shapePath, fillPaint)
+                                } else if (shape.hasFill && fill.type == FillType.SOLID && fill.solidOpacity > 0f) {
+                                    fillPaint.color = shape.fillColor.toInt()
+                                    fillPaint.style = NativePaint.Style.FILL
+                                    nativeCanvas.drawPath(shapePath, fillPaint)
+                                }
+                            }
+
+                            // 3. Stroke
+                            val strokePaint = NativePaint()
+                            if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                                FillRenderer.drawPathWithStroke(nativeCanvas, shapePath, stroke, strokePaint)
+                            } else if (shape.hasStroke && shape.strokeWidth > 0) {
+                                val legacyStroke = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
                                     color = shape.strokeColor.toInt()
                                     strokeWidth = shape.strokeWidth
                                     style = NativePaint.Style.STROKE
                                 }
-                                when (shape.type) {
-                                    ShapeType.RECTANGLE -> nativeCanvas.drawRect(rect, strokePaint)
-                                    ShapeType.ROUNDED_RECTANGLE -> nativeCanvas.drawRoundRect(rect, shape.cornerRadius, shape.cornerRadius, strokePaint)
-                                    ShapeType.CIRCLE -> nativeCanvas.drawOval(rect, strokePaint)
-                                    else -> {
-                                        val path = nativeVectorPath(shape.toVectorPath())
-                                        nativeCanvas.drawPath(path, strokePaint)
-                                    }
-                                }
+                                nativeCanvas.drawPath(shapePath, legacyStroke)
                             }
                         }
                         LayerType.TEXT -> {
                             val textData = layer.textData ?: TextLayerData()
+                            val fill = layer.effectiveFill
+                            val stroke = layer.effectiveStroke
+                            val shadow = layer.effectiveShadow
                             val paint = selectionTextPaint(context, textData).apply {
-                                color = textData.color.toInt()
+                                color = fill.effectiveSolidArgb.toInt()
+                            }
+                            val bounds = RectF(-textData.boxWidth / 2f, -textData.boxHeight / 2f, textData.boxWidth / 2f, textData.boxHeight / 2f)
+                            if (fill.type == FillType.GRADIENT) {
+                                paint.shader = FillRenderer.createGradientShader(fill.gradient, bounds)
                             }
                             val pathLayer = if (textData.followPathLayerId != null) document.findLayerById(textData.followPathLayerId!!) else null
                             val vectorPath = pathLayer?.vectorPathData ?: pathLayer?.shapeData?.toVectorPath()
@@ -455,7 +487,18 @@ fun CanvasView(
                                 val measure = android.graphics.PathMeasure(path, false)
                                 val pathLen = measure.length
                                 val hOffset = pathLen * textData.pathOffsetPercent
-                                if (textData.hasOutline) {
+                                if (shadow.isEnabled) {
+                                    val shadowPaint = NativePaint(paint)
+                                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                        nativeCanvas.drawTextOnPath(textData.text, path, hOffset + shadow.offsetX, shadow.offsetY, shadowPaint)
+                                    }
+                                }
+                                if (stroke.isEnabled && stroke.width > 0f) {
+                                    val strokePaint = NativePaint(paint)
+                                    if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                                        nativeCanvas.drawTextOnPath(textData.text, path, hOffset, 0f, strokePaint)
+                                    }
+                                } else if (textData.hasOutline) {
                                     val outlinePaint = NativePaint(paint).apply {
                                         style = NativePaint.Style.STROKE
                                         strokeWidth = textData.outlineWidth
@@ -471,7 +514,18 @@ fun CanvasView(
                                     else -> 0f
                                 }
                                 val y = (paint.descent() + paint.ascent()) / -2f
-                                if (textData.hasOutline) {
+                                if (shadow.isEnabled) {
+                                    val shadowPaint = NativePaint(paint)
+                                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                        nativeCanvas.drawText(textData.text, x + shadow.offsetX, y + shadow.offsetY, shadowPaint)
+                                    }
+                                }
+                                if (stroke.isEnabled && stroke.width > 0f) {
+                                    val strokePaint = NativePaint(paint)
+                                    if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                                        nativeCanvas.drawText(textData.text, x, y, strokePaint)
+                                    }
+                                } else if (textData.hasOutline) {
                                     val outlinePaint = NativePaint(paint).apply {
                                         style = NativePaint.Style.STROKE
                                         strokeWidth = textData.outlineWidth
@@ -483,20 +537,33 @@ fun CanvasView(
                             }
                         }
                         LayerType.MEDIA -> {
-                            val mediaAsset = layer.mediaAssetPath
+                            val fill = layer.effectiveFill
+                            val stroke = layer.effectiveStroke
+                            val shadow = layer.effectiveShadow
+                            val mediaAsset = fill.mediaAssetPath ?: layer.mediaAssetPath
                             val bmp = if (mediaAsset != null) {
                                 MediaCache.getOrRequest(context, document.id, mediaAsset)
                             } else null
-
                             val mw = layer.mediaWidth ?: 300f
                             val mh = layer.mediaHeight ?: 300f
                             val halfW = mw / 2f
                             val halfH = mh / 2f
                             val dst = RectF(-halfW, -halfH, halfW, halfH)
-
+                            if (shadow.isEnabled) {
+                                val shadowPaint = NativePaint()
+                                if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                    nativeCanvas.save()
+                                    nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
+                                    nativeCanvas.drawRect(dst, shadowPaint)
+                                    nativeCanvas.restore()
+                                }
+                            }
                             if (bmp != null) {
                                 val paint = NativePaint(NativePaint.ANTI_ALIAS_FLAG)
-                                nativeCanvas.drawBitmap(bmp, null, dst, paint)
+                                val (srcR, dstR) = FillRenderer.computeMediaPlacement(
+                                    bmp.width.toFloat(), bmp.height.toFloat(), dst, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
+                                )
+                                nativeCanvas.drawBitmap(bmp, android.graphics.Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, paint)
                             } else {
                                 val fallbackPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
                                     color = 0xFF888888.toInt()
@@ -504,10 +571,43 @@ fun CanvasView(
                                 }
                                 nativeCanvas.drawRect(dst, fallbackPaint)
                             }
+                            val strokePaint = NativePaint()
+                            if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                                val mediaPath = NativePath().apply { addRect(dst, NativePath.Direction.CW) }
+                                FillRenderer.drawPathWithStroke(nativeCanvas, mediaPath, stroke, strokePaint)
+                            }
                         }
                         LayerType.VECTOR -> {
+                            val fill = layer.effectiveFill
+                            val stroke = layer.effectiveStroke
+                            val shadow = layer.effectiveShadow
                             layer.editablePaths.forEach { data ->
-                                drawNativeVector(nativeCanvas, data, 1f)
+                                val path = nativeVectorPath(data)
+                                val bounds = RectF()
+                                path.computeBounds(bounds, true)
+                                if (shadow.isEnabled) {
+                                    val shadowPaint = NativePaint()
+                                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                        nativeCanvas.save()
+                                        nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
+                                        nativeCanvas.drawPath(path, shadowPaint)
+                                        nativeCanvas.restore()
+                                    }
+                                }
+                                val fillPaint = NativePaint()
+                                if (FillRenderer.configureFillPaint(fillPaint, fill, bounds)) {
+                                    nativeCanvas.drawPath(path, fillPaint)
+                                } else if (data.hasFill && fill.type == FillType.SOLID && fill.solidOpacity > 0f) {
+                                    fillPaint.color = data.fillColor.toInt()
+                                    fillPaint.style = NativePaint.Style.FILL
+                                    nativeCanvas.drawPath(path, fillPaint)
+                                }
+                                val strokePaint = NativePaint()
+                                if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                                    FillRenderer.drawPathWithStroke(nativeCanvas, path, stroke, strokePaint)
+                                } else if (data.hasStroke && data.strokeWidth > 0f) {
+                                    drawNativeVector(nativeCanvas, data, 1f)
+                                }
                             }
                         }
                         LayerType.GROUP -> {
@@ -527,8 +627,13 @@ fun CanvasView(
                                 if (child.type == LayerType.SHAPE) {
                                     val s = child.shapeData ?: ShapeData()
                                     val rect = RectF(-s.width / 2f, -s.height / 2f, s.width / 2f, s.height / 2f)
-                                    if (s.hasFill) {
-                                        val fp = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply { color = s.fillColor.toInt(); style = NativePaint.Style.FILL }
+                                    val childFill = child.effectiveFill
+                                    val fp = NativePaint()
+                                    if (FillRenderer.configureFillPaint(fp, childFill, rect)) {
+                                        nativeCanvas.drawRect(rect, fp)
+                                    } else if (s.hasFill && childFill.type == FillType.SOLID && childFill.solidOpacity > 0f) {
+                                        fp.color = s.fillColor.toInt()
+                                        fp.style = NativePaint.Style.FILL
                                         nativeCanvas.drawRect(rect, fp)
                                     }
                                 }
@@ -544,7 +649,6 @@ fun CanvasView(
                             nativeCanvas.drawRoundRect(RectF(-120f, -60f, 120f, 60f), 8f, 8f, qPaint)
                         }
                     }
-
                     nativeCanvas.restore() // Restores layer transform
 
                     // Apply non-destructive mask if configured

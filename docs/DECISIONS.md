@@ -164,3 +164,15 @@ RulerSlider was upgraded to 1:1 sub-pixel continuous internal tracking and direc
 - **Release Publication**: Published release `v1.0.58` with universal and ABI-split APKs (arm64-v8a, armeabi-v7a, x86_64), signed with the permanent release keystore.
 - **UI Refinement**: Confirmed no unauthorized UI refinement was performed.
 
+
+
+## Fix round 4 — V7 Universal Fill and V8 Border & Shadow
+- **V7 Universal Fill Control**:
+  - **Root Cause**: In `EditorScreen`, the `onOpenFill` callback was a no-op that merely cleared `isShapeSettingsOpen` and `isTextSettingsOpen` to `false` without triggering any fill UI, and no modal dialog wrapper existed for `UniversalFillSection`.
+  - **Fix**: Implemented `UniversalFillDialog` in `ui/controls/UniversalFillSection.kt` with a modal surface, title, close button, and scrolling content area. Wired `onOpenFill` in `EditorScreen` to open `UniversalFillDialog` when a visual layer is selected. Synchronized `fillData` with legacy and layer-specific properties (Shape `fillColor`, Text `color`, Vector `fillColor`, Media `mediaAssetPath`). Solid fill transparency operates independently from stroke: setting fill opacity to 0% produces transparent interior while stroke and shadow remain fully visible.
+  - **Live Canvas & Export**: Updated `CanvasView` and `ExportScreen` to render `effectiveFill` using `FillRenderer`, supporting Solid, Gradient, and Media fill modes across all layer types.
+
+- **V8 Border & Shadow Panel**:
+  - **Root Cause**: In `EditorScreen`, the `onOpenBorderShadow` parameter was omitted when invoking `BottomPanel`. Because `onOpenBorderShadow` defaulted to `null`, `BottomPanel` never added the "Border & Shadow" tool button to the layer tool grid.
+  - **Fix**: Wired `onOpenBorderShadow` in `EditorScreen` to open `BorderShadowDialog` for visual layers (Shape, Text, Vector, Media). Implemented stroke alignment (Center, Inside, Outside) via canvas clipping in `FillRenderer.drawPathWithStroke`: inside stroke clips to path with 2x width; outside stroke clips out of path with 2x width; center stroke draws unclipped. Added drop shadow rendering across `CanvasView`, `LayerCompositor`, and `ExportScreen`.
+  - **Verification**: Verified with `FillAndBorderShadowTest` covering CPU reference rendering (stroke alignment, dashes, caps, joins, drop shadows, independent fill opacity) and Robolectric UI interaction tests on Shape, Text, Vector, and Media layers.

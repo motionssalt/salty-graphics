@@ -303,7 +303,7 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -332,7 +332,7 @@
     ],
     "decisions": [
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
-      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
+      "R6: usable portrait workspace gets 40% height clamped 260–340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280–360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
       "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
@@ -765,14 +765,14 @@
       {
         "id": "V7",
         "title": "The universal Fill control must open and respond",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: In EditorScreen, onOpenFill only dismissed other panels without opening any UI, and UniversalFillDialog was missing. Built UniversalFillDialog modal surface wrapping UniversalFillSection, wired it in EditorScreen for all visual layer types (Shape, Text, Vector, Media), synchronized fillData with layer-specific models, maintained independent opacity for transparent fills with strokes, and wired live canvas/export rendering through FillRenderer. Verified with CPU reference tests and Robolectric UI interaction tests."
       },
       {
         "id": "V8",
         "title": "Border & Shadow panel must exist and be easy to find",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Root cause: BottomPanel received onOpenBorderShadow as null from EditorScreen, so the button was omitted from the tool grid. Wired onOpenBorderShadow to launch BorderShadowDialog for visual layer types (Shape, Text, Vector, Media), and implemented stroke alignment (inside, center, outside) via canvas clipping in FillRenderer, live rendering in CanvasView, and full composite in ExportScreen. Verified with CPU reference tests for stroke alignment, dashes, caps, joins, and shadow, and Robolectric UI tests."
       },
       {
         "id": "V9",
@@ -849,7 +849,7 @@
     ],
     "decisions": [],
     "known_issues": [],
-    "last_updated": "2026-11-07T16:55:00.000Z",
-    "last_session_note": "Starting fix_round_4: 20 open items from Victor's beta testing. Initialized queue, starting V1 project persistence root-cause investigation and fault-injection test suite."
+    "last_updated": "2026-11-10T08:53:00.000Z",
+    "last_session_note": "Completed V7 (Universal Fill control) and V8 (Border & Shadow panel). Added UniversalFillDialog, wired onOpenFill and onOpenBorderShadow in EditorScreen and BottomPanel, implemented stroke alignment and drop shadow in FillRenderer/LayerCompositor/CanvasView, and added comprehensive CPU and Robolectric UI test suite."
   }
 }

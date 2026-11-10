@@ -84,101 +84,20 @@ fun ExportScreen(
     val finalHeight = (doc.canvasSize.height * resolutionScale).toInt()
 
     fun renderFullDocumentBitmap(): Bitmap {
-        val bitmap = Bitmap.createBitmap(finalWidth, finalHeight, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawExportBackground(canvas, doc.editorSettings.backgroundColor, selectedFormat == ExportFormat.JPEG)
-
-        val halfW = finalWidth / 2f
-        val halfH = finalHeight / 2f
-
-        for (layer in doc.layers.asReversed()) {
-            if (!layer.isVisible) continue
-            val lx = halfW + (layer.transform.translationX * resolutionScale)
-            val ly = halfH + (layer.transform.translationY * resolutionScale)
-
-            val layerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                alpha = (layer.opacity * 255).toInt().coerceIn(0, 255)
-                com.motionssalt.saltygraphics.engine.render.LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
-            }
-
-            canvas.saveLayer(null, layerPaint)
-            canvas.translate(lx, ly)
-            canvas.rotate(layer.transform.rotationDegrees)
-            canvas.scale(layer.transform.scaleX * resolutionScale, layer.transform.scaleY * resolutionScale)
-
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-            when (layer.type) {
-                LayerType.SHAPE -> {
-                    val s = layer.shapeData
-                    if (s != null) {
-                        val rect = RectF(-s.width / 2f, -s.height / 2f, s.width / 2f, s.height / 2f)
-                        if (s.hasFill) {
-                            paint.style = Paint.Style.FILL
-                            paint.color = s.fillColor.toInt()
-                            when (s.type) {
-                                ShapeType.CIRCLE -> canvas.drawOval(rect, paint)
-                                ShapeType.ROUNDED_RECTANGLE -> canvas.drawRoundRect(rect, s.cornerRadius, s.cornerRadius, paint)
-                                else -> canvas.drawRect(rect, paint)
-                            }
-                        }
-                        if (s.hasStroke && s.strokeWidth > 0) {
-                            paint.style = Paint.Style.STROKE
-                            paint.strokeWidth = s.strokeWidth
-                            paint.color = s.strokeColor.toInt()
-                            when (s.type) {
-                                ShapeType.CIRCLE -> canvas.drawOval(rect, paint)
-                                ShapeType.ROUNDED_RECTANGLE -> canvas.drawRoundRect(rect, s.cornerRadius, s.cornerRadius, paint)
-                                else -> canvas.drawRect(rect, paint)
-                            }
-                        }
-                    }
-                }
-                LayerType.VECTOR -> {
-                    layer.editablePaths.forEach { path -> com.motionssalt.saltygraphics.ui.editor.drawNativeVector(canvas, path, 1f) }
-                }
-                LayerType.TEXT -> {
-                    val t = layer.textData
-                    if (t != null) {
-                        paint.color = t.color.toInt()
-                        paint.textSize = t.fontSize
-                        paint.textAlign = Paint.Align.CENTER
-                        paint.isFakeBoldText = t.isBold
-                        if (t.isItalic) paint.textSkewX = -0.25f
-                        val y = (paint.descent() + paint.ascent()) / -2f
-                        if (t.hasOutline) {
-                            val outlinePaint = Paint(paint).apply {
-                                style = Paint.Style.STROKE
-                                strokeWidth = t.outlineWidth
-                                color = t.outlineColor.toInt()
-                            }
-                            canvas.drawText(t.text, 0f, y, outlinePaint)
-                        }
-                        canvas.drawText(t.text, 0f, y, paint)
-                    }
-                }
-                LayerType.MEDIA -> {
-                    val mediaPath = layer.mediaAssetPath
-                    val bmp = if (mediaPath != null) MediaCache.getOrLoad(context, doc.id, mediaPath) else null
-                    val mw = layer.mediaWidth ?: 300f
-                    val mh = layer.mediaHeight ?: 300f
-                    if (bmp != null) {
-                        val dst = RectF(-mw / 2f, -mh / 2f, mw / 2f, mh / 2f)
-                        canvas.drawBitmap(bmp, null, dst, paint)
-                    } else {
-                        paint.color = android.graphics.Color.DKGRAY
-                        canvas.drawRect(-mw / 2f, -mh / 2f, mw / 2f, mh / 2f, paint)
-                    }
-                }
-                LayerType.ADJUSTMENT -> {
-                    paint.color = 0x80808080.toInt()
-                    canvas.drawRect(-finalWidth / 2f, -finalHeight / 2f, finalWidth / 2f, finalHeight / 2f, paint)
-                }
-                else -> {}
-            }
-            canvas.restore()
+        val composite = com.motionssalt.saltygraphics.engine.render.LayerCompositor.compositeDocument(
+            document = doc,
+            width = finalWidth,
+            height = finalHeight,
+            mediaResolver = { path -> MediaCache.getOrLoad(context, doc.id, path) }
+        )
+        if (selectedFormat == ExportFormat.JPEG && doc.editorSettings.backgroundColor == 0L) {
+            val flattened = Bitmap.createBitmap(finalWidth, finalHeight, Bitmap.Config.ARGB_8888)
+            val c = Canvas(flattened)
+            c.drawColor(android.graphics.Color.WHITE)
+            c.drawBitmap(composite, 0f, 0f, null)
+            return flattened
         }
-        return bitmap
+        return composite
     }
 
     var currentFolderName by remember { mutableStateOf(StorageManager.getSavedFolderName(context)) }

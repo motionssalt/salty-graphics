@@ -21,6 +21,9 @@ import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
 import com.motionssalt.saltygraphics.engine.action.PasteMode
 import com.motionssalt.saltygraphics.engine.effect.EffectRegistry
 import com.motionssalt.saltygraphics.engine.model.*
+import com.motionssalt.saltygraphics.ui.controls.BorderShadowDialog
+import com.motionssalt.saltygraphics.ui.controls.UniversalFillDialog
+
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +64,9 @@ fun EditorScreen(
     var isShapeSettingsOpen by remember { mutableStateOf(false) }
     var isTextSettingsOpen by remember { mutableStateOf(false) }
     var isBlendingOpen by remember { mutableStateOf(false) }
+    var isFillDialogOpen by remember { mutableStateOf(false) }
+    var isBorderShadowDialogOpen by remember { mutableStateOf(false) }
+
     var isMaskOpen by remember { mutableStateOf(false) }
     var isProjectSettingsOpen by remember { mutableStateOf(false) }
     var isVectorMenuOpen by remember { mutableStateOf(false) }
@@ -224,9 +230,9 @@ fun EditorScreen(
     BackHandler {
         if (exitSaveError != null) {
             exitSaveError = null
-        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen) {
+        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen || isFillDialogOpen || isBorderShadowDialogOpen) {
             isVectorMenuOpen = false; isVectorSettingsOpen = false; vectorDraft = null
-            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
+            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillDialogOpen = false; isBorderShadowDialogOpen = false
         } else if (activeGroupId != null) {
             activeGroupId = null // Return to parent document
         } else {
@@ -290,7 +296,7 @@ fun EditorScreen(
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
                 onExportClick = { onNavigateToExport(projectId) },
-                onSettingsClick = { isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isProjectSettingsOpen = true },
+                onSettingsClick = { isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillDialogOpen = false; isBorderShadowDialogOpen = false; isProjectSettingsOpen = true },
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },
                 onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.1f) },
                 onFitToScreen = {
@@ -594,8 +600,12 @@ fun EditorScreen(
                 onOpenBlending = { isBlendingOpen = true },
                 onOpenFill = {
                     if (currentSelectedLayer != null) {
-                        isShapeSettingsOpen = false
-                        isTextSettingsOpen = false
+                        isFillDialogOpen = true
+                    }
+                },
+                onOpenBorderShadow = {
+                    if (currentSelectedLayer != null) {
+                        isBorderShadowDialogOpen = true
                     }
                 },
                 onDuplicate = {
@@ -736,6 +746,110 @@ fun EditorScreen(
                 recordAndAutoSave("Update Mask", updated)
             },
             onBack = { isBlendingOpen = false }
+        )
+    }
+
+    if (isFillDialogOpen && currentSelectedLayer != null) {
+        val targetLayer = currentSelectedLayer
+        UniversalFillDialog(
+            fill = targetLayer.effectiveFill,
+            onFillChange = { newFill ->
+                val targetId = targetLayer.id
+                val updated = doc.updateLayer(targetId) { layer ->
+                    val base = layer.copy(fillData = newFill)
+                    when (layer.type) {
+                        LayerType.SHAPE -> {
+                            val shape = layer.shapeData ?: ShapeData()
+                            base.copy(shapeData = shape.copy(
+                                fillColor = newFill.solidColor,
+                                hasFill = newFill.type != FillType.SOLID || newFill.solidOpacity > 0f
+                            ))
+                        }
+                        LayerType.TEXT -> {
+                            val text = layer.textData ?: TextLayerData()
+                            base.copy(textData = text.copy(
+                                color = newFill.effectiveSolidArgb
+                            ))
+                        }
+                        LayerType.VECTOR -> {
+                            val path = layer.vectorPathData
+                            if (path != null) {
+                                base.copy(vectorPathData = path.copy(
+                                    fillColor = newFill.solidColor,
+                                    hasFill = newFill.type != FillType.SOLID || newFill.solidOpacity > 0f
+                                ))
+                            } else base
+                        }
+                        LayerType.MEDIA -> {
+                            if (newFill.type == FillType.MEDIA && newFill.mediaAssetPath != null) {
+                                base.copy(mediaAssetPath = newFill.mediaAssetPath)
+                            } else base
+                        }
+                        else -> base
+                    }
+                }
+                projectDocument = updated
+                recordAndAutoSave("Change Fill", updated)
+            },
+            onDismiss = { isFillDialogOpen = false }
+        )
+    }
+
+    if (isBorderShadowDialogOpen && currentSelectedLayer != null) {
+        val targetLayer = currentSelectedLayer
+        BorderShadowDialog(
+            stroke = targetLayer.effectiveStroke,
+            shadow = targetLayer.effectiveShadow,
+            onStrokeChange = { newStroke ->
+                val targetId = targetLayer.id
+                val updated = doc.updateLayer(targetId) { layer ->
+                    val base = layer.copy(strokeData = newStroke)
+                    when (layer.type) {
+                        LayerType.SHAPE -> {
+                            val shape = layer.shapeData ?: ShapeData()
+                            base.copy(shapeData = shape.copy(
+                                hasStroke = newStroke.isEnabled,
+                                strokeColor = newStroke.color,
+                                strokeWidth = newStroke.width
+                            ))
+                        }
+                        LayerType.TEXT -> {
+                            val text = layer.textData ?: TextLayerData()
+                            base.copy(textData = text.copy(
+                                hasOutline = newStroke.isEnabled,
+                                outlineColor = newStroke.color,
+                                outlineWidth = newStroke.width
+                            ))
+                        }
+                        LayerType.VECTOR -> {
+                            val path = layer.vectorPathData
+                            if (path != null) {
+                                base.copy(vectorPathData = path.copy(
+                                    hasStroke = newStroke.isEnabled,
+                                    strokeColor = newStroke.color,
+                                    strokeWidth = newStroke.width,
+                                    strokeCap = newStroke.cap,
+                                    strokeJoin = newStroke.join,
+                                    dashLength = if (newStroke.isDashed) newStroke.dashLength else 0f,
+                                    dashGap = if (newStroke.isDashed) newStroke.dashGap else 0f
+                                ))
+                            } else base
+                        }
+                        else -> base
+                    }
+                }
+                projectDocument = updated
+                recordAndAutoSave("Change Border", updated)
+            },
+            onShadowChange = { newShadow ->
+                val targetId = targetLayer.id
+                val updated = doc.updateLayer(targetId) { layer ->
+                    layer.copy(shadowData = newShadow)
+                }
+                projectDocument = updated
+                recordAndAutoSave("Change Shadow", updated)
+            },
+            onDismiss = { isBorderShadowDialogOpen = false }
         )
     }
 

@@ -1,6 +1,7 @@
 package com.motionssalt.saltygraphics.engine.render
 
 import android.graphics.*
+import android.os.Build
 import com.motionssalt.saltygraphics.engine.model.*
 import kotlin.math.*
 
@@ -233,4 +234,40 @@ object FillRenderer {
         }
         return true
     }
+
+    /**
+     * Renders a path with the specified StrokeData respecting stroke alignment (Center, Inside, Outside).
+     */
+    fun drawPathWithStroke(canvas: Canvas, path: Path, stroke: StrokeData, strokePaint: Paint) {
+        if (!stroke.isEnabled || stroke.width <= 0f || stroke.opacity <= 0f) return
+        when (stroke.alignment) {
+            StrokeAlignment.CENTER -> {
+                canvas.drawPath(path, strokePaint)
+            }
+            StrokeAlignment.INSIDE -> {
+                canvas.save()
+                canvas.clipPath(path)
+                val origWidth = strokePaint.strokeWidth
+                strokePaint.strokeWidth = origWidth * 2f
+                canvas.drawPath(path, strokePaint)
+                strokePaint.strokeWidth = origWidth
+                canvas.restore()
+            }
+            StrokeAlignment.OUTSIDE -> {
+                canvas.save()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    canvas.clipOutPath(path)
+                } else {
+                    @Suppress("DEPRECATION")
+                    canvas.clipPath(path, Region.Op.DIFFERENCE)
+                }
+                val origWidth = strokePaint.strokeWidth
+                strokePaint.strokeWidth = origWidth * 2f
+                canvas.drawPath(path, strokePaint)
+                strokePaint.strokeWidth = origWidth
+                canvas.restore()
+            }
+        }
+    }
+
 }

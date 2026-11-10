@@ -6,6 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -219,5 +224,74 @@ fun UniversalFillSection(
             },
             onDismiss = { showGradientDialog = false }
         )
+    }
+}
+
+
+/**
+ * Modal bottom sheet dialog wrapping UniversalFillSection (V7).
+ */
+@Composable
+fun UniversalFillDialog(
+    fill: FillData,
+    onFillChange: (FillData) -> Unit,
+    onDismiss: () -> Unit,
+    onPickMedia: (() -> Unit)? = null
+) {
+    val colors = MaterialTheme.colorScheme
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Card(
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.85f)
+                    .clickable(enabled = false) {}
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Fill Settings",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.primary
+                        )
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "Close Fill", tint = colors.onSurfaceVariant)
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        UniversalFillSection(
+                            fill = fill,
+                            onFillChange = onFillChange,
+                            onPickMedia = onPickMedia
+                        )
+                    }
+                }
+            }
+        }
     }
 }

@@ -35,8 +35,9 @@ fun BottomPanel(
             Tool("Edit", Icons.Default.Edit, onEditLayer),
             Tool("Transform", Icons.Default.OpenWith, onOpenTransform)
         )
-        if (onOpenFill != null) list.add(Tool("Fill", Icons.Default.FormatColorFill, onOpenFill))
-        if (onOpenBorderShadow != null) list.add(Tool("Border & Shadow", Icons.Default.BorderStyle, onOpenBorderShadow))
+        val isVisualLayer = selectedLayer.type != com.motionssalt.saltygraphics.engine.model.LayerType.ADJUSTMENT
+        if (onOpenFill != null && isVisualLayer) list.add(Tool("Fill", Icons.Default.FormatColorFill, onOpenFill))
+        if (onOpenBorderShadow != null && isVisualLayer) list.add(Tool("Border & Shadow", Icons.Default.BorderStyle, onOpenBorderShadow))
         list.add(Tool("Effects", Icons.Default.AutoAwesome, onOpenEffects))
         list.add(Tool("Blending & Mask", Icons.Default.Layers, onOpenBlending))
         if (onDuplicate != null) list.add(Tool("Duplicate", Icons.Default.ControlPointDuplicate, onDuplicate))

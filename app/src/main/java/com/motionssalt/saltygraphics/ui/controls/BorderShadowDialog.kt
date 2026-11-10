@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -101,6 +102,7 @@ fun BorderShadowDialog(
                             Text("Stroke / Outline", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
                             SaltySwitch(
                                 checked = currentStroke.isEnabled,
+                                modifier = Modifier.testTag("stroke_switch"),
                                 onCheckedChange = { en ->
                                     val updated = currentStroke.copy(isEnabled = en)
                                     currentStroke = updated

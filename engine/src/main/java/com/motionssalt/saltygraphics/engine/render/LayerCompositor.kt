@@ -240,7 +240,7 @@ object LayerCompositor {
                 // 3. Draw Stroke if enabled
                 val strokePaint = Paint()
                 if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                    canvas.drawPath(shapePath, strokePaint)
+                    FillRenderer.drawPathWithStroke(canvas, shapePath, stroke, strokePaint)
                 }
             }
             LayerType.TEXT -> {
@@ -325,7 +325,8 @@ object LayerCompositor {
 
                 val strokePaint = Paint()
                 if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                    canvas.drawRect(dst, strokePaint)
+                    val mediaPath = Path().apply { addRect(dst, Path.Direction.CW) }
+                    FillRenderer.drawPathWithStroke(canvas, mediaPath, stroke, strokePaint)
                 }
             }
             LayerType.VECTOR -> {
@@ -355,7 +356,7 @@ object LayerCompositor {
 
                     val strokePaint = Paint()
                     if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                        canvas.drawPath(path, strokePaint)
+                        FillRenderer.drawPathWithStroke(canvas, path, stroke, strokePaint)
                     } else if (data.hasStroke && data.strokeWidth > 0) {
                         val legacyStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                             color = data.strokeColor.toInt()
