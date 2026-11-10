@@ -11,31 +11,94 @@ import kotlin.math.*
  */
 object FillRenderer {
 
+    private fun toTileMode(mode: GradientRepeatMode): Shader.TileMode = when (mode) {
+        GradientRepeatMode.CLAMP -> Shader.TileMode.CLAMP
+        GradientRepeatMode.REPEAT -> Shader.TileMode.REPEAT
+        GradientRepeatMode.MIRROR -> Shader.TileMode.MIRROR
+    }
+
+    /**
+     * Expands stops to take midpoint biasing into account by inserting midpoint colors.
+     */
+    fun computeExpandedStops(gradient: GradientData): Pair<IntArray, FloatArray> {
+        val sorted = gradient.sortedStops()
+        if (sorted.isEmpty()) {
+            return Pair(intArrayOf(0xFF00E5FF.toInt(), 0xFF2979FF.toInt()), floatArrayOf(0f, 1f))
+        }
+        if (sorted.size == 1) {
+            val c = sorted[0].effectiveArgb.toInt()
+            return Pair(intArrayOf(c, c), floatArrayOf(0f, 1f))
+        }
+
+        val colorsList = mutableListOf<Int>()
+        val positionsList = mutableListOf<Float>()
+
+        for (i in 0 until sorted.size - 1) {
+            val s0 = sorted[i]
+            val s1 = sorted[i + 1]
+            colorsList.add(s0.effectiveArgb.toInt())
+            positionsList.add(s0.position.coerceIn(0f, 1f))
+
+            val midBias = s0.midpoint.coerceIn(0.01f, 0.99f)
+            if (abs(midBias - 0.5f) > 0.02f) {
+                val midPos = s0.position + (s1.position - s0.position) * midBias
+                val midColor = interpolateColors(s0.effectiveArgb, s1.effectiveArgb, 0.5f)
+                colorsList.add(midColor.toInt())
+                positionsList.add(midPos.coerceIn(0f, 1f))
+            }
+        }
+        val last = sorted.last()
+        colorsList.add(last.effectiveArgb.toInt())
+        positionsList.add(last.position.coerceIn(0f, 1f))
+
+        return Pair(colorsList.toIntArray(), positionsList.toFloatArray())
+    }
+
+    private fun interpolateColors(c0: Long, c1: Long, t: Float): Long {
+        val a0 = (c0 ushr 24 and 0xFF) / 255f
+        val r0 = (c0 ushr 16 and 0xFF) / 255f
+        val g0 = (c0 ushr 8 and 0xFF) / 255f
+        val b0 = (c0 and 0xFF) / 255f
+
+        val a1 = (c1 ushr 24 and 0xFF) / 255f
+        val r1 = (c1 ushr 16 and 0xFF) / 255f
+        val g1 = (c1 ushr 8 and 0xFF) / 255f
+        val b1 = (c1 and 0xFF) / 255f
+
+        val a = ((a0 + (a1 - a0) * t) * 255f).roundToInt().coerceIn(0, 255)
+        val r = ((r0 + (r1 - r0) * t) * 255f).roundToInt().coerceIn(0, 255)
+        val g = ((g0 + (g1 - g0) * t) * 255f).roundToInt().coerceIn(0, 255)
+        val b = ((b0 + (b1 - b0) * t) * 255f).roundToInt().coerceIn(0, 255)
+
+        return ((a.toLong() and 0xFF) shl 24) or
+            ((r.toLong() and 0xFF) shl 16) or
+            ((g.toLong() and 0xFF) shl 8) or
+            (b.toLong() and 0xFF)
+    }
+
     /**
      * Creates an Android Shader corresponding to GradientData over a target rectangle.
      */
     fun createGradientShader(gradient: GradientData, bounds: RectF): Shader {
         val w = bounds.width().coerceAtLeast(1f)
         val h = bounds.height().coerceAtLeast(1f)
+        val tileMode = toTileMode(gradient.repeatMode)
+        val (colors, positions) = computeExpandedStops(gradient)
 
         return when (gradient.type) {
             GradientType.LINEAR -> {
                 val rad = Math.toRadians(gradient.angleDegrees.toDouble())
                 val cosA = cos(rad).toFloat()
                 val sinA = sin(rad).toFloat()
-                val cx = bounds.centerX()
-                val cy = bounds.centerY()
-                val halfDiag = sqrt(w * w + h * h) / 2f
+                val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
+                val cy = bounds.top + gradient.centerY.coerceIn(0f, 1f) * h
+                val halfDiag = sqrt(w * w + h * h) / 2f * (gradient.radius.coerceAtLeast(0.01f) / 0.5f)
                 val x0 = cx - cosA * halfDiag
                 val y0 = cy - sinA * halfDiag
                 val x1 = cx + cosA * halfDiag
                 val y1 = cy + sinA * halfDiag
 
-                val sorted = gradient.sortedStops()
-                val colors = IntArray(sorted.size) { sorted[it].effectiveArgb.toInt() }
-                val positions = FloatArray(sorted.size) { sorted[it].position.coerceIn(0f, 1f) }
-
-                LinearGradient(x0, y0, x1, y1, colors, positions, Shader.TileMode.CLAMP)
+                LinearGradient(x0, y0, x1, y1, colors, positions, tileMode)
             }
             GradientType.RADIAL -> {
                 val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
@@ -43,17 +106,116 @@ object FillRenderer {
                 val maxDim = max(w, h)
                 val radius = (gradient.radius.coerceAtLeast(0.01f) * maxDim)
 
-                val sorted = gradient.sortedStops()
-                val colors = IntArray(sorted.size) { sorted[it].effectiveArgb.toInt() }
-                val positions = FloatArray(sorted.size) { sorted[it].position.coerceIn(0f, 1f) }
+                val shader = RadialGradient(cx, cy, radius, colors, positions, tileMode)
+                if (abs(gradient.aspect - 1.0f) > 0.01f) {
+                    val matrix = Matrix()
+                    matrix.postScale(1f, 1f / gradient.aspect.coerceAtLeast(0.05f), cx, cy)
+                    shader.setLocalMatrix(matrix)
+                }
+                shader
+            }
+            GradientType.ANGULAR -> {
+                val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
+                val cy = bounds.top + gradient.centerY.coerceIn(0f, 1f) * h
+                val shader = SweepGradient(cx, cy, colors, positions)
+                if (gradient.angleDegrees != 0f) {
+                    val matrix = Matrix()
+                    matrix.postRotate(gradient.angleDegrees, cx, cy)
+                    shader.setLocalMatrix(matrix)
+                }
+                shader
+            }
+            GradientType.REFLECTED -> {
+                val rad = Math.toRadians(gradient.angleDegrees.toDouble())
+                val cosA = cos(rad).toFloat()
+                val sinA = sin(rad).toFloat()
+                val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
+                val cy = bounds.top + gradient.centerY.coerceIn(0f, 1f) * h
+                val halfDiag = sqrt(w * w + h * h) / 2f * (gradient.radius.coerceAtLeast(0.01f) / 0.5f)
+                val x1 = cx + cosA * halfDiag
+                val y1 = cy + sinA * halfDiag
 
-                RadialGradient(cx, cy, radius, colors, positions, Shader.TileMode.CLAMP)
+                LinearGradient(cx, cy, x1, y1, colors, positions, Shader.TileMode.MIRROR)
+            }
+            GradientType.DIAMOND -> {
+                createDiamondShader(gradient, bounds)
             }
             GradientType.FREEFORM -> {
-                // Approximate freeform mesh by rendering a smooth interpolated bitmap shader
                 createFreeformShader(gradient, bounds)
             }
         }
+    }
+
+    /**
+     * Renders a diamond gradient into a bitmap and wraps in BitmapShader.
+     */
+    fun createDiamondShader(gradient: GradientData, bounds: RectF): Shader {
+        val sampleW = 64
+        val sampleH = 64
+        val bmp = Bitmap.createBitmap(sampleW, sampleH, Bitmap.Config.ARGB_8888)
+        val pixels = IntArray(sampleW * sampleH)
+
+        val sorted = gradient.sortedStops()
+        val cx = gradient.centerX.coerceIn(0f, 1f)
+        val cy = gradient.centerY.coerceIn(0f, 1f)
+        val r = gradient.radius.coerceAtLeast(0.01f)
+        val aspect = gradient.aspect.coerceAtLeast(0.05f)
+
+        for (y in 0 until sampleH) {
+            val ny = y.toFloat() / (sampleH - 1).coerceAtLeast(1)
+            for (x in 0 until sampleW) {
+                val nx = x.toFloat() / (sampleW - 1).coerceAtLeast(1)
+                val dx = abs(nx - cx)
+                val dy = abs(ny - cy) / aspect
+                var dist = (dx + dy) / r
+
+                dist = when (gradient.repeatMode) {
+                    GradientRepeatMode.CLAMP -> dist.coerceIn(0f, 1f)
+                    GradientRepeatMode.REPEAT -> (dist % 1f + 1f) % 1f
+                    GradientRepeatMode.MIRROR -> {
+                        val m = (dist % 2f + 2f) % 2f
+                        if (m > 1f) 2f - m else m
+                    }
+                }
+
+                // Sample color from sorted stops
+                var c = sorted.firstOrNull()?.effectiveArgb ?: 0xFF00E5FFL
+                if (sorted.size > 1) {
+                    if (dist <= sorted.first().position) {
+                        c = sorted.first().effectiveArgb
+                    } else if (dist >= sorted.last().position) {
+                        c = sorted.last().effectiveArgb
+                    } else {
+                        for (i in 0 until sorted.size - 1) {
+                            val s0 = sorted[i]
+                            val s1 = sorted[i + 1]
+                            if (dist in s0.position..s1.position) {
+                                val tSpan = (s1.position - s0.position).coerceAtLeast(0.0001f)
+                                var t = (dist - s0.position) / tSpan
+                                val mid = s0.midpoint.coerceIn(0.01f, 0.99f)
+                                if (abs(mid - 0.5f) > 0.01f) {
+                                    val exponent = ln(0.5) / ln(mid.toDouble())
+                                    t = t.toDouble().pow(exponent).toFloat()
+                                }
+                                c = interpolateColors(s0.effectiveArgb, s1.effectiveArgb, t)
+                                break
+                            }
+                        }
+                    }
+                }
+                pixels[y * sampleW + x] = c.toInt()
+            }
+        }
+
+        bmp.setPixels(pixels, 0, sampleW, 0, 0, sampleW, sampleH)
+        val matrix = Matrix()
+        matrix.postScale(bounds.width() / sampleW, bounds.height() / sampleH)
+        matrix.postTranslate(bounds.left, bounds.top)
+
+        val tileMode = toTileMode(gradient.repeatMode)
+        val shader = BitmapShader(bmp, tileMode, tileMode)
+        shader.setLocalMatrix(matrix)
+        return shader
     }
 
     /**
@@ -85,7 +247,6 @@ object FillRenderer {
                         val dy = ny - pt.y
                         val dist = sqrt(dx * dx + dy * dy)
                         val r = pt.radius.coerceAtLeast(0.01f)
-                        // Inverse quadratic falloff
                         val weight = 1f / (1f + (dist / r).pow(3))
                         totalWeight += weight
 
@@ -122,7 +283,8 @@ object FillRenderer {
     }
 
     /**
-     * Computes target source and destination rectangles for Media fill modes (Fill, Fit, Stretch).
+     * Computes target source and destination rectangles for Media fill modes (Fill, Fit, Stretch),
+     * taking scale, offset, and rotation into account.
      */
     fun computeMediaPlacement(
         mediaWidth: Float,
@@ -130,18 +292,24 @@ object FillRenderer {
         layerBounds: RectF,
         mode: MediaScaleMode,
         offsetX: Float = 0f,
-        offsetY: Float = 0f
+        offsetY: Float = 0f,
+        scaleMultiplier: Float = 1.0f
     ): Pair<RectF, RectF> {
         val srcRect = RectF(0f, 0f, mediaWidth.coerceAtLeast(1f), mediaHeight.coerceAtLeast(1f))
         val dstRect = RectF(layerBounds)
+        val userScale = scaleMultiplier.coerceIn(0.05f, 20f)
 
         when (mode) {
             MediaScaleMode.STRETCH -> {
-                return Pair(srcRect, dstRect)
+                val w = dstRect.width() * userScale
+                val h = dstRect.height() * userScale
+                val cx = layerBounds.centerX() + offsetX * layerBounds.width() / 2f
+                val cy = layerBounds.centerY() + offsetY * layerBounds.height() / 2f
+                val scaledDst = RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f)
+                return Pair(srcRect, scaledDst)
             }
             MediaScaleMode.FIT -> {
-                // Whole media fits inside layer bounds, letterboxing / keeping transparent margins
-                val scale = min(layerBounds.width() / mediaWidth, layerBounds.height() / mediaHeight)
+                val scale = min(layerBounds.width() / mediaWidth, layerBounds.height() / mediaHeight) * userScale
                 val fitW = mediaWidth * scale
                 val fitH = mediaHeight * scale
                 val cx = layerBounds.centerX() + offsetX * (layerBounds.width() - fitW) / 2f
@@ -150,8 +318,7 @@ object FillRenderer {
                 return Pair(srcRect, fitDst)
             }
             MediaScaleMode.FILL -> {
-                // Cover the whole layer area and crop overflow
-                val scale = max(layerBounds.width() / mediaWidth, layerBounds.height() / mediaHeight)
+                val scale = max(layerBounds.width() / mediaWidth, layerBounds.height() / mediaHeight) * userScale
                 val coverW = mediaWidth * scale
                 val coverH = mediaHeight * scale
                 val cx = layerBounds.centerX() + offsetX * (layerBounds.width() - coverW) / 2f
@@ -178,10 +345,10 @@ object FillRenderer {
             }
             FillType.GRADIENT -> {
                 paint.shader = createGradientShader(fill.gradient, bounds)
+                paint.isDither = fill.gradient.dither
                 true
             }
             FillType.MEDIA -> {
-                // Media fill is drawn via drawBitmap clipped to shape path
                 false
             }
         }
@@ -269,5 +436,4 @@ object FillRenderer {
             }
         }
     }
-
 }

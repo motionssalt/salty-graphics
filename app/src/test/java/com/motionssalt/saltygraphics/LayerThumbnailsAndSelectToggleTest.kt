@@ -64,9 +64,9 @@ class LayerThumbnailsAndSelectToggleTest {
             type = LayerType.VECTOR,
             vectorPathData = VectorPathData(
                 points = listOf(
-                    VectorPoint(0f, 0f),
-                    VectorPoint(50f, 0f),
-                    VectorPoint(50f, 50f)
+                    BezierPoint(0f, 0f),
+                    BezierPoint(50f, 0f),
+                    BezierPoint(50f, 50f)
                 ),
                 isClosed = true,
                 hasFill = true,

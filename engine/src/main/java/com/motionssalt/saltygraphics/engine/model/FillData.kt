@@ -25,7 +25,9 @@ data class FillData(
     val mediaAssetPath: String? = null,
     val mediaScaleMode: MediaScaleMode = MediaScaleMode.FILL,
     val mediaOffsetX: Float = 0f, // Offset within fill bounds (-1..1)
-    val mediaOffsetY: Float = 0f
+    val mediaOffsetY: Float = 0f,
+    val mediaScale: Float = 1.0f, // Scale factor (0.1..10)
+    val mediaRotation: Float = 0f // Rotation degrees (-360..360)
 ) {
     val effectiveSolidArgb: Long
         get() {
