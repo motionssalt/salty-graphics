@@ -506,10 +506,7 @@ fun CanvasView(
                                 if (bmp != null) {
                                     nativeCanvas.save()
                                     nativeCanvas.clipPath(shapePath)
-                                    val (srcR, dstR) = FillRenderer.computeMediaPlacement(
-                                        bmp.width.toFloat(), bmp.height.toFloat(), rect, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
-                                    )
-                                    nativeCanvas.drawBitmap(bmp, android.graphics.Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, NativePaint(NativePaint.ANTI_ALIAS_FLAG))
+                                    FillRenderer.drawMediaFill(nativeCanvas,bmp,fill,rect,shapePath)
                                     nativeCanvas.restore()
                                 }
                             } else {
@@ -545,9 +542,7 @@ fun CanvasView(
                                 color = fill.effectiveSolidArgb.toInt()
                             }
                             val bounds = RectF(-textData.boxWidth / 2f, -textData.boxHeight / 2f, textData.boxWidth / 2f, textData.boxHeight / 2f)
-                            if (fill.type == FillType.GRADIENT) {
-                                paint.shader = FillRenderer.createGradientShader(fill.gradient, bounds)
-                            }
+                            FillRenderer.configureFillPaint(paint,fill,bounds) { asset -> MediaCache.getOrRequest(context,document.id,asset) }
                             val pathLayer = if (textData.followPathLayerId != null) document.findLayerById(textData.followPathLayerId!!) else null
                             val vectorPath = pathLayer?.vectorPathData ?: pathLayer?.shapeData?.toVectorPath()
                             val nativePath = if (vectorPath != null && vectorPath.points.size >= 2) {
@@ -601,7 +596,7 @@ fun CanvasView(
                             val fill = layer.effectiveFill
                             val stroke = layer.effectiveStroke
                             val shadow = layer.effectiveShadow
-                            val mediaAsset = fill.mediaAssetPath ?: layer.mediaAssetPath
+                            val mediaAsset = if (fill.type == FillType.MEDIA) fill.mediaAssetPath ?: layer.mediaAssetPath else null
                             val bmp = if (mediaAsset != null) {
                                 MediaCache.getOrRequest(context, document.id, mediaAsset)
                             } else null
@@ -621,16 +616,13 @@ fun CanvasView(
                             }
                             if (bmp != null) {
                                 val paint = NativePaint(NativePaint.ANTI_ALIAS_FLAG)
-                                val (srcR, dstR) = FillRenderer.computeMediaPlacement(
-                                    bmp.width.toFloat(), bmp.height.toFloat(), dst, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
-                                )
-                                nativeCanvas.drawBitmap(bmp, android.graphics.Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, paint)
+                                FillRenderer.drawMediaFill(nativeCanvas,bmp,fill,dst)
                             } else {
-                                val fallbackPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
-                                    color = 0xFF888888.toInt()
-                                    style = NativePaint.Style.FILL
+                                val fillPaint = NativePaint()
+                                if (FillRenderer.configureFillPaint(fillPaint,fill,dst)) nativeCanvas.drawRect(dst,fillPaint)
+                                else if(layer.fillData==null && layer.mediaAssetPath==null) {
+                                    nativeCanvas.drawRect(dst,NativePaint().apply { color=0xFF888888.toInt() })
                                 }
-                                nativeCanvas.drawRect(dst, fallbackPaint)
                             }
                             val strokePaint = NativePaint()
                             if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
@@ -656,7 +648,7 @@ fun CanvasView(
                                     }
                                 }
                                 val fillPaint = NativePaint()
-                                if (FillRenderer.configureFillPaint(fillPaint, fill, bounds)) {
+                                if (FillRenderer.configureFillPaint(fillPaint, fill, bounds) { asset -> MediaCache.getOrRequest(context,document.id,asset) }) {
                                     nativeCanvas.drawPath(path, fillPaint)
                                 } else if (data.hasFill && fill.type == FillType.SOLID && fill.solidOpacity > 0f) {
                                     fillPaint.color = data.fillColor.toInt()

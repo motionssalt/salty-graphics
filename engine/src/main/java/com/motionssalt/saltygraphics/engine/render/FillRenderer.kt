@@ -22,36 +22,24 @@ object FillRenderer {
      */
     fun computeExpandedStops(gradient: GradientData): Pair<IntArray, FloatArray> {
         val sorted = gradient.sortedStops()
-        if (sorted.isEmpty()) {
-            return Pair(intArrayOf(0xFF00E5FF.toInt(), 0xFF2979FF.toInt()), floatArrayOf(0f, 1f))
-        }
-        if (sorted.size == 1) {
-            val c = sorted[0].effectiveArgb.toInt()
-            return Pair(intArrayOf(c, c), floatArrayOf(0f, 1f))
-        }
-
-        val colorsList = mutableListOf<Int>()
-        val positionsList = mutableListOf<Float>()
-
-        for (i in 0 until sorted.size - 1) {
-            val s0 = sorted[i]
-            val s1 = sorted[i + 1]
-            colorsList.add(s0.effectiveArgb.toInt())
-            positionsList.add(s0.position.coerceIn(0f, 1f))
-
-            val midBias = s0.midpoint.coerceIn(0.01f, 0.99f)
-            if (abs(midBias - 0.5f) > 0.02f) {
-                val midPos = s0.position + (s1.position - s0.position) * midBias
-                val midColor = interpolateColors(s0.effectiveArgb, s1.effectiveArgb, 0.5f)
-                colorsList.add(midColor.toInt())
-                positionsList.add(midPos.coerceIn(0f, 1f))
+        if (sorted.isEmpty()) return intArrayOf(0,0) to floatArrayOf(0f,1f)
+        if (sorted.size == 1) return intArrayOf(sorted[0].effectiveArgb.toInt(),sorted[0].effectiveArgb.toInt()) to floatArrayOf(0f,1f)
+        val colors = mutableListOf<Int>()
+        val positions = mutableListOf<Float>()
+        for (i in 0 until sorted.lastIndex) {
+            val a=sorted[i]; val b=sorted[i+1]
+            // Native shaders are piecewise linear. Sample the same midpoint/smooth
+            // curve used by CPU references so every gradient type obeys it.
+            for (j in 0 until 32) {
+                val t=j/32f
+                var u=t.toDouble().pow(ln(.5)/ln(a.midpoint.coerceIn(.01f,.99f).toDouble())).toFloat()
+                if (gradient.interpolation==GradientInterpolation.SMOOTH) u=u*u*(3f-2f*u)
+                positions.add((a.position+(b.position-a.position)*t).coerceIn(0f,1f))
+                colors.add(interpolateColors(a.effectiveArgb,b.effectiveArgb,u).toInt())
             }
         }
-        val last = sorted.last()
-        colorsList.add(last.effectiveArgb.toInt())
-        positionsList.add(last.position.coerceIn(0f, 1f))
-
-        return Pair(colorsList.toIntArray(), positionsList.toFloatArray())
+        positions.add(sorted.last().position.coerceIn(0f,1f));colors.add(sorted.last().effectiveArgb.toInt())
+        return colors.toIntArray() to positions.toFloatArray()
     }
 
     private fun interpolateColors(c0: Long, c1: Long, t: Float): Long {
@@ -165,8 +153,9 @@ object FillRenderer {
             val ny = y.toFloat() / (sampleH - 1).coerceAtLeast(1)
             for (x in 0 until sampleW) {
                 val nx = x.toFloat() / (sampleW - 1).coerceAtLeast(1)
-                val dx = abs(nx - cx)
-                val dy = abs(ny - cy) / aspect
+                val angle = Math.toRadians(gradient.angleDegrees.toDouble())
+                val dx = abs(((nx-cx)*cos(angle)+(ny-cy)*sin(angle)).toFloat())
+                val dy = abs((-(nx-cx)*sin(angle)+(ny-cy)*cos(angle)).toFloat()) / aspect
                 var dist = (dx + dy) / r
 
                 dist = when (gradient.repeatMode) {
@@ -197,6 +186,7 @@ object FillRenderer {
                                     val exponent = ln(0.5) / ln(mid.toDouble())
                                     t = t.toDouble().pow(exponent).toFloat()
                                 }
+                                if (gradient.interpolation == GradientInterpolation.SMOOTH) t=t*t*(3f-2f*t)
                                 c = interpolateColors(s0.effectiveArgb, s1.effectiveArgb, t)
                                 break
                             }
@@ -312,8 +302,8 @@ object FillRenderer {
                 val scale = min(layerBounds.width() / mediaWidth, layerBounds.height() / mediaHeight) * userScale
                 val fitW = mediaWidth * scale
                 val fitH = mediaHeight * scale
-                val cx = layerBounds.centerX() + offsetX * (layerBounds.width() - fitW) / 2f
-                val cy = layerBounds.centerY() + offsetY * (layerBounds.height() - fitH) / 2f
+                val cx = layerBounds.centerX() + offsetX * layerBounds.width() / 2f
+                val cy = layerBounds.centerY() + offsetY * layerBounds.height() / 2f
                 val fitDst = RectF(cx - fitW / 2f, cy - fitH / 2f, cx + fitW / 2f, cy + fitH / 2f)
                 return Pair(srcRect, fitDst)
             }
@@ -321,19 +311,52 @@ object FillRenderer {
                 val scale = max(layerBounds.width() / mediaWidth, layerBounds.height() / mediaHeight) * userScale
                 val coverW = mediaWidth * scale
                 val coverH = mediaHeight * scale
-                val cx = layerBounds.centerX() + offsetX * (layerBounds.width() - coverW) / 2f
-                val cy = layerBounds.centerY() + offsetY * (layerBounds.height() - coverH) / 2f
+                val cx = layerBounds.centerX() + offsetX * layerBounds.width() / 2f
+                val cy = layerBounds.centerY() + offsetY * layerBounds.height() / 2f
                 val fillDst = RectF(cx - coverW / 2f, cy - coverH / 2f, cx + coverW / 2f, cy + coverH / 2f)
                 return Pair(srcRect, fillDst)
             }
         }
     }
 
+    /** Shared placement for text/vector shaders and clipped shape/media fills. */
+    fun createMediaShader(bitmap: Bitmap, fill: FillData, bounds: RectF): Shader {
+        // Materialize the clipped fill, including transparent FIT margins, so API 26
+        // never stretches the bitmap's edge pixels into the letterbox area.
+        val w=ceil(bounds.width().coerceAtLeast(1f)).toInt().coerceAtMost(4096)
+        val h=ceil(bounds.height().coerceAtLeast(1f)).toInt().coerceAtMost(4096)
+        val tile=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
+        val c=Canvas(tile)
+        c.scale(w/bounds.width().coerceAtLeast(1f),h/bounds.height().coerceAtLeast(1f))
+        c.translate(-bounds.left,-bounds.top)
+        drawMediaFill(c,bitmap,fill,bounds)
+        val matrix = Matrix().apply {
+            setScale(bounds.width()/w,bounds.height()/h)
+            postTranslate(bounds.left,bounds.top)
+        }
+        val shader = BitmapShader(tile, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+        shader.setLocalMatrix(matrix)
+        return shader
+    }
+
+    fun drawMediaFill(canvas: Canvas, bitmap: Bitmap, fill: FillData, bounds: RectF, path: Path? = null) {
+        val (src,dst)=computeMediaPlacement(bitmap.width.toFloat(),bitmap.height.toFloat(),bounds,
+            fill.mediaScaleMode,fill.mediaOffsetX,fill.mediaOffsetY,fill.mediaScale)
+        canvas.save()
+        if(path!=null) canvas.clipPath(path) else canvas.clipRect(bounds)
+        canvas.rotate(fill.mediaRotation,bounds.centerX(),bounds.centerY())
+        canvas.drawBitmap(bitmap,Rect(src.left.toInt(),src.top.toInt(),src.right.toInt(),src.bottom.toInt()),dst,
+            Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+        canvas.restore()
+    }
+
     /**
      * Prepares a Paint for drawing FillData across any layer geometry.
      */
-    fun configureFillPaint(paint: Paint, fill: FillData, bounds: RectF): Boolean {
-        paint.reset()
+    fun configureFillPaint(paint: Paint, fill: FillData, bounds: RectF, mediaResolver: ((String) -> Bitmap?)? = null): Boolean {
+        // Do not reset a text paint: reset discards typeface, size and spacing.
+        paint.shader = null
+        paint.color = Color.TRANSPARENT
         paint.isAntiAlias = true
         paint.style = Paint.Style.FILL
 
@@ -344,12 +367,16 @@ object FillRenderer {
                 true
             }
             FillType.GRADIENT -> {
+                paint.alpha = 255
                 paint.shader = createGradientShader(fill.gradient, bounds)
                 paint.isDither = fill.gradient.dither
                 true
             }
             FillType.MEDIA -> {
-                false
+                val bitmap=fill.mediaAssetPath?.let { mediaResolver?.invoke(it) } ?: return false
+                paint.alpha=255
+                paint.shader=createMediaShader(bitmap,fill,bounds)
+                true
             }
         }
     }
@@ -359,7 +386,9 @@ object FillRenderer {
      */
     fun configureStrokePaint(paint: Paint, stroke: StrokeData): Boolean {
         if (!stroke.isEnabled || stroke.width <= 0f || stroke.opacity <= 0f) return false
-        paint.reset()
+        paint.shader = null
+        paint.pathEffect = null
+        paint.maskFilter = null
         paint.isAntiAlias = true
         paint.style = Paint.Style.STROKE
         paint.color = stroke.effectiveArgb.toInt()
@@ -390,7 +419,9 @@ object FillRenderer {
      */
     fun configureShadowPaint(paint: Paint, shadow: ShadowData): Boolean {
         if (!shadow.isEnabled || shadow.opacity <= 0f) return false
-        paint.reset()
+        paint.shader = null
+        paint.pathEffect = null
+        paint.maskFilter = null
         paint.isAntiAlias = true
         paint.style = Paint.Style.FILL
         paint.color = shadow.effectiveArgb.toInt()

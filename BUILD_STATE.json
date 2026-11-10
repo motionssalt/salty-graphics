@@ -766,7 +766,7 @@
         "id": "V7",
         "title": "The universal Fill control: opens, responds, and is complete (bottom panel only)",
         "status": "in_progress",
-        "notes": "Root causes: Fill opened a full-window Dialog; nested gradient/color editors opened further windows, media picker callback was absent, and solid alpha was multiplied twice when color was applied. Replaced editor entry with FillPanelPage in fixed EditorWorkspace; added panel-native ARGB and numeric controls, gradient stops/geometry/repeat/interpolation controls, project-image grid and dedicated asynchronous system import targeting the original layer. Preview and committed history are separated for numeric gestures. Shared withUniversalFill mutation keeps legacy fields synchronized without touching strokes. Added real editor alpha/stroke and project media picker tests; Actions verification pending. Still requires complete renderer/interpolation audit, on-canvas gradient handles and full amended acceptance checks; NOT DONE."
+        "notes": "Root causes: Fill opened a full-window Dialog; nested gradient/color editors opened further windows, media picker callback was absent, and solid alpha was multiplied twice when color was applied. Replaced editor entry with FillPanelPage in fixed EditorWorkspace; added panel-native ARGB and numeric controls, gradient stops/geometry/repeat/interpolation controls, project-image grid and dedicated asynchronous system import targeting the original layer. Preview and committed history are separated for numeric gestures. Shared withUniversalFill mutation keeps legacy fields synchronized without touching strokes. Added real editor alpha/stroke and project media picker tests; Actions verification pending. Still requires complete renderer/interpolation audit, on-canvas gradient handles and full amended acceptance checks; NOT DONE. Added on-canvas gradient center/start/end and freeform-point handles (inverse transformed, single commit, cancellation rollback), consistent media placement in preview/export, transparent media/text fixes, and real-render tests for all six gradient types, midpoint alpha, interpolation, media transform and paint metrics. Verification pending."
       },
       {
         "id": "V8",
@@ -893,8 +893,8 @@
       "Inherited latest HEAD 79023c6 fails Actions 42819779009; earlier successful verification is not proof of current HEAD.",
       "Inherited V10\u2013V19 done markers require acceptance audit; latest documentation incorrectly claims all 20 items complete."
     ],
-    "last_updated": "2026-11-10T13:27:28.886167+00:00",
-    "last_session_note": "V7 fixed-panel implementation checkpoint pushed; continue V7 verification and remaining renderer/on-canvas requirements. Do not advance or release until green Actions and acceptance.",
+    "last_updated": "2026-11-10T13:32:52.192772+00:00",
+    "last_session_note": "V7 rendering/geometry checkpoint: on-canvas gradient handles added; preview and export now share media scale/offset/rotation placement, preserve explicit transparent text/media fills and text paint metrics. Midpoint/interpolation used by native gradients. New native regression tests pending Actions. Baseline 42824145223 exposed four inherited failures: undo root label, obsolete Select None interaction, and text metric tests running without native graphics; fix before advancing.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",

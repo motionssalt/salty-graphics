@@ -224,10 +224,7 @@ object LayerCompositor {
                     if (bmp != null) {
                         canvas.save()
                         canvas.clipPath(shapePath)
-                        val (srcR, dstR) = FillRenderer.computeMediaPlacement(
-                            bmp.width.toFloat(), bmp.height.toFloat(), rect, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
-                        )
-                        canvas.drawBitmap(bmp, Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, Paint(Paint.ANTI_ALIAS_FLAG))
+                        FillRenderer.drawMediaFill(canvas,bmp,fill,rect,shapePath)
                         canvas.restore()
                     }
                 } else {
@@ -261,9 +258,7 @@ object LayerCompositor {
                     }
                 }
 
-                if (!FillRenderer.configureFillPaint(textPaint, fill, bounds)) {
-                    textPaint.color = textData.color.toInt()
-                }
+                FillRenderer.configureFillPaint(textPaint, fill, bounds, mediaResolver)
 
                 var strokePaint: Paint? = null
                 if (stroke.isEnabled) {
@@ -287,7 +282,7 @@ object LayerCompositor {
                 val halfW = mw / 2f
                 val halfH = mh / 2f
                 val dst = RectF(-halfW, -halfH, halfW, halfH)
-                val bmp = (fill.mediaAssetPath ?: layer.mediaAssetPath)?.let { mediaResolver?.invoke(it) }
+                val bmp = if (fill.type == FillType.MEDIA) (fill.mediaAssetPath ?: layer.mediaAssetPath)?.let { mediaResolver?.invoke(it) } else null
 
                 if (shadow.isEnabled) {
                     val shadowPaint = Paint()
@@ -301,20 +296,13 @@ object LayerCompositor {
 
                 if (bmp != null) {
                     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-                    val (srcR, dstR) = FillRenderer.computeMediaPlacement(
-                        bmp.width.toFloat(), bmp.height.toFloat(), dst, fill.mediaScaleMode, fill.mediaOffsetX, fill.mediaOffsetY
-                    )
-                    canvas.drawBitmap(bmp, Rect(srcR.left.toInt(), srcR.top.toInt(), srcR.right.toInt(), srcR.bottom.toInt()), dstR, paint)
+                    FillRenderer.drawMediaFill(canvas,bmp,fill,dst)
                 } else {
                     val fillPaint = Paint()
                     if (FillRenderer.configureFillPaint(fillPaint, fill, dst)) {
                         canvas.drawRect(dst, fillPaint)
-                    } else {
-                        val fallbackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                            color = 0xFF888888.toInt()
-                            style = Paint.Style.FILL
-                        }
-                        canvas.drawRect(dst, fallbackPaint)
+                    } else if (layer.fillData == null && layer.mediaAssetPath == null) {
+                        canvas.drawRect(dst, Paint().apply { color = 0xFF888888.toInt() })
                     }
                 }
 
@@ -341,7 +329,7 @@ object LayerCompositor {
                     }
 
                     val fillPaint = Paint()
-                    if (FillRenderer.configureFillPaint(fillPaint, fill, bounds)) {
+                    if (FillRenderer.configureFillPaint(fillPaint, fill, bounds, mediaResolver)) {
                         canvas.drawPath(path, fillPaint)
                     } else if (layer.fillData == null && data.hasFill) {
                         fillPaint.color = data.fillColor.toInt()

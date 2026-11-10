@@ -427,6 +427,15 @@ fun EditorScreen(
                 }
             )
 
+            if (isFillPanelOpen && currentSelectedLayer?.effectiveFill?.type == FillType.GRADIENT) {
+                val targetId=currentSelectedLayer.id
+                GradientCanvasOverlay(currentSelectedLayer,doc.canvasSize,zoom,panOffset,
+                    onPreview={ fill -> projectDocument=projectDocument?.updateLayer(targetId){it.copy(fillData=fill)} },
+                    onCommit={ fill -> recordCommandAndAutoSave(ActionIdentity("Change","Layer","gradient geometry")) { live ->
+                        live.updateLayer(targetId){it.withUniversalFill(fill)}
+                    } })
+            }
+
             if (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) {
                 VectorCanvasOverlay(currentSelectedLayer, doc.canvasSize, vectorPathIndex, vectorPointIndex, vectorTool,
                     zoom, panOffset, { vectorPointIndex = it }, { vectorDraft = it },

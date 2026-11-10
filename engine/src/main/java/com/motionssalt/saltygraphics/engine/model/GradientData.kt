@@ -79,8 +79,10 @@ data class GradientData(
 
     fun reversed(): GradientData {
         val sorted = sortedStops()
-        val newStops = sorted.reversed().map { stop ->
-            stop.copy(position = (1f - stop.position).coerceIn(0f, 1f))
+        val newStops = sorted.reversed().mapIndexed { index, stop ->
+            val originalIndex=sorted.lastIndex-index
+            stop.copy(position = (1f-stop.position).coerceIn(0f,1f),
+                midpoint=if(originalIndex>0) 1f-sorted[originalIndex-1].midpoint else .5f)
         }
         return copy(stops = newStops)
     }
