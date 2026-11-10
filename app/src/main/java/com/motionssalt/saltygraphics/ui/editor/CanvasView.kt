@@ -418,8 +418,9 @@ fun CanvasView(
                             }
 
                             // 2. Fill (solid, gradient, media)
-                            if (fill.type == FillType.MEDIA && fill.mediaAssetPath != null) {
-                                val bmp = MediaCache.getOrRequest(context, document.id, fill.mediaAssetPath)
+                            val shapeMediaAsset = fill.mediaAssetPath
+                            if (fill.type == FillType.MEDIA && shapeMediaAsset != null) {
+                                val bmp = MediaCache.getOrRequest(context, document.id, shapeMediaAsset)
                                 if (bmp != null) {
                                     nativeCanvas.save()
                                     nativeCanvas.clipPath(shapePath)

@@ -781,8 +781,9 @@ fun EditorScreen(
                             } else base
                         }
                         LayerType.MEDIA -> {
-                            if (newFill.type == FillType.MEDIA && newFill.mediaAssetPath != null) {
-                                base.copy(mediaAssetPath = newFill.mediaAssetPath)
+                            val newMediaPath = newFill.mediaAssetPath
+                            if (newFill.type == FillType.MEDIA && newMediaPath != null) {
+                                base.copy(mediaAssetPath = newMediaPath)
                             } else base
                         }
                         else -> base
