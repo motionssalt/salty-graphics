@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V7",
+  "current_phase": "fix_round_4/V9",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,9 +194,8 @@
     "F14"
   ],
   "next_steps": [
-    "Resume fix_round_3 at T7; T1-T6 are verified done. Read docs/FIX_ROUND_3_PROMPT.md and queue notes.",
-    "Finish and verify each remaining ordered item through T28; then T29 full compatibility audit and new uniquely tagged stable-signed APK release.",
-    "Do not start UI refinement or build a web frontend/preview."
+    "Repair inherited failing Actions baseline, then implement and verify V9 before V10\u2013V20 in order.",
+    "Publish a unique stable-signed release only after all acceptance checks pass. No web frontend or UI refinement."
   ],
   "decisions": [
     {
@@ -303,7 +302,7 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -332,7 +331,7 @@
     ],
     "decisions": [
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
-      "R6: usable portrait workspace gets 40% height clamped 260–340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280–360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
+      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
       "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
@@ -849,7 +848,7 @@
     ],
     "decisions": [],
     "known_issues": [],
-    "last_updated": "2026-11-10T08:53:00.000Z",
-    "last_session_note": "Completed V7 (Universal Fill control) and V8 (Border & Shadow panel). Added UniversalFillDialog, wired onOpenFill and onOpenBorderShadow in EditorScreen and BottomPanel, implemented stroke alignment and drop shadow in FillRenderer/LayerCompositor/CanvasView, and added comprehensive CPU and Robolectric UI test suite."
+    "last_updated": "2026-11-10T09:31:45.505403+00:00",
+    "last_session_note": "Resumed existing round 4 at V9 (V1\u2013V8 inherited done, not reimplemented). Latest inherited Actions run 42787518922 failed; repair and verify baseline before advancing V9. No release or UI refinement."
   }
 }
