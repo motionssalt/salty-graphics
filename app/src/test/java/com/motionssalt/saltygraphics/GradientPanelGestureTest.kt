@@ -30,7 +30,7 @@ class GradientPanelGestureTest : FillEditorFixture() {
             compose.onAllNodes(isDialog()).assertCountEquals(0)
             val node=compose.onNodeWithTag("gradient_handles")
             val rect=node.getUnclippedBoundsInRoot()
-            val fit=min(rect.width.value/1000f,rect.height.value/1000f)*.94f
+            val fit=min((rect.right-rect.left).value/1000f,(rect.bottom-rect.top).value/1000f)*.94f
             node.performTouchInput {
                 down(center)
                 moveTo(center+Offset(40f*fit,20f*fit),100)
