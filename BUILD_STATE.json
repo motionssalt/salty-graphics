@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V9",
+  "current_phase": "fix_round_4/V10",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,8 +194,9 @@
     "F14"
   ],
   "next_steps": [
-    "Repair inherited failing Actions baseline, then implement and verify V9 before V10\u2013V20 in order.",
-    "Publish a unique stable-signed release only after all acceptance checks pass. No web frontend or UI refinement."
+    "Resume fix_round_4 at V10 layer-content thumbnails; V9 verified done in Actions 42800046457.",
+    "Complete V10\u2013V19 in order with real code-path tests and green Actions; then V20 compatibility audit and unique stable-signed GitHub Release.",
+    "No UI refinement, preview frontend, secret commits, or modification to existing releases/reference-keyflaw."
   ],
   "decisions": [
     {
@@ -378,8 +379,8 @@
       "device_testing": "not performed (per brief)"
     }
   },
-  "last_updated": "2026-11-07T08:01:00.624648+00:00",
-  "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. T1/T2 done, code aea7d95b verified green Actions 42353088901 with 164 test executions and signed universal/per-ABI APK artifacts. Resume T3 bottom panel persistence, then ordered T4-T29. Complete acceptance brief in docs/FIX_ROUND_3_PROMPT.md (credentials removed). No new release; do not publish until T29 and do not start UI refinement.",
+  "last_updated": "2026-11-10T10:42:35.202432+00:00",
+  "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. Resumed existing V1\u2013V8 done state, repaired failing baseline, and completed V9. Code 16b2ba8 verified green Actions 42800046457: 312 JVM test executions, zero failures/errors/skips, stable-signed universal and three ABI APK artifacts. Resume first pending V10, then V11\u2013V20 in order. No new release; do not publish until V20/full acceptance audit. No UI refinement, host preview, frontend, physical-phone testing or secret commits. Cancellation test uses deterministic save handoff and completion instead of scheduler-dependent sleeps.",
   "fix_round_2": {
     "status": "done",
     "queue": [
@@ -776,8 +777,8 @@
       {
         "id": "V9",
         "title": "Layer panel: one grab handle, long-press and drag to reorder",
-        "status": "in_progress",
-        "notes": "Root cause: T22 added only a decorative handle; no drag recognizer existed and arrow buttons remained. Implementing list-owned long-press drag with stationary edge scrolling, one drop commit, explicit selection checkboxes, top-first nested-group commands; acceptance CI pending. Real gesture tests in run 42796958701 caught parent-vs-LazyColumn touch priority: standard parent long-press recognizer lost the first movement to child scrolling. Use list-owned Initial-pass hold recognition, consuming only after hold wins; normal scrolling/taps remain unconsumed. Staged pointer tests now explicitly assert feedback before drop. Actions 42797987247 passed basic real drag, render-overlap, group/history and 30-row stationary auto-scroll tests; cancellation test caught Android CANCEL being synthesized by Compose as all-pointers-up. Observe ACTION_CANCEL before drop recognition to discard the reorder. V9 remains in_progress until complete CI passes. Checked upstream Compose SuspendedPointerInput onCancelPointerInput: cancellation is an already-consumed synthetic up, not necessarily a native event visible to motionEventSpy. Replaced native observer with consumed-state check before consuming our own Initial-pass events."
+        "status": "done",
+        "notes": "Root cause: earlier T22 added a decorative grab icon, but no pointer recognizer or auto-scroll, and retained step arrows. Replacement owns the gesture on the stable list, not recycled rows; Initial-pass hold recognition prevents child scrolling from stealing a drag, and already-consumed synthetic up events cancel instead of committing. One handle per row; a plain tap cannot reorder; explicit checkboxes support multi-selection without competing for hold. Stationary edge scrolling, selected/drag feedback and drop indicator are live, and drop creates one structured history action. Top-first live-document commands preserve child order, insert groups at the first selected position, and target only the active nested group. Verified in successful Actions 42800046457, code 16b2ba802abe040fe0cec0044172530531e57761: real EditorScreen plain tap, hold-drag, 30-row stationary auto-scroll/source recycling, touch cancellation, grouping/ungrouping, single history actions, undo/redo, and compositor overlap tests; 1,200 randomized reorder/group/undo/redo/branch transitions and nested-group tests. All debug/release JVM tests pass; stable-signed universal/arm64-v8a/armeabi-v7a/x86_64 APK artifacts built and signature checked."
       },
       {
         "id": "V10",
@@ -846,12 +847,17 @@
         "notes": ""
       }
     ],
-    "decisions": [],
-    "known_issues": [
-      "V1\u2013V8 inherited done markers retained; baseline regression suite green, not a fresh exhaustive acceptance audit. V9 under verification; V10\u2013V20 pending. No round-4 release yet."
+    "decisions": [
+      "V9: long-press row/handle belongs to reorder; explicit row checkboxes own multi-selection to avoid gesture ambiguity. Tapping never changes stack order.",
+      "V9: keep one top-first list. Group at the first selected stack position, preserving child order; nested commands resolve against the live document. Commit one history action only on a valid drop."
     ],
-    "last_updated": "2026-11-10T10:32:41.601558+00:00",
-    "last_session_note": "V9 final cancellation handling uses Compose synthetic consumed-up semantics; current implementation and tests committed, awaiting CI. V10\u2013V20 not started. No round-4 release. No UI refinement or preview frontend.",
+    "known_issues": [
+      "PARTIAL CHECKPOINT: V10\u2013V20 remain pending, not blocked. Resume V10 layer-content thumbnails; do not skip ahead or publish a round-4 completion release.",
+      "V1\u2013V8 inherited done markers were retained. Their regression suite is green after baseline repair, but this session did not perform a fresh exhaustive audit of all acceptance criteria; V20 compatibility/release verification is still pending.",
+      "No new round-4 tag or release has been published. Signed APKs are Actions artifacts only. Existing releases and reference-keyflaw were not modified."
+    ],
+    "last_updated": "2026-11-10T10:42:35.202432+00:00",
+    "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. Resumed existing V1\u2013V8 done state, repaired failing baseline, and completed V9. Code 16b2ba8 verified green Actions 42800046457: 312 JVM test executions, zero failures/errors/skips, stable-signed universal and three ABI APK artifacts. Resume first pending V10, then V11\u2013V20 in order. No new release; do not publish until V20/full acceptance audit. No UI refinement, host preview, frontend, physical-phone testing or secret commits. Cancellation test uses deterministic save handoff and completion instead of scheduler-dependent sleeps.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",
@@ -881,7 +887,39 @@
           "errors": 0,
           "skipped": 0
         }
-      }
+      },
+      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42800046457",
+      "commit": "16b2ba802abe040fe0cec0044172530531e57761",
+      "result": "success",
+      "jvm_test_counts": {
+        "app/Debug": {
+          "tests": 108,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app/Release": {
+          "tests": 108,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine/Debug": {
+          "tests": 48,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine/Release": {
+          "tests": 48,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "total_test_executions": 312,
+      "release_apks": "Stable-signed universal, arm64-v8a, armeabi-v7a and x86_64 built as Actions artifacts only. No new GitHub Release published.",
+      "device_testing": "Not performed, per brief."
     }
   }
 }
