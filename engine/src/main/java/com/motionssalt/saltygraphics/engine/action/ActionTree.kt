@@ -235,7 +235,10 @@ class ActionTree(
         get() = _nodes[currentNodeId]?.childrenIds?.isNotEmpty() == true
 
     val undoActionName: String?
-        get() = _nodes[currentNodeId]?.identity?.toLabel() ?: _nodes[currentNodeId]?.description
+        get() {
+            val node = _nodes[currentNodeId]?.takeIf { it.parentId != null } ?: return null
+            return node.identity?.toLabel() ?: node.description
+        }
 
     val redoActionName: String?
         get() {

@@ -7,8 +7,10 @@ import com.motionssalt.saltygraphics.engine.render.TextLayoutEngine
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(AndroidJUnit4::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class TextMultilineAndJustificationTest {
 
     @Test
@@ -42,6 +44,7 @@ class TextMultilineAndJustificationTest {
             boxMode = TextBoxMode.PARAGRAPH
         )
         val paint = Paint().apply { textSize = 40f }
+        assertTrue("Native font measurement must be active", paint.measureText(longSentence) > textData.boxWidth)
         val layout = TextLayoutEngine.computeLayout(textData, paint)
 
         assertTrue("Should wrap into multiple lines when boxWidth is constrained", layout.lines.size > 1)

@@ -232,3 +232,7 @@ All editing controls must use pages/inline expansion inside the fixed tools pane
 
 ### V7 panel migration checkpoint (verification pending)
 The Fill tool now replaces the tools pane instead of creating a window. Nested Color, Gradient and Project Images are panel pages. Shared PanelNumberControl routes exact entry inline and uses the existing wheel for continuous editing. Color edits store ARGB alpha once, not both in color and opacity. Media replacement imports off-main, retains the target id across the system picker, and changes only that layer's fill through the live action tree. Existing project assets are selectable in a three-column grid. New UI tests use the real editor and saved document to check 50% alpha, independent stroke and image selection. Remaining V7 acceptance work includes on-canvas handles and renderer audit; do not read this as completion. No unrelated UI refinement.
+
+
+### Resumed baseline regression repairs
+Actions 42824145223 compiled but exposed four inherited failures. `undoActionName` incorrectly returned the root's "Initial Project" label despite `canUndo == false`; it now returns null at the root. The old selection regression still expected the removed standalone Select None button; it now asserts the V11 partial → all → none toggle sequence. Text layout tests ran under Robolectric's legacy graphics stub (zero text widths/font metrics); they now request native graphics and assert actual font measurement before wrapping assertions. No tests disabled and no assertions weakened.

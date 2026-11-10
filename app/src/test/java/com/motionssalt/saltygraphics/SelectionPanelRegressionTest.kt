@@ -90,6 +90,10 @@ class SelectNoneRegressionTest : SelectionPanelFixture() {
         tapArtwork(-240f)
         selection(1)
         compose.onNodeWithContentDescription("Layers").performClick()
+        // V11 replaced the standalone clear button with a select-all/none toggle.
+        // A partial selection first becomes all-selected, then clears on the next tap.
+        compose.onNodeWithContentDescription("Select All").performClick()
+        selection(2)
         compose.onNodeWithContentDescription("Select None").performClick()
         selection(0)
         compose.onNodeWithContentDescription("Close Layers").performClick()
