@@ -22,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -130,53 +132,18 @@ fun GradientSelectorDialog(
                     ) {
                         CheckerboardPattern(Modifier.fillMaxSize())
 
-                        val brush = remember(currentGradient) {
-                            when (currentGradient.type) {
-                                GradientType.LINEAR -> {
-                                    val rad = Math.toRadians(currentGradient.angleDegrees.toDouble())
-                                    val stops = currentGradient.sortedStops().map {
-                                        val c = it.effectiveArgb
-                                        val a = ((c ushr 24) and 0xFF) / 255f
-                                        val r = ((c ushr 16) and 0xFF) / 255f
-                                        val g = ((c ushr 8) and 0xFF) / 255f
-                                        val b = (c and 0xFF) / 255f
-                                        it.position.coerceIn(0f, 1f) to Color(r, g, b, a)
-                                    }
-                                    Brush.linearGradient(
-                                        colorStops = stops.toTypedArray(),
-                                        start = Offset.Zero,
-                                        end = Offset(400f * cos(rad).toFloat(), 400f * sin(rad).toFloat())
-                                    )
-                                }
-                                GradientType.RADIAL -> {
-                                    val stops = currentGradient.sortedStops().map {
-                                        val c = it.effectiveArgb
-                                        val a = ((c ushr 24) and 0xFF) / 255f
-                                        val r = ((c ushr 16) and 0xFF) / 255f
-                                        val g = ((c ushr 8) and 0xFF) / 255f
-                                        val b = (c and 0xFF) / 255f
-                                        it.position.coerceIn(0f, 1f) to Color(r, g, b, a)
-                                    }
-                                    Brush.radialGradient(
-                                        colorStops = stops.toTypedArray(),
-                                        radius = 200f
-                                    )
-                                }
-                                GradientType.FREEFORM -> {
-                                    val stops = currentGradient.freeformPoints.map {
-                                        val c = it.effectiveArgb
-                                        val a = ((c ushr 24) and 0xFF) / 255f
-                                        val r = ((c ushr 16) and 0xFF) / 255f
-                                        val g = ((c ushr 8) and 0xFF) / 255f
-                                        val b = (c and 0xFF) / 255f
-                                        Color(r, g, b, a)
-                                    }
-                                    Brush.horizontalGradient(stops)
-                                }
+                        // Use the actual fill renderer: enum additions and geometry must not
+                        // silently diverge between the swatch and the document canvas.
+                        Canvas(Modifier.fillMaxSize()) {
+                            drawIntoCanvas { canvas ->
+                                val bounds = android.graphics.RectF(0f, 0f, size.width, size.height)
+                                val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+                                paint.shader = com.motionssalt.saltygraphics.engine.render.FillRenderer
+                                    .createGradientShader(currentGradient, bounds)
+                                paint.isDither = currentGradient.dither
+                                canvas.nativeCanvas.drawRect(bounds, paint)
                             }
                         }
-
-                        Box(modifier = Modifier.fillMaxSize().background(brush))
                     }
 
                     // Stops Editor (for Linear & Radial)

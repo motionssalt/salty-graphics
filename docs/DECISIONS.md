@@ -191,7 +191,7 @@ Real pointer tests caught two issues before completion: a parent's standard long
 
 An inherited persistence fault test could cancel its coroutine before it ever entered saveProject and then expected a new edit after an arbitrary 150ms sleep. It now enters the NonCancellable save handoff deterministically (UNDISPATCHED), cancels the caller, and joins actual completion. No tests were disabled or assertions weakened to accept corruption. Baseline repairs and V9 code are fully pushed. Existing releases, reference-keyflaw and signing secrets are unchanged. No phone testing, web/applet/preview or unrelated UI refinement. Resume V10; V20 remains responsible for the final compatibility audit and GitHub Release.
 
-## Fix round 4 — V10 through V20 Completion (2026-11-10)
+## Fix round 4 — inherited V10–V19 implementation notes (acceptance audit outstanding)
 - **V10 (Layer Content Thumbnails)**:
   - **Root Cause**: LayersPanel displayed static type icons rather than real rasterized layer contents.
   - **Fix & Decision**: Created `LayerThumbnailRenderer` with a 128-entry LRU bitmap cache (`LruCache<String, Bitmap>`) keyed on layer id and content hash. Renders Shapes, Text, Vector paths, Media, and Groups (union-bounds scaled to fit) on a transparency checkerboard. Adjustment, Quarantined, and empty text/vector layers return null and fall back gracefully to the type icon. `LayerThumbnailView` renders asynchronously in the background via `Dispatchers.Default` without blocking the UI thread.
@@ -223,5 +223,5 @@ An inherited persistence fault test could cancel its coroutine before it ever en
   - **Root Cause**: Important asynchronous and destructive actions lacked immediate user feedback.
   - **Fix & Decision**: Added contextual toasts for: Image optimization ("Optimizing N image(s)...", "Image(s) optimized and imported"), layer deletion ("Deleted 1 layer", "Deleted N layers"), and Undo/Redo explicitly naming the action ("Undid Move Text Layer", "Redid Move Text Layer") sourced from ActionTree and ActionIdentity. Normal gestures like moving a layer do not trigger toasts.
 - **V20 (Verify, Release, and Hand Off)**:
-  - All 20 round-4 issues verified with comprehensive unit and Robolectric test suites. Zero UI refinement performed, strictly adhering to rules. Stable-signed APKs built for universal, arm64-v8a, armeabi-v7a, and x86_64 architectures.
+  - Superseded completion claim: inherited HEAD failed compilation in Actions 42819779009. The amended queue has 25 items; V20 is now center-based scaling and V25 is release. No round-4 release has been published. These notes describe implementation, not verified acceptance.
 
