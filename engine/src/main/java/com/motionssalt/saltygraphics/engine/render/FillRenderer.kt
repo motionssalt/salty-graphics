@@ -64,6 +64,28 @@ object FillRenderer {
             (b.toLong() and 0xFF)
     }
 
+    /** Scalar reference shared by angular repeat and CPU regression checks. */
+    fun sampleGradient(gradient: GradientData, position: Float): Long {
+        val x=when(gradient.repeatMode) {
+            GradientRepeatMode.CLAMP -> position.coerceIn(0f,1f)
+            GradientRepeatMode.REPEAT -> ((position%1f)+1f)%1f
+            GradientRepeatMode.MIRROR -> {val t=((position%2f)+2f)%2f;if(t>1f) 2f-t else t}
+        }
+        val stops=gradient.sortedStops()
+        if(stops.isEmpty()) return 0L
+        if(x<=stops.first().position) return stops.first().effectiveArgb
+        for(i in 0 until stops.lastIndex) {
+            val a=stops[i];val b=stops[i+1]
+            if(x<=b.position) {
+                var t=((x-a.position)/(b.position-a.position).coerceAtLeast(.000001f)).coerceIn(0f,1f)
+                t=t.toDouble().pow(ln(.5)/ln(a.midpoint.coerceIn(.01f,.99f).toDouble())).toFloat()
+                if(gradient.interpolation==GradientInterpolation.SMOOTH) t=t*t*(3f-2f*t)
+                return interpolateColors(a.effectiveArgb,b.effectiveArgb,t)
+            }
+        }
+        return stops.last().effectiveArgb
+    }
+
     /**
      * Creates an Android Shader corresponding to GradientData over a target rectangle.
      */
@@ -95,35 +117,31 @@ object FillRenderer {
                 val radius = (gradient.radius.coerceAtLeast(0.01f) * maxDim)
 
                 val shader = RadialGradient(cx, cy, radius, colors, positions, tileMode)
-                if (abs(gradient.aspect - 1.0f) > 0.01f) {
-                    val matrix = Matrix()
-                    matrix.postScale(1f, 1f / gradient.aspect.coerceAtLeast(0.05f), cx, cy)
-                    shader.setLocalMatrix(matrix)
-                }
+                val matrix = Matrix()
+                matrix.postScale(1f, 1f / gradient.aspect.coerceAtLeast(0.05f), cx, cy)
+                matrix.postRotate(gradient.angleDegrees,cx,cy)
+                shader.setLocalMatrix(matrix)
                 shader
             }
             GradientType.ANGULAR -> {
-                val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
-                val cy = bounds.top + gradient.centerY.coerceIn(0f, 1f) * h
-                val shader = SweepGradient(cx, cy, colors, positions)
-                if (gradient.angleDegrees != 0f) {
-                    val matrix = Matrix()
-                    matrix.postRotate(gradient.angleDegrees, cx, cy)
-                    shader.setLocalMatrix(matrix)
+                val cx=bounds.left+gradient.centerX.coerceIn(0f,1f)*w
+                val cy=bounds.top+gradient.centerY.coerceIn(0f,1f)*h
+                val samples=1024
+                val period=(2f*gradient.radius).coerceAtLeast(.02f)
+                val sampled=IntArray(samples+1){i->sampleGradient(gradient,i.toFloat()/samples/period).toInt()}
+                SweepGradient(cx,cy,sampled,null).apply {
+                    setLocalMatrix(Matrix().apply {postRotate(gradient.angleDegrees,cx,cy)})
                 }
-                shader
             }
             GradientType.REFLECTED -> {
-                val rad = Math.toRadians(gradient.angleDegrees.toDouble())
-                val cosA = cos(rad).toFloat()
-                val sinA = sin(rad).toFloat()
-                val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
-                val cy = bounds.top + gradient.centerY.coerceIn(0f, 1f) * h
-                val halfDiag = sqrt(w * w + h * h) / 2f * (gradient.radius.coerceAtLeast(0.01f) / 0.5f)
-                val x1 = cx + cosA * halfDiag
-                val y1 = cy + sinA * halfDiag
-
-                LinearGradient(cx, cy, x1, y1, colors, positions, Shader.TileMode.MIRROR)
+                val rad=Math.toRadians(gradient.angleDegrees.toDouble())
+                val cx=bounds.left+gradient.centerX.coerceIn(0f,1f)*w
+                val cy=bounds.top+gradient.centerY.coerceIn(0f,1f)*h
+                val length=sqrt(w*w+h*h)*gradient.radius.coerceAtLeast(.01f)
+                val dx=cos(rad).toFloat()*length;val dy=sin(rad).toFloat()*length
+                val reflectedColors=colors.reversedArray()+colors
+                val reflectedPositions=positions.reversedArray().map{(1f-it)*.5f}.toFloatArray()+positions.map{.5f+it*.5f}.toFloatArray()
+                LinearGradient(cx-dx,cy-dy,cx+dx,cy+dy,reflectedColors,reflectedPositions,tileMode)
             }
             GradientType.DIAMOND -> {
                 createDiamondShader(gradient, bounds)

@@ -21,10 +21,11 @@ fun PanelNumberControl(
 ) {
     var editing by remember { mutableStateOf(false) }
     var input by remember { mutableStateOf("") }
-    val latestValue by rememberUpdatedState(value)
+    var pending by remember { mutableFloatStateOf(value) }
+    LaunchedEffect(value) { pending = value }
     Column {
-        RulerSlider(label, value, onPreview, min, max, step = step, unit = unit,
-            onValueChangeFinished = { onCommit(latestValue) },
+        RulerSlider(label, value, { pending = it; onPreview(it) }, min, max, step = step, unit = unit,
+            onValueChangeFinished = { onCommit(pending) },
             onEditValue = { input = value.toString(); editing = true })
         if (editing) {
             val parsed = input.toFloatOrNull()?.takeIf { it.isFinite() && it in min..max }

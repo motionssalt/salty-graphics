@@ -64,6 +64,7 @@ fun GradientCanvasOverlay(layer: Layer, canvasSize: CanvasSize, zoom: Float, pan
                     ?.takeIf{(screen(points[it],original)-down.position).getDistance()<=22.dp.toPx()} ?: return@awaitEachGesture
                 down.consume()
                 var changed=false;var cancelled=false
+                var working=original.effectiveFill
                 while(true) {
                     val event=awaitPointerEvent(PointerEventPass.Initial)
                     val c=event.changes.firstOrNull{it.id==down.id} ?: break
@@ -87,9 +88,10 @@ fun GradientCanvasOverlay(layer: Layer, canvasSize: CanvasSize, zoom: Float, pan
                         g.copy(centerX=((newCenter.x-b.left)/b.width).coerceIn(0f,1f),centerY=((newCenter.y-b.top)/b.height).coerceIn(0f,1f),
                             angleDegrees=Math.toDegrees(atan2(delta.y.toDouble(),delta.x.toDouble())).toFloat(),radius=(hypot(delta.x,delta.y)/divisor).coerceIn(.01f,2f))
                     }
-                    preview(original.effectiveFill.copy(gradient=updated));changed=true;c.consume()
+                    working=original.effectiveFill.copy(gradient=updated)
+                    preview(working);changed=true;c.consume()
                 }
-                if(cancelled) preview(original.effectiveFill) else if(changed) commit(live.effectiveFill)
+                if(cancelled) preview(original.effectiveFill) else if(changed) commit(working)
             }
         }) {
         val points=handles(layer).map{screen(it,layer)}

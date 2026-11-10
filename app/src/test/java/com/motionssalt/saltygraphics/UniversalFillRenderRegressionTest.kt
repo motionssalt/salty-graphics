@@ -69,6 +69,18 @@ class UniversalFillRenderRegressionTest {
         assertEquals(0,Color.alpha(rotated.getPixel(45,100)))
     }
 
+    @Test fun repeatAndReversePreserveMatteAlphaAndMidpointIntervals() {
+        val g=GradientData(interpolation=GradientInterpolation.LINEAR,
+            stops=listOf(GradientStop(0f,0xFFFF0000L,midpoint=.3f),GradientStop(1f,0x00FF0000L)))
+        assertEquals(g.stops.last().effectiveArgb,FillRenderer.sampleGradient(g,1.5f))
+        assertEquals(FillRenderer.sampleGradient(g,.5f),FillRenderer.sampleGradient(g.copy(repeatMode=GradientRepeatMode.REPEAT),1.5f))
+        assertEquals(FillRenderer.sampleGradient(g,.5f),FillRenderer.sampleGradient(g.copy(repeatMode=GradientRepeatMode.MIRROR),1.5f))
+        assertEquals(.7f,g.reversed().stops.first().midpoint,.00001f)
+        assertEquals(g.stops.last().color,g.reversed().stops.first().color)
+        val three=g.copy(stops=g.stops+GradientStop(.2f,0xFF0000FFL))
+        assertEquals(listOf(0f,.5f,1f),three.distributeEvenly().stops.map{it.position})
+    }
+
     @Test fun textPaintMetricsAndExplicitTransparencySurviveFillSetup() {
         val p=Paint().apply{textSize=81f;typeface=Typeface.MONOSPACE}
         FillRenderer.configureFillPaint(p,FillData(solidOpacity=0f),RectF(0f,0f,100f,100f))

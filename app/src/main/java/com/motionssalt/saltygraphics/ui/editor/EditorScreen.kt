@@ -238,7 +238,11 @@ fun EditorScreen(
             } else Toast.makeText(context, result.failureReasons.firstOrNull() ?: "Could not import image", Toast.LENGTH_LONG).show()
         }
     }
-    val fillMediaPaths by produceState(emptyList<String>(), projectId, fillMediaRevision) {
+    fun mediaReferences(layers: List<Layer>): Set<String> = layers.flatMap { layer ->
+        listOfNotNull(layer.mediaAssetPath,layer.fillData?.mediaAssetPath)+mediaReferences(layer.children)
+    }.toSet()
+    val referencedMedia=mediaReferences(projectDocument?.layers ?: emptyList())
+    val fillMediaPaths by produceState(emptyList<String>(), projectId, fillMediaRevision, referencedMedia) {
         value = withContext(Dispatchers.IO) {
             repository.getAssetsDir(projectId).listFiles()?.filter { it.isFile && it.extension.lowercase() in setOf("png", "jpg", "jpeg", "webp") }
                 ?.sortedBy { it.name }?.map { "assets/${it.name}" } ?: emptyList()

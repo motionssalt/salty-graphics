@@ -893,8 +893,8 @@
       "Inherited latest HEAD 79023c6 fails Actions 42819779009; earlier successful verification is not proof of current HEAD.",
       "Inherited V10\u2013V19 done markers require acceptance audit; latest documentation incorrectly claims all 20 items complete."
     ],
-    "last_updated": "2026-11-10T13:33:35.993284+00:00",
-    "last_session_note": "V7 rendering/geometry changes fd981fc pushed. Repaired four inherited baseline failures from Actions 42824145223: root undo label now null; selection regression follows V11 select-all/none toggle; font measurement tests explicitly use native graphics and assert measurement precondition. All acceptance statuses unchanged pending green Actions.",
+    "last_updated": "2026-11-10T13:37:39.697581+00:00",
+    "last_session_note": "V7 verification checkpoint: added real EditorScreen gradient center-handle gesture/history test, Fill no-window architecture guard, scalar repeat/midpoint references. Fixed last-event commit to use gesture-owned value (not recomposition timing); angular/reflected repeat and radial-angle settings now affect shaders. Full Actions verification required; V7 remains in progress, V8 next only after full amended acceptance. No release.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",
