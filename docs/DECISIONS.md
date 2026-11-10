@@ -225,3 +225,10 @@ An inherited persistence fault test could cancel its coroutine before it ever en
 - **V20 (Verify, Release, and Hand Off)**:
   - Superseded completion claim: inherited HEAD failed compilation in Actions 42819779009. The amended queue has 25 items; V20 is now center-based scaling and V25 is release. No round-4 release has been published. These notes describe implementation, not verified acceptance.
 
+
+
+## UI rule: editing lives in the bottom panel
+All editing controls must use pages/inline expansion inside the fixed tools panel, leaving the canvas unobscured. No editing Dialog, AlertDialog, ModalBottomSheet, Popup, DropdownMenu or full-screen overlay. Exceptions: Android file/media pickers, destructive confirmations, toasts, non-canvas screens, and a compact numeric-entry strip above the system keyboard (canvas must resize rather than be covered). Existing historical modal implementations are migration debt, not permission for new ones. V24 owns exhaustive migration and enforcement; until its check passes the round is incomplete.
+
+### V7 panel migration checkpoint (verification pending)
+The Fill tool now replaces the tools pane instead of creating a window. Nested Color, Gradient and Project Images are panel pages. Shared PanelNumberControl routes exact entry inline and uses the existing wheel for continuous editing. Color edits store ARGB alpha once, not both in color and opacity. Media replacement imports off-main, retains the target id across the system picker, and changes only that layer's fill through the live action tree. Existing project assets are selectable in a three-column grid. New UI tests use the real editor and saved document to check 50% alpha, independent stroke and image selection. Remaining V7 acceptance work includes on-canvas handles and renderer audit; do not read this as completion. No unrelated UI refinement.

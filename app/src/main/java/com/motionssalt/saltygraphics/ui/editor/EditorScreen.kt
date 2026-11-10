@@ -23,7 +23,10 @@ import com.motionssalt.saltygraphics.engine.action.PasteMode
 import com.motionssalt.saltygraphics.engine.effect.EffectRegistry
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.ui.controls.BorderShadowDialog
-import com.motionssalt.saltygraphics.ui.controls.UniversalFillDialog
+import com.motionssalt.saltygraphics.ui.controls.FillPanelPage
+import com.motionssalt.saltygraphics.media.MediaCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
 import kotlinx.coroutines.launch
@@ -66,7 +69,7 @@ fun EditorScreen(
     var isShapeSettingsOpen by remember { mutableStateOf(false) }
     var isTextSettingsOpen by remember { mutableStateOf(false) }
     var isBlendingOpen by remember { mutableStateOf(false) }
-    var isFillDialogOpen by remember { mutableStateOf(false) }
+    var isFillPanelOpen by remember { mutableStateOf(false) }
     var isBorderShadowDialogOpen by remember { mutableStateOf(false) }
 
     var isMaskOpen by remember { mutableStateOf(false) }
@@ -214,6 +217,35 @@ fun EditorScreen(
         }
     }
 
+    var fillMediaRevision by remember { mutableIntStateOf(0) }
+    var fillImportTargetId by remember { mutableStateOf<String?>(null) }
+    val fillMediaPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        val targetId = fillImportTargetId
+        fillImportTargetId = null
+        if (uri != null && targetId != null) coroutineScope.launch {
+            val current = projectDocument ?: return@launch
+            Toast.makeText(context, "Optimizing image…", Toast.LENGTH_SHORT).show()
+            val result = withContext(Dispatchers.IO) {
+                MediaImporter.importMediaFromUris(context, current.id, listOf(uri), current.canvasSize.width, current.canvasSize.height)
+            }
+            val asset = result.importedLayers.firstOrNull()?.mediaAssetPath
+            if (asset != null) {
+                recordCommandAndAutoSave(ActionIdentity("Replace", "Layer", "media fill")) { live ->
+                    live.updateLayer(targetId) { layer -> layer.copy(fillData = layer.effectiveFill.copy(type = FillType.MEDIA, mediaAssetPath = asset)) }
+                }
+                fillMediaRevision++
+                Toast.makeText(context, "Image optimized and imported", Toast.LENGTH_SHORT).show()
+            } else Toast.makeText(context, result.failureReasons.firstOrNull() ?: "Could not import image", Toast.LENGTH_LONG).show()
+        }
+    }
+    val fillMediaPaths by produceState(emptyList<String>(), projectId, fillMediaRevision) {
+        value = withContext(Dispatchers.IO) {
+            repository.getAssetsDir(projectId).listFiles()?.filter { it.isFile && it.extension.lowercase() in setOf("png", "jpg", "jpeg", "webp") }
+                ?.sortedBy { it.name }?.map { "assets/${it.name}" } ?: emptyList()
+        }
+    }
+    val mediaCacheRevision by MediaCache.revision.collectAsState()
+
     val saveSgLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri: Uri? ->
@@ -235,9 +267,9 @@ fun EditorScreen(
     BackHandler {
         if (exitSaveError != null) {
             exitSaveError = null
-        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen || isFillDialogOpen || isBorderShadowDialogOpen) {
+        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen || isFillPanelOpen || isBorderShadowDialogOpen) {
             isVectorMenuOpen = false; isVectorSettingsOpen = false; vectorDraft = null
-            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillDialogOpen = false; isBorderShadowDialogOpen = false
+            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false; isBorderShadowDialogOpen = false
         } else if (activeGroupId != null) {
             activeGroupId = null // Return to parent document
         } else {
@@ -260,7 +292,7 @@ fun EditorScreen(
     LaunchedEffect(currentSelectedLayer?.id, currentSelectedLayer?.type) {
         if (currentSelectedLayer == null) {
             isTransformPanelOpen = false; isEffectsSheetOpen = false
-            isBlendingOpen = false; isMaskOpen = false
+            isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false
         }
         if (currentSelectedLayer?.shapeData == null) isShapeSettingsOpen = false
         if (currentSelectedLayer?.textData == null) isTextSettingsOpen = false
@@ -308,7 +340,7 @@ fun EditorScreen(
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
                 onExportClick = { onNavigateToExport(projectId) },
-                onSettingsClick = { isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillDialogOpen = false; isBorderShadowDialogOpen = false; isProjectSettingsOpen = true },
+                onSettingsClick = { isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false; isBorderShadowDialogOpen = false; isProjectSettingsOpen = true },
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },
                 onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.1f) },
                 onFitToScreen = {
@@ -529,7 +561,7 @@ fun EditorScreen(
                     (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) ||
                     (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) ||
                     (isTextSettingsOpen && currentSelectedLayer?.textData != null) ||
-                    (currentSelectedLayer != null && (isTransformPanelOpen || isEffectsSheetOpen || isBlendingOpen))
+                    (currentSelectedLayer != null && (isTransformPanelOpen || isEffectsSheetOpen || isBlendingOpen || isFillPanelOpen))
                 if (isVectorMenuOpen) {
                     VectorCreationPage(onChoose = { choice ->
                         if (choice == "Import SVG") svgLauncher.launch(arrayOf("image/svg+xml", "text/xml", "application/xml", "application/octet-stream"))
@@ -563,6 +595,26 @@ fun EditorScreen(
                             recordCommandAndAutoSave(ActionIdentity("Rename", "Project")) { it.copy(name = newName) }
                         },
                         onBack = { isProjectSettingsOpen = false }
+                    )
+                } else if (isFillPanelOpen && currentSelectedLayer != null) {
+                    val targetId = currentSelectedLayer.id
+                    // The revision observation invalidates cached null image cells after decoding.
+                    val media = remember(fillMediaPaths, mediaCacheRevision) {
+                        fillMediaPaths.map { path -> path to MediaCache.getOrRequest(context, doc.id, path) }
+                    }
+                    FillPanelPage(
+                        fill = currentSelectedLayer.effectiveFill,
+                        media = media,
+                        onPreview = { fill ->
+                            projectDocument = projectDocument?.updateLayer(targetId) { it.copy(fillData = fill) }
+                        },
+                        onCommit = { label, fill ->
+                            recordCommandAndAutoSave(ActionIdentity(label.substringBefore(' '), "Layer", label.substringAfter(' '))) { live ->
+                                live.updateLayer(targetId) { it.withUniversalFill(fill) }
+                            }
+                        },
+                        onImport = { fillImportTargetId = targetId; fillMediaPicker.launch("image/*") },
+                        onBack = { isFillPanelOpen = false }
                     )
                 } else if (!pageOpen) {
 
@@ -607,7 +659,7 @@ fun EditorScreen(
                 onOpenBlending = { isBlendingOpen = true },
                 onOpenFill = {
                     if (currentSelectedLayer != null) {
-                        isFillDialogOpen = true
+                        isFillPanelOpen = true
                     }
                 },
                 onOpenBorderShadow = {
@@ -760,52 +812,6 @@ fun EditorScreen(
         )
     }
 
-    if (isFillDialogOpen && currentSelectedLayer != null) {
-        val targetLayer = currentSelectedLayer
-        UniversalFillDialog(
-            fill = targetLayer.effectiveFill,
-            onFillChange = { newFill ->
-                val targetId = targetLayer.id
-                val updated = doc.updateLayer(targetId) { layer ->
-                    val base = layer.copy(fillData = newFill)
-                    when (layer.type) {
-                        LayerType.SHAPE -> {
-                            val shape = layer.shapeData ?: ShapeData()
-                            base.copy(shapeData = shape.copy(
-                                fillColor = newFill.solidColor,
-                                hasFill = newFill.type != FillType.SOLID || newFill.solidOpacity > 0f
-                            ))
-                        }
-                        LayerType.TEXT -> {
-                            val text = layer.textData ?: TextLayerData()
-                            base.copy(textData = text.copy(
-                                color = newFill.effectiveSolidArgb
-                            ))
-                        }
-                        LayerType.VECTOR -> {
-                            val path = layer.vectorPathData
-                            if (path != null) {
-                                base.copy(vectorPathData = path.copy(
-                                    fillColor = newFill.solidColor,
-                                    hasFill = newFill.type != FillType.SOLID || newFill.solidOpacity > 0f
-                                ))
-                            } else base
-                        }
-                        LayerType.MEDIA -> {
-                            val newMediaPath = newFill.mediaAssetPath
-                            if (newFill.type == FillType.MEDIA && newMediaPath != null) {
-                                base.copy(mediaAssetPath = newMediaPath)
-                            } else base
-                        }
-                        else -> base
-                    }
-                }
-                projectDocument = updated
-                recordAndAutoSave("Change Fill", updated)
-            },
-            onDismiss = { isFillDialogOpen = false }
-        )
-    }
 
     if (isBorderShadowDialogOpen && currentSelectedLayer != null) {
         val targetLayer = currentSelectedLayer

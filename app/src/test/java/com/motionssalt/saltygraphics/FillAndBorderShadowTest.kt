@@ -279,8 +279,9 @@ abstract class FillEditorFixture {
             compose.onNodeWithText(layer.name).performClick()
             compose.onNodeWithContentDescription("Close Layers").performClick()
             compose.onNodeWithText("Fill").assertExists().performClick()
-            compose.onNodeWithContentDescription("Close Fill").assertIsDisplayed()
-            compose.onNodeWithContentDescription("Close Fill").performClick()
+            compose.onNodeWithText("Fill Settings").assertIsDisplayed()
+            compose.onAllNodes(isDialog()).assertCountEquals(0)
+            compose.onNodeWithContentDescription("Back").performClick()
             compose.onNodeWithText("Border & Shadow").performClick()
             compose.onNodeWithText("Stroke / Outline", useUnmergedTree = true).assertExists()
             compose.onNodeWithText("Drop Shadow", useUnmergedTree = true).assertExists()
@@ -344,7 +345,7 @@ class FillEditorMutationTest : FillEditorFixture() {
             compose.onNodeWithText("Gradient", useUnmergedTree = true).performClick()
 
             // Close dialog
-            compose.onNodeWithContentDescription("Close Fill").performClick()
+            compose.onNodeWithContentDescription("Back").performClick()
 
             // Verify document was updated with Gradient fill
             compose.waitUntil(10000) { runBlocking { repo.getProject(docId)?.findLayerById("target_shape")?.effectiveFill?.type == FillType.GRADIENT } }

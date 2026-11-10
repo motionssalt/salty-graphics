@@ -41,7 +41,8 @@ fun RulerSlider(
     step: Float = 1f,
     unit: String = "",
     onValueChangeFinished: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onEditValue: (() -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val view = LocalView.current
@@ -271,7 +272,7 @@ fun RulerSlider(
 
         // Tappable Value Pill
         Surface(
-            onClick = { isEditorOpen = true },
+            onClick = { if (onEditValue != null) onEditValue() else isEditorOpen = true },
             shape = RoundedCornerShape(8.dp),
             color = colors.surfaceVariant,
             border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.primary.copy(alpha = 0.4f))),

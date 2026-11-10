@@ -766,7 +766,7 @@
         "id": "V7",
         "title": "The universal Fill control: opens, responds, and is complete (bottom panel only)",
         "status": "in_progress",
-        "notes": "Reopened per amended requirements: Fill editing must live in bottom panel (no popups), full gradient editor (linear, radial, angular/conic, reflected, diamond, freeform), transparency on stops, on-canvas handles, and in-panel media picker."
+        "notes": "Root causes: Fill opened a full-window Dialog; nested gradient/color editors opened further windows, media picker callback was absent, and solid alpha was multiplied twice when color was applied. Replaced editor entry with FillPanelPage in fixed EditorWorkspace; added panel-native ARGB and numeric controls, gradient stops/geometry/repeat/interpolation controls, project-image grid and dedicated asynchronous system import targeting the original layer. Preview and committed history are separated for numeric gestures. Shared withUniversalFill mutation keeps legacy fields synchronized without touching strokes. Added real editor alpha/stroke and project media picker tests; Actions verification pending. Still requires complete renderer/interpolation audit, on-canvas gradient handles and full amended acceptance checks; NOT DONE."
       },
       {
         "id": "V8",
@@ -886,14 +886,15 @@
       "V16: TextLayoutEngine preserves explicit newlines and wraps words to boxWidth; justify distributes inter-word space while keeping paragraph end lines left-aligned.",
       "V17: Text frame width handles adjust boxWidth without scaling transform scaleX/scaleY or fontSize.",
       "V18: Vector precision controls provide floating toolbar with Independent Handles, Corner/Smooth toggle, 45-deg angle snap, and touch priority Handle -> Anchor -> Segment.",
-      "V19: Contextual toasts added for image optimization, layer deletion, and undo/redo naming specific action; silent on normal drags."
+      "V19: Contextual toasts added for image optimization, layer deletion, and undo/redo naming specific action; silent on normal drags.",
+      "V7: color page stores alpha only in ARGB and resets the separate opacity multiplier to 1 on a color edit; prevent half-alpha becoming quarter-alpha. Fill imports replace only original target fill; no extra layer is created. Numeric gestures preview live and commit on finish."
     ],
     "known_issues": [
       "Inherited latest HEAD 79023c6 fails Actions 42819779009; earlier successful verification is not proof of current HEAD.",
       "Inherited V10\u2013V19 done markers require acceptance audit; latest documentation incorrectly claims all 20 items complete."
     ],
-    "last_updated": "2026-11-10T13:22:57.805659+00:00",
-    "last_session_note": "Resumed amended brief at V7. Latest inherited HEAD 79023c6 has failing Actions 42819779009; restore passing baseline before advancing. V7/V8/V15 and V20\u2013V25 remain open. No release authorized until full acceptance verification.",
+    "last_updated": "2026-11-10T13:27:28.886167+00:00",
+    "last_session_note": "V7 fixed-panel implementation checkpoint pushed; continue V7 verification and remaining renderer/on-canvas requirements. Do not advance or release until green Actions and acceptance.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",

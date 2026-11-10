@@ -35,3 +35,17 @@ data class FillData(
             return ((a.toLong() and 0xFF) shl 24) or (solidColor and 0x00FFFFFFL)
         }
 }
+
+/** Synchronise legacy editors without allowing fill to change stroke or shadow. */
+fun Layer.withUniversalFill(fill: FillData): Layer {
+    val base = copy(fillData = fill)
+    return when (type) {
+        LayerType.SHAPE -> base.copy(shapeData = (shapeData ?: ShapeData()).copy(
+            fillColor = fill.effectiveSolidArgb, hasFill = fill.type != FillType.SOLID || fill.effectiveSolidArgb ushr 24 != 0L))
+        LayerType.TEXT -> base.copy(textData = (textData ?: TextLayerData()).copy(color = fill.effectiveSolidArgb))
+        LayerType.VECTOR -> base.withVectorPaths(editablePaths.map { it.copy(
+            fillColor = fill.effectiveSolidArgb, hasFill = fill.type != FillType.SOLID || fill.effectiveSolidArgb ushr 24 != 0L) })
+        LayerType.MEDIA -> if (fill.type == FillType.MEDIA) base.copy(mediaAssetPath = fill.mediaAssetPath) else base
+        else -> base
+    }
+}
