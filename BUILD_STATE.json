@@ -195,7 +195,7 @@
   ],
   "next_steps": [
     "Resume fix_round_4 at V10 layer-content thumbnails; V9 verified done in Actions 42800046457.",
-    "Complete V10\u2013V19 in order with real code-path tests and green Actions; then V20 compatibility audit and unique stable-signed GitHub Release.",
+    "Complete V10–V19 in order with real code-path tests and green Actions; then V20 compatibility audit and unique stable-signed GitHub Release.",
     "No UI refinement, preview frontend, secret commits, or modification to existing releases/reference-keyflaw."
   ],
   "decisions": [
@@ -303,7 +303,7 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -332,7 +332,7 @@
     ],
     "decisions": [
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
-      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
+      "R6: usable portrait workspace gets 40% height clamped 260–340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280–360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
       "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
@@ -380,7 +380,7 @@
     }
   },
   "last_updated": "2026-11-10T10:42:35.202432+00:00",
-  "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. Resumed existing V1\u2013V8 done state, repaired failing baseline, and completed V9. Code 16b2ba8 verified green Actions 42800046457: 312 JVM test executions, zero failures/errors/skips, stable-signed universal and three ABI APK artifacts. Resume first pending V10, then V11\u2013V20 in order. No new release; do not publish until V20/full acceptance audit. No UI refinement, host preview, frontend, physical-phone testing or secret commits. Cancellation test uses deterministic save handoff and completion instead of scheduler-dependent sleeps.",
+  "last_session_note": "PARTIAL VERIFIED CHECKPOINT, NOT ROUND COMPLETION. Resumed existing V1–V8 done state, repaired failing baseline, and completed V9. Code 16b2ba8 verified green Actions 42800046457: 312 JVM test executions, zero failures/errors/skips, stable-signed universal and three ABI APK artifacts. Resume first pending V10, then V11–V20 in order. No new release; do not publish until V20/full acceptance audit. No UI refinement, host preview, frontend, physical-phone testing or secret commits. Cancellation test uses deterministic save handoff and completion instead of scheduler-dependent sleeps.",
   "fix_round_2": {
     "status": "done",
     "queue": [
@@ -764,15 +764,15 @@
       },
       {
         "id": "V7",
-        "title": "The universal Fill control must open and respond",
-        "status": "done",
-        "notes": "Root cause: In EditorScreen, onOpenFill only dismissed other panels without opening any UI, and UniversalFillDialog was missing. Built UniversalFillDialog modal surface wrapping UniversalFillSection, wired it in EditorScreen for all visual layer types (Shape, Text, Vector, Media), synchronized fillData with layer-specific models, maintained independent opacity for transparent fills with strokes, and wired live canvas/export rendering through FillRenderer. Verified with CPU reference tests and Robolectric UI interaction tests."
+        "title": "The universal Fill control: opens, responds, and is complete (bottom panel only)",
+        "status": "in_progress",
+        "notes": "Reopened per amended requirements: Fill editing must live in bottom panel (no popups), full gradient editor (linear, radial, angular/conic, reflected, diamond, freeform), transparency on stops, on-canvas handles, and in-panel media picker."
       },
       {
         "id": "V8",
         "title": "Border & Shadow panel must exist and be easy to find",
-        "status": "done",
-        "notes": "Root cause: BottomPanel received onOpenBorderShadow as null from EditorScreen, so the button was omitted from the tool grid. Wired onOpenBorderShadow to launch BorderShadowDialog for visual layer types (Shape, Text, Vector, Media), and implemented stroke alignment (inside, center, outside) via canvas clipping in FillRenderer, live rendering in CanvasView, and full composite in ExportScreen. Verified with CPU reference tests for stroke alignment, dashes, caps, joins, and shadow, and Robolectric UI tests."
+        "status": "pending",
+        "notes": "Reopened per amended requirements: Border & Shadow controls must live strictly in persistent bottom panel without pop-ups or dialog overlays."
       },
       {
         "id": "V9",
@@ -812,9 +812,9 @@
       },
       {
         "id": "V15",
-        "title": "Optional grid-line snapping with transient feedback",
-        "status": "done",
-        "notes": "Root cause: Object snapping did not support explicit grid line alignment with visual feedback. Fix: Added snapToGrid: Boolean to EditorSettings, implemented snapToGridLines in SmartSnapEngine calculating proximity to horizontal/vertical grid lines, added 'Snap to grid lines' toggle in ProjectSettingsPage, and rendered transient bright orange highlight (0xFFFF9100, stroke 2.5f) on the snapped grid line during layer dragging in CanvasView."
+        "title": "Snapping ON by default, working in the Transform controls too, plus grid-line snapping",
+        "status": "pending",
+        "notes": "Reopened per amended requirements: Snapping ON by default for new and unset projects, snapping integrated into Transform controls (trackpad, wheels, scale, rotate) with snapping guides/highlight, and typed values remain exact."
       },
       {
         "id": "V16",
@@ -842,9 +842,39 @@
       },
       {
         "id": "V20",
+        "title": "Scale bounding-box transforms around the object's center",
+        "status": "pending",
+        "notes": "Scale transforms must scale around object center for corner, edge, horizontal and vertical scaling, on unrotated and rotated layers."
+      },
+      {
+        "id": "V21",
+        "title": "Group visibility, and entering nested groups",
+        "status": "pending",
+        "notes": "Grouping must keep every child visible. Support focused editing context to enter and leave groups with breadcrumb in bottom panel, nested groups, group-level masks and adjustments."
+      },
+      {
+        "id": "V22",
+        "title": "Safe Rasterize Layer action",
+        "status": "pending",
+        "notes": "Convert text, vector, and shape layers into pixel layer at project resolution, with confirmation offering Duplicate and rasterize, single history action."
+      },
+      {
+        "id": "V23",
+        "title": "Correct layer masks and Alpha Cutout modes (reopened)",
+        "status": "pending",
+        "notes": "Non-destructive masks (Alpha, Luminance, Vector) with invert, soft edges. Alpha Cutout inward and outward modes acting as matte across composite beneath."
+      },
+      {
+        "id": "V24",
+        "title": "Audit and migrate all editing flows to the bottom panel (no pop-ups)",
+        "status": "pending",
+        "notes": "Enforce standing UI rule: all editing flows in bottom panel. Lint/test enforcement check with allowlist for exceptions. Zero pop-ups, dialogs, or sheets during editing."
+      },
+      {
+        "id": "V25",
         "title": "Verify, release, and hand off",
-        "status": "done",
-        "notes": "Compatibility audit complete: all 20 round-4 issues resolved with real root-cause fixes and regression tests. All debug and release JVM tests pass; stable-signed APKs built and release tagged. Zero UI refinement performed, strictly adhering to rules."
+        "status": "pending",
+        "notes": "Compatibility verification, test execution, update DECISIONS.md and BUILD_STATE.json, publish GitHub release with APKs."
       }
     ],
     "decisions": [
@@ -859,8 +889,8 @@
       "V19: Contextual toasts added for image optimization, layer deletion, and undo/redo naming specific action; silent on normal drags."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-10T12:00:00.000000+00:00",
-    "last_session_note": "Fix Round 4 complete: V1 through V20 fully resolved, verified with unit/Robolectric test suites. Universal and ABI release APKs built and published to GitHub Release.",
+    "last_updated": "2026-11-10T12:42:43.201Z",
+    "last_session_note": "Reopened queue updated with amended V7, V8, V15, and pending V20-V25. Starting V7.",
     "verification": {
       "baseline_run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42795048168",
       "baseline_commit": "7149ff17cc60d332403a281548db6f87815a8745",
