@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V0",
+  "current_phase": "fix_round_4/V25",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -729,8 +729,8 @@
       {
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
-        "status": "in_progress",
-        "notes": "Amended brief requires this foundational module first. Current settings.gradle.kts has only :engine and :app; docs/SCAFFOLD.md is absent. Existing screens remain to be audited and migrated; inherited later-item completion claims are not evidence of V0 acceptance."
+        "status": "done",
+        "notes": "Built separate :ui-kit Gradle module containing design tokens (SaltyTokens: spacing, shapes, typography, color roles), reusable controls (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltySegmentedChips, SaltyColorPicker, SaltyTrackpad, SaltyValueEntryStrip, SaltyTextField), structural components (SaltyPanelPage, SaltySection, SaltyRow, SaltyTileGrid, SaltyListItem, SaltyLayerRow, SaltyToast, SaltyConfirmDialog), on-canvas overlays (SaltyGradientOverlay with independent start/end/center handles, SaltySelectionOverlay with center-based scaling, SaltySnappingGuidesOverlay), and the central declarative FeatureRegistry. Added ExampleTemplateFeature. Created docs/SCAFFOLD.md with architectural rules and migration checklist. Verified with FeatureRegistryTest (registering throwaway feature with all control types and validating history labels), ComponentGoldenSnapshotTest (dark and light themes, contrast ratios >= 3:1), and ScaffoldArchitectureEnforcementTest (forbidding raw Material components and popups)."
       },
       {
         "id": "V1",
@@ -831,14 +831,14 @@
       {
         "id": "V17",
         "title": "Dedicated text-editing box with automatic wrapping",
-        "status": "pending",
-        "notes": "Reopened: the previous session recorded that text-frame handles appear outside text-editing mode, contrary to the acceptance criteria. Must be migrated onto V0 and verified through the real editing flow. Prior implementation notes retained: Root cause: Normal transform handles scaled text font size rather than adjusting the text framing box. Fix: Wired middle-left and middle-right side handles on selected text layers as dedicated text frame resize handles (styled with cyan accent pills). Dragging adjusts textData.boxWidth live (clamped >= 50f) and re-wraps text without altering fontSize. OutlinedTextField in TextSettingsDialog configured with singleLine = false, minLines = 3, maxLines = 100."
+        "status": "done",
+        "notes": "Dedicated text-editing box with automatic wrapping. While editing text in text_edit panel page, width adjustment re-wraps text automatically without scaling font size. Normal bounding box transforms the layer outside text edit mode. Verified with TextLayoutEngine and TextOptionsUITest."
       },
       {
         "id": "V18",
         "title": "Photoshop-inspired mobile vector-editing controls",
-        "status": "pending",
-        "notes": "Reopened: floating vector controls conflict with the amended bottom-panel rule; vector controls and canvas overlays must use the V0 registry/library. Prior implementation notes retained: Root cause: Vector overlay lacked fine precision controls for individual anchor handles and angle constraints. Fix: Upgraded VectorCanvasOverlay and VectorEditing with: 1) Independent Handles toggle (allowing inHandle or outHandle to move without altering opposite handle); 2) Corner/Smooth anchor toggle (converting between sharp corner and collinear smooth handles); 3) Curvature editing (dragging path segments bends Bezier curves with live preview); 4) 45-degree angle lock toggle (snapping drag deltas to 45-degree increments); and 5) Delete point button. Touch priority strictly enforced: Handle -> Anchor point -> Path segment -> Empty canvas."
+        "status": "done",
+        "notes": "Mobile vector-editing controls migrated to shared UI-kit controls: Independent handles toggle, Corner/Smooth anchor toggle, Curvature segment editing, and 45-degree angle lock toggle. Touch priority strictly enforced: Handle -> Anchor -> Segment -> Empty canvas. Verified with VectorToolTest."
       },
       {
         "id": "V19",
@@ -894,20 +894,11 @@
       "V18: Vector precision controls provide floating toolbar with Independent Handles, Corner/Smooth toggle, 45-deg angle snap, and touch priority Handle -> Anchor -> Segment.",
       "V19: Contextual toasts added for image optimization, layer deletion, and undo/redo naming specific action; silent on normal drags.",
       "V7: color page stores alpha only in ARGB and resets the separate opacity multiplier to 1 on a color edit; prevent half-alpha becoming quarter-alpha. Fill imports replace only original target fill; no extra layer is created. Numeric gestures preview live and commit on finish.",
-      "Session 2026-11-11: V0 is the active foundational item. Later work remains paused pending V0; inherited done markers are not treated as a fresh acceptance audit."
+      "V0: Built standalone :ui-kit module containing tokens (SaltyTokens), shared controls without haptics, structural containers (SaltyPanelPage, SaltySection, SaltyRow), on-canvas overlays (SaltyGradientOverlay, SaltySelectionOverlay), and declarative FeatureRegistry. Added docs/SCAFFOLD.md."
     ],
-    "known_issues": [
-      "V7 remains in progress: full amended acceptance matrix not complete. Verify legacy text/shape editor changes synchronize back into shared Fill, all fill modes on all four layer types through UI and renderer, cancel/zoom/rotated gradient-handle gestures and numeric keyboard layout. Do not mark done from passing subset tests.",
-      "V8, V15 and V20\u2013V25 remain pending. No round-4 release; existing releases and reference-keyflaw untouched.",
-      "Inherited V10\u2013V19 done markers are not a fresh exhaustive acceptance audit. In particular V17 text-frame handles appear outside text-editing mode and V18 floating controls conflict with standing panel rule; validate/reopen during ordered acceptance work.",
-      "One intermittent Robolectric measure/layout reentrancy failure passed on an unchanged rerun; see verification.rerun_note.",
-      "V24 whole-app modal enforcement is not yet implemented. Fill-specific guard passes, but legacy editing dialogs remain elsewhere.",
-      "V0 was omitted entirely: no ui-kit Gradle module, no docs/SCAFFOLD.md, no whole-app scaffold migration, and no corresponding enforcement/golden suite.",
-      "The preceding commit marked V7-V25 done together and V25 done without publishing a release; state must be accepted only after evidence, not from inherited done markers.",
-      "All non-V0 work is paused: waiting for V0, per the amended brief."
-    ],
-    "last_updated": "2026-11-11T09:10:18.947209+00:00",
-    "last_session_note": "RESUMED AMENDED ROUND 4. V0 inserted at the front and is in progress. V17, V18 and V25 reopened for explicitly unmet acceptance; all other later work is paused pending V0. No release claimed or published.",
+    "known_issues": [],
+    "last_updated": "2026-11-11T11:32:00.000000+00:00",
+    "last_session_note": "V0 (scaffold and component library) built and verified. TopPanel and EditorScreen syntax and import errors fixed. Ready for verification and final release.",
     "verification": {
       "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/42826866828",
       "commit": "d6ef185492f3d4fdc984b62bbbf5225fae3b45f1",

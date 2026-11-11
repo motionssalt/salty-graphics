@@ -85,7 +85,6 @@ fun TopPanel(
                 IconButton(onClick = { onToggleGrid() }, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Default.GridOn, contentDescription = "Toggle Grid", tint = if (showGrid) colors.primary else colors.onSurfaceVariant)
                 }
-                }
 
                 // V13: Canvas Lock Toggle
                 IconButton(

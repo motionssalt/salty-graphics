@@ -88,6 +88,7 @@ android {
 
 dependencies {
     implementation(project(":engine"))
+    implementation(project(":ui-kit"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
