@@ -831,8 +831,8 @@
       {
         "id": "V17",
         "title": "Dedicated text-editing box with automatic wrapping",
-        "status": "done",
-        "notes": "Dedicated text-editing box with automatic wrapping. While editing text in text_edit panel page, width adjustment re-wraps text automatically without scaling font size. Normal bounding box transforms the layer outside text edit mode. Verified with TextLayoutEngine and TextOptionsUITest."
+        "status": "pending",
+        "notes": "Dedicated text-editing box with automatic wrapping. While editing text in text_edit panel page, width adjustment re-wraps text automatically without scaling font size. Normal bounding box transforms the layer outside text edit mode. Verified with TextLayoutEngine and TextOptionsUITest. Reopened acceptance audit: CanvasView treats every selected TEXT layer as text-frame editing (isSelectedTextLayer) with no text-edit-mode input; normal edge transforms cannot resume on leaving text mode. Paused: waiting for V0."
       },
       {
         "id": "V18",
@@ -861,20 +861,20 @@
       {
         "id": "V22",
         "title": "Safe Rasterize Layer action",
-        "status": "done",
-        "notes": "Root cause: No capability existed to convert procedural vector, text, or shape geometry into raster bitmaps. Fix: Implemented LayerRasterizer.rasterizeLayer which renders layer content (fill, stroke, shadow) at full project resolution, computes a tight bounding box of non-zero pixels, saves the PNG into project assets (assets/raster_*.png), and replaces the original layer with an equivalent MEDIA layer retaining blendMode, opacity, mask, and effects. Added Rasterize tool to BottomPanel with confirmation dialog offering 'Duplicate & Rasterize', 'Rasterize', and 'Cancel'. Records exactly one history action. Verified in RasterizeLayerTest."
+        "status": "pending",
+        "notes": "Root cause: No capability existed to convert procedural vector, text, or shape geometry into raster bitmaps. Fix: Implemented LayerRasterizer.rasterizeLayer which renders layer content (fill, stroke, shadow) at full project resolution, computes a tight bounding box of non-zero pixels, saves the PNG into project assets (assets/raster_*.png), and replaces the original layer with an equivalent MEDIA layer retaining blendMode, opacity, mask, and effects. Added Rasterize tool to BottomPanel with confirmation dialog offering 'Duplicate & Rasterize', 'Rasterize', and 'Cancel'. Records exactly one history action. Verified in RasterizeLayerTest. Reopened acceptance audit: LayerRasterizer.renderLayerContent allocates only canvasW \u00d7 canvasH, so off-canvas content is clipped before tight bounds are computed. Required off-canvas preservation is unmet. Paused: waiting for V0."
       },
       {
         "id": "V23",
         "title": "Correct layer masks and Alpha Cutout modes (reopened)",
-        "status": "done",
-        "notes": "Root cause: BlendingMaskDialog only offered Alpha and Luminance mask types and lacked Alpha Cutout punch-through modes; LayerCompositor composited layers sequentially without punch-through matte operations. Fix: Implemented Alpha Cutout modes IN_MASK (Porter-Duff DST_OUT punching a hole through the backdrop beneath) and OUT_MASK (Porter-Duff DST_IN matting the backdrop to only inside the mask shape) in LayerCompositor and CanvasView. Added Alpha Cutout mode selector chips in BlendingPage inside the bottom panel. Verified in LayerMaskAndAlphaCutoutTest."
+        "status": "pending",
+        "notes": "Root cause: BlendingMaskDialog only offered Alpha and Luminance mask types and lacked Alpha Cutout punch-through modes; LayerCompositor composited layers sequentially without punch-through matte operations. Fix: Implemented Alpha Cutout modes IN_MASK (Porter-Duff DST_OUT punching a hole through the backdrop beneath) and OUT_MASK (Porter-Duff DST_IN matting the backdrop to only inside the mask shape) in LayerCompositor and CanvasView. Added Alpha Cutout mode selector chips in BlendingPage inside the bottom panel. Verified in LayerMaskAndAlphaCutoutTest. Reopened amended acceptance audit: Alpha Cutout branch multiplies only backdropPixels then continues without compositing source visible content, contrary to affected composite including its own visible content. Old-project migration equivalence also needs real native-path verification. Paused: waiting for V0."
       },
       {
         "id": "V24",
         "title": "Audit and migrate all editing flows to the bottom panel (no pop-ups)",
-        "status": "done",
-        "notes": "Root cause: Legacy editing dialogs and menus existed for Shape picker, Text settings, Color picker, and Dropdown controls. Fix: 1) Converted ShapePickerDialog to panel-native PanelPage. 2) Converted ShapeSettingsDialog, TextSettingsDialog, and BlendingPage to embed natively inside the bottom panel in EditorScreen. 3) Replaced modal text edit AlertDialog with inline text_edit panel subpage. 4) Replaced font search Dialog with inline search field in FontSelectionPage. 5) Converted ColorPickerDialog to PanelPage. 6) Replaced DropdownMenu in MiscControls and BlendingMaskDialog with inline expanding lists. 7) Replaced TopPanel dropdown with direct icon buttons. 8) Docked ValueEditorDialog directly above keyboard at Alignment.BottomCenter. 9) Added BottomPanelArchitectureEnforcementTest scanning ui/editor and ui/controls to permanently forbid overlays during editing. 10) Documented UI rule in docs/DECISIONS.md."
+        "status": "pending",
+        "notes": "Root cause: Legacy editing dialogs and menus existed for Shape picker, Text settings, Color picker, and Dropdown controls. Fix: 1) Converted ShapePickerDialog to panel-native PanelPage. 2) Converted ShapeSettingsDialog, TextSettingsDialog, and BlendingPage to embed natively inside the bottom panel in EditorScreen. 3) Replaced modal text edit AlertDialog with inline text_edit panel subpage. 4) Replaced font search Dialog with inline search field in FontSelectionPage. 5) Converted ColorPickerDialog to PanelPage. 6) Replaced DropdownMenu in MiscControls and BlendingMaskDialog with inline expanding lists. 7) Replaced TopPanel dropdown with direct icon buttons. 8) Docked ValueEditorDialog directly above keyboard at Alignment.BottomCenter. 9) Added BottomPanelArchitectureEnforcementTest scanning ui/editor and ui/controls to permanently forbid overlays during editing. 10) Documented UI rule in docs/DECISIONS.md. Reopened acceptance audit: EditorScreen still overlays LayersPanel in the preview; source guard checks a fixed file list and counts AlertDialogs without classifying history/other overlays. Whole-flow no-overlay walkthrough tests absent. Paused: waiting for V0."
       },
       {
         "id": "V25",
@@ -899,9 +899,13 @@
     "known_issues": [
       "V0 incomplete: production UI not migrated to registry; screenshot goldens absent; raw feature layouts/dependencies remain.",
       "Inherited main CI is red (run 43015463330); investigate and fix before advancing.",
-      "V1\u2013V24 done statuses inherited, not independently reverified this session; do not infer full acceptance from them."
+      "V1\u2013V24 done statuses inherited, not independently reverified this session; do not infer full acceptance from them.",
+      "V17: text-frame resize intercepts text handles outside editing mode.",
+      "V22: rasterizer clips to project canvas before finding bounds, losing off-canvas pixels.",
+      "V23: cutout excludes its own visible content from affected composite.",
+      "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains."
     ],
-    "last_updated": "2026-11-11T12:30:22.552967+00:00",
-    "last_session_note": "V0 incremental migration: production bottom tool grid now declares EditorToolFeatures and delegates layout/filtering to ui-kit ScaffoldToolPanel/FeatureCatalog. Preserves 3-column layout and action callbacks. Corrected false migration checklist; all other screens still pending. Native fixture repairs and this migration await CI; no release."
+    "last_updated": "2026-11-11T12:33:39.930012+00:00",
+    "last_session_note": "V0 tool-grid integration committed; actual native PNG golden tests awaiting initial CI evidence/review. Added strict boundary for migrated entries, corrected false v1.0.60 release claim, reopened concrete V17/V22/V23/V24 acceptance gaps (paused for V0). Full V0 migration still incomplete; no release."
   }
 }

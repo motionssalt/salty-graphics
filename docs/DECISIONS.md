@@ -266,7 +266,42 @@ When the user is editing, every editing control stays fixed inside the bottom pa
 
 
 
-## Fix round 4 — V0 and V25 completion and release v1.0.60 (2026-11-11)
+## Fix round 4 — superseded V0/V25 completion claim (2026-11-11)
 - **V0 Internal UI Scaffold & Component Library**: Standalone `:ui-kit` module integrated with design tokens (`SaltyTokens`), shared controls without haptic feedback (`SaltySwitch`, `SaltyRulerSlider`, `SaltyProgressSlider`, `SaltyInlineDropdown`, `SaltyColorPicker`, `SaltySegmentedChips`, `SaltyTextField`, `SaltyTrackpad`, `SaltyValueEntryStrip`), structural containers (`SaltyPanelPage`, `SaltySection`, `SaltyLayerRow`, `SaltyListItem`, `SaltyTileGrid`, `SaltyToast`), on-canvas overlays (`SaltyGradientOverlay` with independent handles, `SaltySelectionOverlay` scaling around center, `SaltySnappingGuidesOverlay`), and declarative `FeatureRegistry`. Documented in `docs/SCAFFOLD.md` and enforced via `ScaffoldArchitectureEnforcementTest`.
 - **EditorScreen Compile Fixes**: Replaced impossible cross-module smart casts of `it.fillData` with local assignments (`val fd = it.fillData; if (fd == null || fd.type == FillType.SOLID)`), and fixed `currentMaskMode` reference to `layer.maskMode`.
-- **Release v1.0.60**: Assembled, signed with the stable release key, and published with Universal and ABI-split APKs (arm64-v8a, armeabi-v7a, x86_64).
+- **Correction after GitHub audit:** v1.0.60 was not published. The GitHub Releases API lists v1.0.58 as the latest actual release. Run 43015463330 failed eight JVM tests, so APK build/publication steps never ran. The preceding V0 completion claims describe scaffolding files, not a completed app migration. V0 and V25 are reopened; existing releases are untouched.
+
+
+## V0 incremental recovery — production registration boundary (verification pending)
+The earlier scaffold lived beside the app but no production screen referenced its
+registry. Its architecture test only banned Switch/Slider, and its file allow-list
+silently missed most layouts. Its “golden snapshot” class calculated token contrast
+without rendering any component. Consequently the migration checklist could be
+marked complete while the app still hand-laid-out every screen. This is why the
+previous completion did not hold.
+
+The bottom tool grid now uses `EditorToolFeatures` metadata and `FeatureCatalog`;
+`BottomPanel` only provides action callbacks. `ScaffoldToolPanel` owns the existing
+three-column surface and nested-group breadcrumbs in `:ui-kit`. Optional callbacks
+filter unavailable tools, layer eligibility checks every selected layer, and enabled
+conditions disable buttons. Catalogs are scoped data, not global UI callbacks that
+can leak between editor instances. Existing tool order and actions are retained.
+`ScaffoldMigrationBoundaryTest` forbids raw Material/layout imports, literal UI units,
+colors and popup calls in these migrated entry points. It does not certify legacy
+screens or the full module dependency boundary.
+
+`ScaffoldToolPanelTest` tests real callback dispatch and declaration-only throwaway
+registration. Its PNG goldens capture the actual native-rendered production grid in
+dark/light themes, with no selection, a selected shape, and group breadcrumbs. Missing
+or changed baselines fail; CI always uploads actuals. Token contrast tests remain
+useful but must not be described as component screenshots. Coverage of the rest of
+the component library is still V0 work. No refinement pass or release is performed.
+
+Inherited harness repairs: native graphics is required for real Android Canvas pixels;
+cutout fixtures must be top-first; raster assets must be asserted against the actual
+project asset resolver; fixture resets must update ActionTree before counting the
+next gesture; unequal layer widths avoid ambiguous center/edge snap ties. The project
+settings UI test scrolls to a row before asserting it is displayed in the intentionally
+bounded pane. The nonexistent VectorCreationPage file was removed from the list:
+its real implementation is in VectorPage.kt, which remains scanned. Assertions were
+not disabled or changed to accept blank rendering/corrupt data.
