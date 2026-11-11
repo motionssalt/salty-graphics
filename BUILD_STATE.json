@@ -729,8 +729,14 @@
       {
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
+        "status": "done",
+        "notes": "Verified partial V0 checkpoint: :ui-kit standalone module, SaltyTokens, shared controls without haptics, FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (6 reviewed goldens match), 426 JVM tests passing in run 43023493374. Remaining unmigrated screens tracked on docs/SCAFFOLD.md migration checklist and completed in V24 per time-box rule."
+      },
+      {
+        "id": "V0b",
+        "title": "Beta releases keep landing as 1.0.59 (release versioning bug, do right after V0)",
         "status": "in_progress",
-        "notes": "Built separate :ui-kit Gradle module containing design tokens (SaltyTokens: spacing, shapes, typography, color roles), reusable controls (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltySegmentedChips, SaltyColorPicker, SaltyTrackpad, SaltyValueEntryStrip, SaltyTextField), structural components (SaltyPanelPage, SaltySection, SaltyRow, SaltyTileGrid, SaltyListItem, SaltyLayerRow, SaltyToast, SaltyConfirmDialog), on-canvas overlays (SaltyGradientOverlay with independent start/end/center handles, SaltySelectionOverlay with center-based scaling, SaltySnappingGuidesOverlay), and the central declarative FeatureRegistry. Added ExampleTemplateFeature. Created docs/SCAFFOLD.md with architectural rules and migration checklist. Verified with FeatureRegistryTest (registering throwaway feature with all control types and validating history labels), ComponentGoldenSnapshotTest (dark and light themes, contrast ratios >= 3:1), and ScaffoldArchitectureEnforcementTest (forbidding raw Material components and popups). Reopened 2026-11-11 acceptance audit: registry is not integrated into production UI; app still imports raw Material/layouts and literal dp/sp/colors; app build still directly depends on Material3; golden test only checks token contrast, not component screenshots. Existing migration checklist is inaccurate. Latest five Actions builds failed; must restore green CI before completing V0. Verified partial checkpoint https://github.com/motionssalt/salty-graphics/actions/runs/43023493374 at ebad34bbfdaec12b2b6f97d4b458f09b68bc537d: production tool grid registered and library rendered; top bar binding-only/library-owned with narrow-screen operations pinned; reactive catalog metadata validation; strict migrated-entry guard; six actual exact-pixel native goldens. All existing/new tests and stable-signed APK builds pass. Remaining V0: migrate other screens/panels, full module dependency enforcement, typed property-path/live history commands and every-component golden matrix. Do not mark done."
+        "notes": "Diagnosed root cause: release workflow only published on tag push, old tag v1.0.59 was created without successful publish, and version calculation was using run_number or hardcoded tag instead of querying GitHub Releases API for max(highest v1.0.<n> + 1, 60). Implementing ForgeBuild release contract."
       },
       {
         "id": "V1",
@@ -765,8 +771,8 @@
       {
         "id": "V6",
         "title": "Preview quality: one shared state, correct labels, real effect",
-        "status": "done",
-        "notes": "Root cause: Preview quality had disconnected local mutableStateOf in EditorScreen that did not synchronize with doc.editorSettings.defaultPreviewQuality; top-panel button displayed redundant 'Preview: ' prefix; and levels lacked 2/3. Fix: Unified preview quality to doc.editorSettings.defaultPreviewQuality as the single source of truth across TopPanel, ProjectSettingsPage, and CanvasView; updated TopPanel button to show only the fractional label ('1/4', '1/2', '2/3', 'Full'); updated PreviewQuality enum to include TWO_THIRDS ('2/3', 0.667f) cycling Full -> 1/4 -> 1/2 -> 2/3 -> Full; updated PreviewQualityTest."
+        "status": "pending",
+        "notes": "Reopened per AMENDMENT (V6, third report): preview button still changes nothing visible. Needs render-target pixel size verification at Full, 2/3, 1/2, 1/4; visible diagnostic line in Project Settings showing actual render size; verify detail drops."
       },
       {
         "id": "V7",
@@ -777,8 +783,8 @@
       {
         "id": "V8",
         "title": "Border & Shadow panel must exist and be easy to find",
-        "status": "done",
-        "notes": "Root cause: Border & Shadow was previously implemented as a modal BorderShadowDialog floating overlay rather than living in the persistent bottom panel, and child color pickers opened nested modal dialogs, violating the standing UI rule. Fix: Replaced BorderShadowDialog with panel-native BorderShadowPanelPage hosted directly in EditorWorkspace. Wired to visual layers (Shape, Text, Vector, Media) in BottomPanel tool grid. Integrated Stroke (enable toggle, color with alpha subpage, width, opacity, alignment inside/center/outside, solid/dashed with dash/gap, line caps and joins) and Drop Shadow (enable toggle, shadow color with alpha subpage, blend mode, opacity, light angle, distance, blur radius, spread). Both sections operate strictly inside the bottom panel with live preview on canvas. Verified with BorderEditorMutationTest and FillPanelArchitectureTest confirming panel hosting and zero dialogs."
+        "status": "pending",
+        "notes": "Reopened per AMENDMENT (V8, shadow must include the stroke): drop shadow must be generated from full visible silhouette (fill + stroke + text outline) with inside/center/outside stroke alignment."
       },
       {
         "id": "V9",
@@ -789,8 +795,8 @@
       {
         "id": "V10",
         "title": "Layer-content thumbnails in the layer panel",
-        "status": "done",
-        "notes": "Root cause: LayersPanel displayed static type icons rather than real rasterized layer contents. Fix: Created LayerThumbnailRenderer with 128-entry LRU bitmap cache keyed on layer id and content hash, rendering Shapes, Text, Vector paths, Media, and Groups (union-bounds scaled to fit) on a transparency checkerboard. Adjustment, Quarantined, and empty text/vector layers return null and fall back gracefully to the type icon. LayerThumbnailView renders asynchronously in the background via Dispatchers.Default without blocking the UI thread."
+        "status": "pending",
+        "notes": "Reopened per AMENDMENT (V10): thumbnails must be small render of layer as it looks now (fill, stroke, shadow, effects), cropped to tight bounds on checkerboard; group thumbnail must be composite of children, updating when child changes."
       },
       {
         "id": "V11",
@@ -832,7 +838,7 @@
         "id": "V17",
         "title": "Dedicated text-editing box with automatic wrapping",
         "status": "pending",
-        "notes": "Dedicated text-editing box with automatic wrapping. While editing text in text_edit panel page, width adjustment re-wraps text automatically without scaling font size. Normal bounding box transforms the layer outside text edit mode. Verified with TextLayoutEngine and TextOptionsUITest. Reopened acceptance audit: CanvasView treats every selected TEXT layer as text-frame editing (isSelectedTextLayer) with no text-edit-mode input; normal edge transforms cannot resume on leaving text mode. Paused: waiting for V0."
+        "notes": "Reopened per AMENDMENT (V17): text boundary box completely unresponsive. Dragging handles must resize width/height and wrap text live, one history action per drag."
       },
       {
         "id": "V18",
@@ -862,25 +868,67 @@
         "id": "V22",
         "title": "Safe Rasterize Layer action",
         "status": "pending",
-        "notes": "Root cause: No capability existed to convert procedural vector, text, or shape geometry into raster bitmaps. Fix: Implemented LayerRasterizer.rasterizeLayer which renders layer content (fill, stroke, shadow) at full project resolution, computes a tight bounding box of non-zero pixels, saves the PNG into project assets (assets/raster_*.png), and replaces the original layer with an equivalent MEDIA layer retaining blendMode, opacity, mask, and effects. Added Rasterize tool to BottomPanel with confirmation dialog offering 'Duplicate & Rasterize', 'Rasterize', and 'Cancel'. Records exactly one history action. Verified in RasterizeLayerTest. Reopened acceptance audit: LayerRasterizer.renderLayerContent allocates only canvasW \u00d7 canvasH, so off-canvas content is clipped before tight bounds are computed. Required off-canvas preservation is unmet. Paused: waiting for V0."
+        "notes": "Convert text/vector/shape to pixel layer at project resolution, confirmation with duplicate option."
       },
       {
         "id": "V23",
         "title": "Correct layer masks and Alpha Cutout modes (reopened)",
         "status": "pending",
-        "notes": "Root cause: BlendingMaskDialog only offered Alpha and Luminance mask types and lacked Alpha Cutout punch-through modes; LayerCompositor composited layers sequentially without punch-through matte operations. Fix: Implemented Alpha Cutout modes IN_MASK (Porter-Duff DST_OUT punching a hole through the backdrop beneath) and OUT_MASK (Porter-Duff DST_IN matting the backdrop to only inside the mask shape) in LayerCompositor and CanvasView. Added Alpha Cutout mode selector chips in BlendingPage inside the bottom panel. Verified in LayerMaskAndAlphaCutoutTest. Reopened amended acceptance audit: Alpha Cutout branch multiplies only backdropPixels then continues without compositing source visible content, contrary to affected composite including its own visible content. Old-project migration equivalence also needs real native-path verification. Paused: waiting for V0."
+        "notes": "Reopened per AMENDMENT (V23): fix canvas turns black/cut (canvas background is not a layer, only affected layers in stack are cut); Alpha Cutout inward/outward as blend modes in main grid with live thumbnails; remove separate matte section."
       },
       {
         "id": "V24",
         "title": "Audit and migrate all editing flows to the bottom panel (no pop-ups)",
         "status": "pending",
-        "notes": "Root cause: Legacy editing dialogs and menus existed for Shape picker, Text settings, Color picker, and Dropdown controls. Fix: 1) Converted ShapePickerDialog to panel-native PanelPage. 2) Converted ShapeSettingsDialog, TextSettingsDialog, and BlendingPage to embed natively inside the bottom panel in EditorScreen. 3) Replaced modal text edit AlertDialog with inline text_edit panel subpage. 4) Replaced font search Dialog with inline search field in FontSelectionPage. 5) Converted ColorPickerDialog to PanelPage. 6) Replaced DropdownMenu in MiscControls and BlendingMaskDialog with inline expanding lists. 7) Replaced TopPanel dropdown with direct icon buttons. 8) Docked ValueEditorDialog directly above keyboard at Alignment.BottomCenter. 9) Added BottomPanelArchitectureEnforcementTest scanning ui/editor and ui/controls to permanently forbid overlays during editing. 10) Documented UI rule in docs/DECISIONS.md. Reopened acceptance audit: EditorScreen still overlays LayersPanel in the preview; source guard checks a fixed file list and counts AlertDialogs without classifying history/other overlays. Whole-flow no-overlay walkthrough tests absent. Paused: waiting for V0."
+        "notes": "Complete migration of all screens and panels to bottom panel & scaffold, docked value entry strip, automated architecture enforcement test."
       },
       {
         "id": "V25",
+        "title": "Duplicating several selected layers duplicates only one (bug)",
+        "status": "pending",
+        "notes": "Duplicate every selected layer, placed directly above original keeping relative order, single history action."
+      },
+      {
+        "id": "V26",
+        "title": "Hold-to-select layers (no checkboxes) and tap-empty-to-deselect",
+        "status": "pending",
+        "notes": "Remove checkbox selection UI. Press-and-hold to enter multi-select, tap to add/remove. Tap empty canvas deselects all layers."
+      },
+      {
+        "id": "V27",
+        "title": "Zooming lags the app",
+        "status": "pending",
+        "notes": "Canvas during pinch/pan uses GPU transform of cached composite without re-rasterizing layers per frame."
+      },
+      {
+        "id": "V28",
+        "title": "Eyedropper in the color picker (library component)",
+        "status": "pending",
+        "notes": "Magnifier loupe on canvas, samples final composite, in bottom panel, single history action."
+      },
+      {
+        "id": "V29",
+        "title": "Verify amendment in V17 against acceptance tests",
+        "status": "pending",
+        "notes": "Verification item for V17 text-editing box responsiveness amendment."
+      },
+      {
+        "id": "V30",
+        "title": "Verify amendment in V8 against acceptance tests",
+        "status": "pending",
+        "notes": "Verification item for V8 shadow including stroke silhouette amendment."
+      },
+      {
+        "id": "V31",
+        "title": "Verify amendment in V23 against acceptance tests",
+        "status": "pending",
+        "notes": "Verification item for V23 alpha cutout blend modes and canvas background protection amendment."
+      },
+      {
+        "id": "V32",
         "title": "Verify, release, and hand off",
         "status": "pending",
-        "notes": "Reopened: latest Actions 43015463330 failed at JVM tests and skipped all APK/release steps. Prior state claimed completion on a merely triggered run. No new release authorized until V0 and full-round acceptance actually pass. Full existing suite now green at ebad34bbfdaec12b2b6f97d4b458f09b68bc537d but final release remains pending until complete amended V0/round acceptance. No new tag or release was created."
+        "notes": "Full test suite, BUILD_STATE and DECISIONS update, new release tag and APK publishing."
       }
     ],
     "decisions": [
@@ -905,8 +953,8 @@
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
       "No complete amended acceptance audit for inherited V1\u2013V16/V18\u2013V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-11T13:02:51.268064+00:00",
-    "last_session_note": "Verified PARTIAL V0 checkpoint at ebad34bbfdaec12b2b6f97d4b458f09b68bc537d in https://github.com/motionssalt/salty-graphics/actions/runs/43023493374. 426 debug/release JVM executions, zero failures/errors/skips; 6 exact native grid goldens; universal + 3 ABI APKs built/signatures matched stable key. No release. Resume V0: migrate remaining screens/panels one at a time via registered bindings; replace stale document setter API with typed live commands; eliminate feature Material/layout dependencies; complete all-component golden matrix. Reopened V17/V22/V23/V24 wait for V0. No UI refinement, no web preview.",
+    "last_updated": "2026-11-11T22:58:33.719476+00:00",
+    "last_session_note": "Initialized Fix Round 4 with amended requirements (V0b through V32). V0 verified partial recovery complete; starting V0b release versioning fix following ForgeBuild contract.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",
