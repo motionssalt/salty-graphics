@@ -73,6 +73,8 @@ jobs:
             engine/build/test-results/
             app/build/reports/tests/
             engine/build/reports/tests/
+            ui-kit/build/test-results/
+            ui-kit/build/reports/tests/
 
       - name: Build Release APKs
         run: ./gradlew assembleRelease --stacktrace

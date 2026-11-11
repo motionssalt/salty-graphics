@@ -182,7 +182,7 @@ class CanvasLockFadeAndGridSnapTest {
     @Test
     fun testTransformPanelSnappingIntegration() {
         val bounds = SelectionBounds(left = -50f, top = -50f, right = 50f, bottom = 50f)
-        val otherBounds = SelectionBounds(left = -50f, top = -50f, right = 50f, bottom = 50f)
+        val otherBounds = SelectionBounds(left = -40f, top = -40f, right = 40f, bottom = 40f)
         val otherTransform = Transform2D(translationX = 200f, translationY = 200f)
 
         // Snapping translation to other layer's center/edge

@@ -7,11 +7,13 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.Config
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RasterizeLayerTest {
 
     @Test
@@ -39,7 +41,13 @@ class RasterizeLayerTest {
         assertEquals(BlendMode.MULTIPLY, rasterized.blendMode)
         assertEquals(0.85f, rasterized.opacity, 0.001f)
         assertNotNull(rasterized.mediaAssetPath)
-        assertTrue(rasterized.mediaAssetPath!!.startsWith("assets/raster_"))
+        val asset = File(File(context.filesDir, "projects/${doc.id}_assets"), rasterized.mediaAssetPath!!)
+        assertTrue("Rasterized asset must exist at the production resolver path", asset.isFile)
+        val pixels = android.graphics.BitmapFactory.decodeFile(asset.absolutePath)
+        assertNotNull("Rasterized asset must decode", pixels)
+        assertEquals(120, pixels.width)
+        assertEquals(80, pixels.height)
+        assertEquals(0xFFFF0000.toInt(), pixels.getPixel(60, 40))
     }
 
     @Test

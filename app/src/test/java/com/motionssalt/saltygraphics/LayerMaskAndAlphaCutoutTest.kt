@@ -7,10 +7,12 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class LayerMaskAndAlphaCutoutTest {
 
     @Test
@@ -32,7 +34,8 @@ class LayerMaskAndAlphaCutoutTest {
             id = "test_doc_cutout",
             name = "Cutout Doc",
             canvasSize = CanvasSize(width = 200, height = 200),
-            layers = listOf(bottomLayer, cutoutLayer)
+            editorSettings = EditorSettings(backgroundColor = 0L),
+            layers = listOf(cutoutLayer, bottomLayer)
         )
 
         val fullComposite = LayerCompositor.compositeDocument(doc, 200, 200)
@@ -63,7 +66,8 @@ class LayerMaskAndAlphaCutoutTest {
             id = "test_doc_matte",
             name = "Matte Doc",
             canvasSize = CanvasSize(width = 200, height = 200),
-            layers = listOf(bottomLayer, cutoutLayer)
+            editorSettings = EditorSettings(backgroundColor = 0L),
+            layers = listOf(cutoutLayer, bottomLayer)
         )
 
         val fullComposite = LayerCompositor.compositeDocument(doc, 200, 200)

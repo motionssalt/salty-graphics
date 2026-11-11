@@ -50,7 +50,12 @@ class SelectionHandleRegressionTest {
             compose.runOnIdle {doc=doc.copy(layers=listOf(shape,neighbor));selected=setOf(shape.id)}
             val canvas=compose.onNodeWithTag("editor_canvas")
             for(h in SelectionHandle.entries.filter {it!=SelectionHandle.NONE && it!=SelectionHandle.BODY}) {
-                compose.runOnIdle { doc=doc.updateLayer(shape.id){it.copy(transform=Transform2D(rotationDegrees=27f))} }
+                compose.runOnIdle {
+                    doc=doc.updateLayer(shape.id){it.copy(transform=Transform2D(rotationDegrees=27f))}
+                    // Synchronize history with the fixture reset. Otherwise equal edge transforms
+                    // are correctly deduplicated against the previous gesture, not this reset.
+                    tree.recordAction("Reset gesture fixture", doc)
+                }
                 val dimensions=canvas.fetchSemanticsNode().size
                 val fit=min(dimensions.width/1000f,dimensions.height/1000f)*.94f
                 val center=Offset(dimensions.width/2f,dimensions.height/2f)

@@ -37,7 +37,6 @@ class BottomPanelArchitectureEnforcementTest {
             "ui/editor/TransformPanel.kt",
             "ui/editor/EffectSettingsSheet.kt",
             "ui/editor/VectorPage.kt",
-            "ui/editor/VectorCreationPage.kt",
             "ui/editor/ProjectSettingsPage.kt"
         )
 
