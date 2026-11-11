@@ -450,7 +450,8 @@ fun EditorScreen(
                     projectDocument?.let { cur ->
                         projectDocument = cur.updateLayer(layerId) {
                             val base = it.copy(textData = newTextData)
-                            if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                            val fd = it.fillData
+                            if (fd == null || fd.type == FillType.SOLID) {
                                 base.copy(fillData = FillData(type = FillType.SOLID, solidColor = newTextData.color, solidOpacity = 1f))
                             } else base
                         }
@@ -461,7 +462,8 @@ fun EditorScreen(
                     if (live != null) {
                         val updated = live.updateLayer(layerId) {
                             val base = it.copy(textData = finalTextData)
-                            if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                            val fd = it.fillData
+                            if (fd == null || fd.type == FillType.SOLID) {
                                 base.copy(fillData = FillData(type = FillType.SOLID, solidColor = finalTextData.color, solidOpacity = 1f))
                             } else base
                         }
@@ -740,7 +742,8 @@ fun EditorScreen(
                         onShapeChange = { previewShape ->
                             projectDocument = doc.updateLayer(currentSelectedLayer.id) {
                                 val base = it.copy(shapeData = previewShape)
-                                if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                                val fd = it.fillData
+                                if (fd == null || fd.type == FillType.SOLID) {
                                     base.copy(fillData = FillData(type = FillType.SOLID, solidColor = previewShape.fillColor, solidOpacity = if (previewShape.hasFill) 1f else 0f))
                                 } else base
                             }
@@ -748,7 +751,8 @@ fun EditorScreen(
                         onShapeCommit = { committedShape ->
                             val updated = doc.updateLayer(currentSelectedLayer.id) {
                                 val base = it.copy(shapeData = committedShape)
-                                if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                                val fd = it.fillData
+                                if (fd == null || fd.type == FillType.SOLID) {
                                     base.copy(fillData = FillData(type = FillType.SOLID, solidColor = committedShape.fillColor, solidOpacity = if (committedShape.hasFill) 1f else 0f))
                                 } else base
                             }
@@ -765,7 +769,8 @@ fun EditorScreen(
                         onSave = { newTextData ->
                             val updated = doc.updateLayer(currentSelectedLayer.id) {
                                 val base = it.copy(textData = newTextData)
-                                if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                                val fd = it.fillData
+                                if (fd == null || fd.type == FillType.SOLID) {
                                     base.copy(fillData = FillData(type = FillType.SOLID, solidColor = newTextData.color, solidOpacity = 1f))
                                 } else base
                             }
@@ -781,7 +786,7 @@ fun EditorScreen(
                         currentMaskType = currentSelectedLayer.effectiveMaskType,
                         currentMaskSourceLayerId = currentSelectedLayer.effectiveMaskSourceLayerId,
                         isMaskInverted = currentSelectedLayer.effectiveMaskInverted,
-                        currentMaskMode = currentSelectedLayer.effectiveMaskMode,
+                        currentMaskMode = currentSelectedLayer.maskMode,
                         allAvailableLayers = otherLayers,
                         onBlendChange = { mode, op ->
                             val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(blendMode = mode, opacity = op) }
