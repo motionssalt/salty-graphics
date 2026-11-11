@@ -905,7 +905,7 @@
       "V23: cutout excludes its own visible content from affected composite.",
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains."
     ],
-    "last_updated": "2026-11-11T12:33:39.930012+00:00",
-    "last_session_note": "V0 tool-grid integration committed; actual native PNG golden tests awaiting initial CI evidence/review. Added strict boundary for migrated entries, corrected false v1.0.60 release claim, reopened concrete V17/V22/V23/V24 acceptance gaps (paused for V0). Full V0 migration still incomplete; no release."
+    "last_updated": "2026-11-11T12:37:30.186837+00:00",
+    "last_session_note": "V0: production grid integration/callback and eligibility tests passed in run 43021117624. PixelCopy screenshot capture timed out on JVM; replaced with actual Compose View.draw on native Canvas, pending screenshot evidence review. Catalog now validates metadata/ranges/steps/default types before rendering and observes runtime registration/removal in declaration order. New validation and strict migrated-boundary tests added; all awaiting latest CI. Baseline b73d8cb reduced eight inherited failures to one offscreen settings assertion (scrolled in a7cc93c). No release; V0 still incomplete."
   }
 }

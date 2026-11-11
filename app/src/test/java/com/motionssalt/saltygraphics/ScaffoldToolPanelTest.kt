@@ -69,14 +69,20 @@ class ScaffoldToolPanelTest {
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         host.get().setContent {
             MaterialTheme { Box(Modifier.requiredSize(412.dp, 300.dp)) {
-                ScaffoldToolPanel(catalog, ProjectDocument(), emptySet(), setOf("throwaway"), { clicks++ })
+                ScaffoldToolPanel(catalog, ProjectDocument(), emptySet(), setOf("throwaway", "later"), { clicks++ })
             } }
         }
         try {
             compose.onNodeWithText("Throwaway").assertIsDisplayed().assertIsNotEnabled()
             compose.runOnIdle { enabled = true }
             compose.onNodeWithText("Throwaway").assertIsEnabled().performClick()
-            compose.runOnIdle { assertEquals(1, clicks) }
+            compose.runOnIdle {
+                assertEquals(1, clicks)
+                catalog.register(FeatureDefinition("later", "Runtime registration", Icons.Default.Star, ToolPlacement.ALWAYS))
+            }
+            compose.onNodeWithText("Runtime registration").assertIsDisplayed().performClick()
+            compose.runOnIdle { assertEquals(2, clicks); catalog.unregister("later") }
+            compose.onNodeWithText("Runtime registration").assertDoesNotExist()
         } finally { host.pause().stop().destroy() }
     }
 

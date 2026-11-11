@@ -9,7 +9,8 @@ import org.junit.Test
 import kotlin.math.max
 import kotlin.math.min
 
-class ComponentGoldenSnapshotTest {
+/** Token math only; rendered component goldens are a separate acceptance requirement. */
+class TokenContrastTest {
 
     private fun luminance(color: Color): Double {
         fun channel(c: Float): Double {

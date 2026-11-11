@@ -131,3 +131,27 @@ until they are removed and every component has actual rendered golden coverage.
 - [ ] **Layers Panel**: Migrated to `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
 - [ ] **History Panel / Action Tree**: Migrated to `SaltyHistoryTree`, clean lane layout, branching timeline, pan and zoom.
 - [ ] **Effects Engine**: Effect definitions auto-generate settings through the shared control engine.
+
+
+### V0 verified-scope boundaries and tool registrations
+`EditorToolFeatures.kt` is the current production example for **tool** registration.
+A `FeatureCatalog` is scoped to its feature host; the legacy `FeatureRegistry` singleton
+remains a compatibility API, not a requirement to store editor callbacks globally.
+Registrations are snapshot-observable and retain declaration order. Replacing metadata
+for the same id updates that position; unregistering removes its tile immediately.
+The library validates nonempty feature/page/control metadata, duplicate identifiers,
+finite ordered numeric ranges, positive steps and compatible defaults/options before
+rendering. The host supplies only `availableActions` and callback dispatch.
+
+A separate `ScaffoldMigrationBoundaryTest` locks down the migrated bottom grid and
+registration file. It intentionally does **not** imply the remaining app or module
+boundary is clean. `ScaffoldFeaturePage` still needs production integration, typed
+property-path validation, live-document commands, one history command per gesture,
+and a complete custom-component registry before V0 is complete. Its old pair-of-document
+setter API must not be used to capture and overwrite stale full document snapshots.
+
+`TokenContrastTest` checks token math only. Native rendered tool-grid PNG tests live
+in `ScaffoldToolPanelTest`: missing/changed checked-in baselines fail (no auto-accept).
+CI uploads actual PNGs for inspection. Golden review must check that images contain
+real controls, readable labels and intended states, not accept a blank image just to
+make CI green. Other components still need their complete state/theme matrix.

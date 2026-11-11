@@ -18,7 +18,9 @@ import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
  * control changes to the history system with structured action labels.
  */
 open class FeatureCatalog {
-    private val features = mutableMapOf<String, FeatureDefinition>()
+    // Snapshot-backed and ordered: runtime registration must appear immediately,
+    // without losing the declaration order when metadata is replaced.
+    private val features = mutableStateListOf<FeatureDefinition>()
 
     fun register(feature: FeatureDefinition) {
         require(feature.id.isNotBlank()) { "Feature id is required" }
@@ -27,16 +29,44 @@ open class FeatureCatalog {
         require(feature.defaultPageId == null || feature.pages.any { it.id == feature.defaultPageId }) {
             "Default page does not exist: ${feature.id}"
         }
-        features[feature.id] = feature
+        for (page in feature.pages) {
+            require(page.id.isNotBlank() && page.title.isNotBlank()) { "Page metadata is required: ${feature.id}" }
+            require(page.sections.map { it.id }.distinct().size == page.sections.size) { "Duplicate section id: ${page.id}" }
+            val controls = page.sections.flatMap { it.controls }
+            require(controls.map { it.id }.distinct().size == controls.size) { "Duplicate control id: ${page.id}" }
+            for (section in page.sections) require(section.id.isNotBlank()) { "Section id is required" }
+            for (control in controls) {
+                require(control.id.isNotBlank() && control.label.isNotBlank()) { "Control metadata is required" }
+                require(control.defaultValue != null) { "Default value is required: ${control.id}" }
+                control.range?.let { range ->
+                    require(range.start.isFinite() && range.endInclusive.isFinite() && range.start <= range.endInclusive) {
+                        "Invalid range: ${control.id}"
+                    }
+                }
+                control.step?.let { require(it.isFinite() && it > 0f) { "Invalid step: ${control.id}" } }
+                val validType = when (control.type) {
+                    BoundControlType.SWITCH -> control.defaultValue is Boolean
+                    BoundControlType.RULER_SLIDER, BoundControlType.PROGRESS_SLIDER -> control.defaultValue is Float
+                    BoundControlType.COLOR_PICKER -> control.defaultValue is Long
+                    BoundControlType.TEXT_FIELD -> control.defaultValue is String
+                    BoundControlType.INLINE_DROPDOWN -> !control.options.isNullOrEmpty()
+                    BoundControlType.SEGMENTED_CHIPS -> !control.segmentOptions.isNullOrEmpty()
+                    BoundControlType.CUSTOM -> control.customRenderer != null
+                }
+                require(validType) { "Default/options do not match control type: ${control.id}" }
+            }
+        }
+        val existing = features.indexOfFirst { it.id == feature.id }
+        if (existing < 0) features.add(feature) else features[existing] = feature
     }
 
     fun unregister(featureId: String) {
-        features.remove(featureId)
+        features.removeAll { it.id == featureId }
     }
 
-    fun getAllFeatures(): List<FeatureDefinition> = features.values.toList()
+    fun getAllFeatures(): List<FeatureDefinition> = features.toList()
 
-    fun getFeature(id: String): FeatureDefinition? = features[id]
+    fun getFeature(id: String): FeatureDefinition? = features.firstOrNull { it.id == id }
 
     /**
      * Queries features applicable for the current tool grid (no-selection or layer-selected).
@@ -47,9 +77,9 @@ open class FeatureCatalog {
     ): List<FeatureDefinition> {
         val selected = selectedLayerIds.mapNotNull(document::findLayerById)
         val hasSelection = selected.isNotEmpty()
-        val targetLayer = if (hasSelection) document.findLayerById(selectedLayerIds.first()) else null
+        val validIds = selected.map { it.id }.toSet()
 
-        return features.values.filter { feat ->
+        return features.filter { feat ->
             val placementMatches = when (feat.placement) {
                 ToolPlacement.ALWAYS -> true
                 ToolPlacement.NO_SELECTION -> !hasSelection
@@ -60,7 +90,7 @@ open class FeatureCatalog {
             } else {
                 selected.isNotEmpty() && selected.all { it.type in feat.supportedLayerTypes }
             }
-            placementMatches && layerTypeMatches && feat.visibleCondition(document, selectedLayerIds)
+            placementMatches && layerTypeMatches && feat.visibleCondition(document, validIds)
         }
     }
 }
