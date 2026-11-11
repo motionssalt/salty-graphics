@@ -15,7 +15,7 @@ class ScaffoldMigrationBoundaryTest {
     @Test fun migratedFeatureEntryPointsCannotIntroduceRawLayoutsOrTokens() {
         val root = File("src/main/java/com/motionssalt/saltygraphics/ui/editor")
             .takeIf(File::exists) ?: File("app/src/main/java/com/motionssalt/saltygraphics/ui/editor")
-        for (name in listOf("BottomPanel.kt", "EditorToolFeatures.kt")) {
+        for (name in listOf("BottomPanel.kt", "EditorToolFeatures.kt", "TopPanel.kt")) {
             val source = File(root, name)
             assertTrue("Migrated source must exist: $name", source.isFile)
             assertFalse("$name bypasses :ui-kit; add missing UI to the library instead", forbidden.containsMatchIn(source.readText()))

@@ -40,6 +40,14 @@ object SaltySpacing {
     val controlHeight: Dp = 40.dp
     val touchTargetMin: Dp = 48.dp
     val breadcrumbButton: Dp = 28.dp
+    val toolbar38: Dp = 38.dp
+    val toolbar36: Dp = 36.dp
+    val toolbar20: Dp = 20.dp
+    val toolbar14: Dp = 14.dp
+    val toolbar6: Dp = 6.dp
+    val toolbar4: Dp = 4.dp
+    val toolbar3: Dp = 3.dp
+    val toolbar1: Dp = 1.dp
 }
 
 object SaltyShapes {

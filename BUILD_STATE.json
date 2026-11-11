@@ -905,8 +905,8 @@
       "V23: cutout excludes its own visible content from affected composite.",
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains."
     ],
-    "last_updated": "2026-11-11T12:39:39.306393+00:00",
-    "last_session_note": "V0 partial checkpoint: six actual native Compose screenshot goldens from run 43021704055 visually reviewed (dark/light \u00d7 empty/selected/group). Checked in baselines; test still fails on any changed pixel or missing baseline. Production grid, callback dispatch, layer eligibility and throwaway registration passed there. Reactive registration/validation and full suite are pending this commit CI. Do not publish: V0 full migration and V17/V22/V23/V24 remain open; no refinement.",
+    "last_updated": "2026-11-11T12:48:09.747231+00:00",
+    "last_session_note": "Run 43022262233 passed all four native scaffold UI/golden tests. Full debug suite exposed real toolbar overflow (Settings outside viewport) and an intermittent Fill selection test. Moved toolbar into ui-kit and constrained navigation width so Settings/operations remain pinned; app TopPanel now binding-only. Await CI for toolbar root fix and all tests. V0 remains partial, no release/refinement.",
     "verification_pending": true
   }
 }

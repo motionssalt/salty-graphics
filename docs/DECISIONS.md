@@ -318,3 +318,13 @@ now checked in under `app/src/test/goldens/scaffold`. Capture uses the real Comp
 View drawn through native Canvas: PixelCopy waits for a device Surface frame and
 timed out on Robolectric. Blank screenshots are rejected and baseline updates are
 never automatic. Full-suite and reactive-catalog verification remain pending CI.
+
+
+### V0 remaining baseline failure — toolbar hit targets outside viewport
+The settings regression failed at the page title, not its color row. Investigation
+showed the top bar measured two unweighted icon groups wider than a 412dp phone;
+Settings existed in semantics but was outside the window. A coordinate click could
+not open the page. The toolbar implementation now lives in :ui-kit, with navigation
+scrolling in its allocated width and operations/Settings pinned. The app facade only
+binds callbacks. This is an accessibility/overflow fix, not visual refinement. The
+regression now asserts Settings is actually displayed before clicking it.

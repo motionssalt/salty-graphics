@@ -118,7 +118,7 @@ until they are removed and every component has actual rendered golden coverage.
 - [ ] **New Project Screen**: Migrated to `SaltyTokens`, visual ratio tiles, and docked value entry strip.
 - [ ] **Export Screen**: Migrated to `SaltyTokens`, progress sliders, format chips, and shared controls.
 - [ ] **Project Settings**: Migrated to `SaltyPanelPage`, canvas background color picker, grid size ruler slider, and snap toggles.
-- [ ] **Editor Top Bar**: Migrated to `SaltyTopBar`, unified icon buttons, zoom actions, preview quality badge, canvas lock toggle.
+- [x] **Editor Top Bar**: `TopPanel` is now a binding-only facade over `SaltyEditorTopBar` in `:ui-kit`. Shared library owns layout/tokens; navigation is horizontally scrollable and operations/settings remain pinned on narrow screens. Screenshot matrix remains pending.
 - [x] **Bottom Panel Tool Grid**: Production `BottomPanel` supplies action bindings only. `EditorToolFeatures` declares metadata/eligibility, and `ScaffoldToolPanel` in `:ui-kit` draws the existing fixed three-column grid and group breadcrumbs through `FeatureCatalog.queryTools`.
 - [ ] **Fill & Gradient**: Migrated to `FillPanelPage`, `SaltyColorPicker`, `SaltyGradientOverlay`, and in-panel project media grid.
 - [ ] **Border & Shadow**: Migrated to `BorderShadowPanelPage`, stroke/shadow sections, inside/center/outside chips, blur sliders.
