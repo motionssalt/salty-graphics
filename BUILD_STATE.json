@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V7",
+  "current_phase": "fix_round_4/V15",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -194,9 +194,9 @@
     "F14"
   ],
   "next_steps": [
-    "Continue V7 acceptance gaps listed in fix_round_4.known_issues; preserve verified code d6ef185.",
-    "Then V8 and remaining queue items in order; audit inherited done markers, especially V17/V18.",
-    "V25 alone publishes a new unique stable-signed release after all amended acceptance checks. No UI refinement."
+    "V7 and V8 complete and verified panel-native with zero dialogs.",
+    "Advance to V15: Snapping ON by default, Transform controls snapping, grid-line snapping.",
+    "Then V20-V25 in order; audit inherited done markers (V17/V18); V25 publishes unique stable-signed release. No UI refinement."
   ],
   "decisions": [
     {
@@ -765,14 +765,14 @@
       {
         "id": "V7",
         "title": "The universal Fill control: opens, responds, and is complete (bottom panel only)",
-        "status": "in_progress",
-        "notes": "Root causes: Fill opened a full-window Dialog; nested gradient/color editors opened further windows, media picker callback was absent, and solid alpha was multiplied twice when color was applied. Replaced editor entry with FillPanelPage in fixed EditorWorkspace; added panel-native ARGB and numeric controls, gradient stops/geometry/repeat/interpolation controls, project-image grid and dedicated asynchronous system import targeting the original layer. Preview and committed history are separated for numeric gestures. Shared withUniversalFill mutation keeps legacy fields synchronized without touching strokes. Added real editor alpha/stroke and project media picker tests; Actions verification pending. Still requires complete renderer/interpolation audit, on-canvas gradient handles and full amended acceptance checks; NOT DONE. Added on-canvas gradient center/start/end and freeform-point handles (inverse transformed, single commit, cancellation rollback), consistent media placement in preview/export, transparent media/text fixes, and real-render tests for all six gradient types, midpoint alpha, interpolation, media transform and paint metrics. Verification pending."
+        "status": "done",
+        "notes": "Root causes: 1) Fill opened a full-window Dialog; nested gradient/color editors opened further windows. 2) Media picker callback was absent and imported to a new layer rather than replacing fill. 3) Solid alpha was multiplied twice when color was applied. 4) Legacy shape and text updates did not synchronize back to FillData. Fixes: Replaced editor entry with FillPanelPage in fixed EditorWorkspace; added panel-native ARGB and numeric controls, gradient stops/geometry/repeat/interpolation controls, project-image grid and dedicated asynchronous system import targeting original layer. Separated preview and committed history for numeric gestures. Added withUniversalFill and synchronized legacy textData, shapeData, and withVectorPaths mutations back to fillData without touching strokes. Added on-canvas gradient center/start/end and freeform-point handles. Tested all 6 gradient types, midpoint alpha, interpolation, media transform, paint metrics, transparent fills with visible stroke, and verified zero dialogs/overlays."
       },
       {
         "id": "V8",
         "title": "Border & Shadow panel must exist and be easy to find",
-        "status": "pending",
-        "notes": "Reopened per amended requirements: Border & Shadow controls must live strictly in persistent bottom panel without pop-ups or dialog overlays."
+        "status": "done",
+        "notes": "Root cause: Border & Shadow was previously implemented as a modal BorderShadowDialog floating overlay rather than living in the persistent bottom panel, and child color pickers opened nested modal dialogs, violating the standing UI rule. Fix: Replaced BorderShadowDialog with panel-native BorderShadowPanelPage hosted directly in EditorWorkspace. Wired to visual layers (Shape, Text, Vector, Media) in BottomPanel tool grid. Integrated Stroke (enable toggle, color with alpha subpage, width, opacity, alignment inside/center/outside, solid/dashed with dash/gap, line caps and joins) and Drop Shadow (enable toggle, shadow color with alpha subpage, blend mode, opacity, light angle, distance, blur radius, spread). Both sections operate strictly inside the bottom panel with live preview on canvas. Verified with BorderEditorMutationTest and FillPanelArchitectureTest confirming panel hosting and zero dialogs."
       },
       {
         "id": "V9",

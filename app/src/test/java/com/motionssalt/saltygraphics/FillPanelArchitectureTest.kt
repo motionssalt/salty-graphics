@@ -10,11 +10,12 @@ class FillPanelArchitectureTest {
         val dir=File("src/main/java/com/motionssalt/saltygraphics").takeIf{it.exists()}
             ?: File("app/src/main/java/com/motionssalt/saltygraphics")
         val forbidden=Regex("\\b(Dialog|AlertDialog|ModalBottomSheet|Popup|DropdownMenu|DropdownMenuItem)\\s*\\(")
-        listOf("ui/controls/FillPanelPage.kt","ui/controls/PanelControls.kt","ui/editor/GradientCanvasOverlay.kt").forEach { path ->
+        listOf("ui/controls/FillPanelPage.kt","ui/controls/PanelControls.kt","ui/editor/GradientCanvasOverlay.kt","ui/controls/BorderShadowPanelPage.kt").forEach { path ->
             val file=File(dir,path);assertTrue(file.exists())
             assertFalse("$path must remain panel-native",forbidden.containsMatchIn(file.readText()))
         }
         assertFalse("Obsolete fill dialog must not return",File(dir,"ui/controls/UniversalFillSection.kt").exists())
         assertFalse("Obsolete gradient dialog must not return",File(dir,"ui/controls/GradientSelectorDialog.kt").exists())
+        assertFalse("Obsolete border shadow dialog must not return",File(dir,"ui/controls/BorderShadowDialog.kt").exists())
     }
 }

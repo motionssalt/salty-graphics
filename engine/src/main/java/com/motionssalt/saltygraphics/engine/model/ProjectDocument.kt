@@ -131,8 +131,17 @@ data class Layer(
 
     val editablePaths: List<VectorPathData> get() = listOfNotNull(vectorPathData) + additionalVectorPaths
 
-    fun withVectorPaths(paths: List<VectorPathData>): Layer = copy(
-        vectorPathData = paths.firstOrNull(), additionalVectorPaths = paths.drop(1))
+    fun withVectorPaths(paths: List<VectorPathData>): Layer {
+        val first = paths.firstOrNull()
+        val base = copy(vectorPathData = first, additionalVectorPaths = paths.drop(1))
+        return if (first != null && (fillData == null || fillData.type == FillType.SOLID)) {
+            base.copy(fillData = FillData(
+                type = FillType.SOLID,
+                solidColor = first.fillColor,
+                solidOpacity = if (first.hasFill) 1f else 0f
+            ))
+        } else base
+    }
 
     /**
      * Approximate bounds in local coordinate space (before transform).

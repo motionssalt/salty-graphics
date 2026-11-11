@@ -65,3 +65,35 @@ class FillPanelMediaRegressionTest : FillEditorFixture() {
         }
     }
 }
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk=[34])
+class LegacyFillSynchronizationRegressionTest {
+    @Test fun legacyTextAndShapeAndVectorSettingsKeepSharedFillSynchronized() {
+        val textLayer = Layer(id = "text_sync", type = LayerType.TEXT, textData = TextLayerData(color = 0xFFFF0000L))
+        assertEquals(0xFFFF0000L, textLayer.effectiveFill.effectiveSolidArgb)
+        assertEquals(FillType.SOLID, textLayer.effectiveFill.type)
+
+        val updatedText = textLayer.copy(textData = textLayer.textData!!.copy(color = 0xFF00FF00L),
+            fillData = FillData(type = FillType.SOLID, solidColor = 0xFF00FF00L, solidOpacity = 1f))
+        assertEquals(0xFF00FF00L, updatedText.effectiveFill.effectiveSolidArgb)
+
+        val shapeLayer = Layer(id = "shape_sync", type = LayerType.SHAPE, shapeData = ShapeData(fillColor = 0xFF123456L, hasFill = true))
+        assertEquals(0xFF123456L, shapeLayer.effectiveFill.effectiveSolidArgb)
+
+        val updatedShape = shapeLayer.copy(shapeData = shapeLayer.shapeData!!.copy(fillColor = 0xFF654321L),
+            fillData = FillData(type = FillType.SOLID, solidColor = 0xFF654321L, solidOpacity = 1f))
+        assertEquals(0xFF654321L, updatedShape.effectiveFill.effectiveSolidArgb)
+
+        val vectorLayer = Layer(id = "vector_sync", type = LayerType.VECTOR).withVectorPaths(listOf(
+            VectorPathData(fillColor = 0xFFAABBCCL, hasFill = true)
+        ))
+        assertEquals(0xFFAABBCCL, vectorLayer.effectiveFill.effectiveSolidArgb)
+        assertEquals(1f, vectorLayer.effectiveFill.solidOpacity, 0.001f)
+
+        val transparentVector = vectorLayer.withVectorPaths(listOf(
+            VectorPathData(fillColor = 0xFFAABBCCL, hasFill = false)
+        ))
+        assertEquals(0f, transparentVector.effectiveFill.solidOpacity, 0.001f)
+    }
+}

@@ -379,23 +379,28 @@ class BorderEditorMutationTest : FillEditorFixture() {
             compose.onNodeWithText("Stroke Shape").performClick()
             compose.onNodeWithContentDescription("Close Layers").performClick()
 
-            // Open Border & Shadow dialog
+            // Open Border & Shadow in bottom panel
             compose.onNodeWithText("Border & Shadow", useUnmergedTree = true).performClick()
-            compose.onAllNodesWithText("Border & Shadow", useUnmergedTree = true).filterToOne(hasAnyAncestor(isDialog())).assertIsDisplayed()
+            compose.onAllNodes(isDialog()).assertCountEquals(0)
+            compose.onAllNodesWithText("Border & Shadow", useUnmergedTree = true).filterToOne(hasAnyAncestor(hasTestTag("tools"))).assertIsDisplayed()
 
             // Toggle Stroke on
             compose.onNodeWithTag("stroke_switch").performClick()
 
-            // Close dialog
-            compose.onNodeWithContentDescription("Close").performClick()
+            // Toggle Shadow on
+            compose.onNodeWithTag("shadow_switch").performScrollTo().performClick()
 
-            // Verify document was updated with stroke enabled
+            // Close panel
+            compose.onAllNodesWithContentDescription("Back").filterToOne(hasAnyAncestor(hasTestTag("tools"))).performClick()
+
+            // Verify document was updated with stroke and shadow enabled
             compose.waitUntil(10000) { runBlocking { repo.getProject(docId)?.findLayerById("stroke_shape")?.effectiveStroke?.isEnabled == true } }
             runBlocking {
                 val saved = repo.getProject(docId)
                 val updatedLayer = saved?.findLayerById("stroke_shape")
                 assertNotNull(updatedLayer)
                 assertTrue("Stroke should now be enabled", updatedLayer!!.effectiveStroke.isEnabled)
+                assertTrue("Shadow should now be enabled", updatedLayer.effectiveShadow.isEnabled)
             }
         }
     }
