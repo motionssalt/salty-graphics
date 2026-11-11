@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "salty-graphics"
 include(":engine")
+include(":ui-kit")
 include(":app")

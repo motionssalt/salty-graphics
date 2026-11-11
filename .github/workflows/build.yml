@@ -72,6 +72,9 @@ jobs:
             app/build/test-results/
             engine/build/test-results/
             app/build/reports/tests/
+            ui-kit/build/test-results/
+            ui-kit/build/reports/tests/
+            ui-kit/build/reports/screenshots/
             engine/build/reports/tests/
 
       - name: Build Release APKs
