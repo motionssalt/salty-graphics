@@ -73,9 +73,8 @@ object ExampleTemplateFeature {
                                             ((layer?.opacity ?: 1f) * 100f)
                                         },
                                         setter = { doc, layerId, newPct ->
-                                            val layer = layerId?.let { doc.findLayerById(it) } ?: return@PropertyBinding doc to "No-op"
-                                            val updatedLayer = layer.copy(opacity = newPct / 100f)
-                                            doc.updateLayer(updatedLayer) to "Change Layer Opacity"
+                                            if (layerId == null) return@PropertyBinding doc to "No-op"
+                                            doc.updateLayer(layerId) { it.copy(opacity = newPct / 100f) } to "Change Layer Opacity"
                                         }
                                     )
                                 )

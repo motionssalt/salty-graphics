@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
@@ -64,7 +65,7 @@ fun SaltySwitch(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 3.dp),
-            contentAlignment = Alignment(alignmentBias, 0f)
+            contentAlignment = BiasAlignment(alignmentBias, 0f)
         ) {
             Box(
                 modifier = Modifier
