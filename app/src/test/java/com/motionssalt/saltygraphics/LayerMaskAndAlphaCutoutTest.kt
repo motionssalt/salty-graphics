@@ -35,13 +35,13 @@ class LayerMaskAndAlphaCutoutTest {
             layers = listOf(bottomLayer, cutoutLayer)
         )
 
-        val fullComposite = LayerCompositor.compositeLayers(doc, 200, 200)
+        val fullComposite = LayerCompositor.compositeDocument(doc, 200, 200)
         assertNotNull(fullComposite)
 
         // Center pixel (100, 100) where circle punches through should have reduced or 0 alpha
         val centerPixel = fullComposite.getPixel(100, 100)
         val centerAlpha = (centerPixel ushr 24) and 0xFF
-        assertEquals("Inward cutout must punch a hole through backdrop", 0, centerAlpha)
+        assertEquals("Inward cutout must punch a hole through backdrop", 0L, centerAlpha.toLong())
     }
 
     @Test
@@ -66,7 +66,7 @@ class LayerMaskAndAlphaCutoutTest {
             layers = listOf(bottomLayer, cutoutLayer)
         )
 
-        val fullComposite = LayerCompositor.compositeLayers(doc, 200, 200)
+        val fullComposite = LayerCompositor.compositeDocument(doc, 200, 200)
         assertNotNull(fullComposite)
 
         // Center pixel (100, 100) where circle exists should retain opacity
@@ -77,6 +77,6 @@ class LayerMaskAndAlphaCutoutTest {
         // Edge pixel (10, 10) outside circle should be matted out (0 alpha)
         val cornerPixel = fullComposite.getPixel(10, 10)
         val cornerAlpha = (cornerPixel ushr 24) and 0xFF
-        assertEquals("Outward matte eliminates backdrop outside mask shape", 0, cornerAlpha)
+        assertEquals("Outward matte eliminates backdrop outside mask shape", 0L, cornerAlpha.toLong())
     }
 }

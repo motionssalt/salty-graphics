@@ -22,14 +22,14 @@ class GroupCompositingAndContextTest {
             name = "Shape Child",
             type = LayerType.SHAPE,
             shapeData = ShapeData(type = ShapeType.RECTANGLE, width = 100f, height = 100f, fillColor = 0xFFFF0000L, hasFill = true),
-            transform = LayerTransform(scaleX = 1f, scaleY = 1f)
+            transform = Transform2D(scaleX = 1f, scaleY = 1f)
         )
         val textChild = Layer(
             id = "child_text",
             name = "Text Child",
             type = LayerType.TEXT,
             textData = TextLayerData(text = "Hello", fontSize = 24f, color = 0xFF00FF00L),
-            transform = LayerTransform(translationY = 50f)
+            transform = Transform2D(translationY = 50f)
         )
         val vectorChild = Layer(
             id = "child_vector",
@@ -53,7 +53,7 @@ class GroupCompositingAndContextTest {
             name = "Nested Group",
             type = LayerType.GROUP,
             children = listOf(nestedChild),
-            transform = LayerTransform(translationX = 100f)
+            transform = Transform2D(translationX = 100f)
         )
 
         val rootGroup = Layer(
@@ -61,7 +61,7 @@ class GroupCompositingAndContextTest {
             name = "Root Group",
             type = LayerType.GROUP,
             children = listOf(shapeChild, textChild, vectorChild, nestedGroup),
-            transform = LayerTransform(translationX = 20f, translationY = 30f)
+            transform = Transform2D(translationX = 20f, translationY = 30f)
         )
 
         val doc = ProjectDocument(
@@ -94,7 +94,7 @@ class GroupCompositingAndContextTest {
             id = "parent_group",
             type = LayerType.GROUP,
             children = listOf(child),
-            transform = LayerTransform(translationX = 50f, translationY = 50f, scaleX = 2f, scaleY = 2f)
+            transform = Transform2D(translationX = 50f, translationY = 50f, scaleX = 2f, scaleY = 2f)
         )
         val doc = ProjectDocument(
             id = "test_doc_scale",
