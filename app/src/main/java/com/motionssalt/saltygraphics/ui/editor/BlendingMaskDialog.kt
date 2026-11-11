@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.Color
 import com.motionssalt.saltygraphics.ui.controls.ProgressSliderControl
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -87,9 +89,10 @@ fun BlendingPage(
     currentMaskType: MaskType,
     currentMaskSourceLayerId: String?,
     isMaskInverted: Boolean,
+    currentMaskMode: com.motionssalt.saltygraphics.engine.model.MaskMode = com.motionssalt.saltygraphics.engine.model.MaskMode.NONE,
     allAvailableLayers: List<Layer>,
     onBlendChange: (BlendMode, Float) -> Unit,
-    onMaskChange: (MaskType, String?, Boolean) -> Unit,
+    onMaskChange: (MaskType, String?, Boolean, com.motionssalt.saltygraphics.engine.model.MaskMode) -> Unit,
     onBack: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -101,6 +104,7 @@ fun BlendingPage(
         mutableStateOf(currentMaskSourceLayerId ?: allAvailableLayers.firstOrNull()?.id)
     }
     var activeInverted by remember(isMaskInverted) { mutableStateOf(isMaskInverted) }
+    var activeCutoutMode by remember(currentMaskMode) { mutableStateOf(currentMaskMode) }
     var isSourceDropdownOpen by remember { mutableStateOf(false) }
 
     val displayedModes = remember(selectedCategory) {
@@ -244,10 +248,41 @@ fun BlendingPage(
                         selected = isSelected,
                         onClick = {
                             activeMaskType = type
-                            onMaskChange(type, activeSourceId, activeInverted)
+                            onMaskChange(type, activeSourceId, activeInverted, activeCutoutMode)
                         },
                         label = { Text(type.displayName, style = MaterialTheme.typography.labelSmall) }
                     )
+                }
+            }
+
+            // Alpha Cutout Mode Chips (V23)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Alpha Cutout (Punch-Through)", style = MaterialTheme.typography.titleSmall, color = colors.primary)
+                Text(
+                    "Punches through layers beneath. 'Inward' cuts out the shape; 'Outward' keeps only inside the shape.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val modes = listOf(
+                        com.motionssalt.saltygraphics.engine.model.MaskMode.NONE to "Off",
+                        com.motionssalt.saltygraphics.engine.model.MaskMode.IN_MASK to "Inward (Punch Hole)",
+                        com.motionssalt.saltygraphics.engine.model.MaskMode.OUT_MASK to "Outward (Matte)"
+                    )
+                    modes.forEach { (mode, label) ->
+                        val isSelected = activeCutoutMode == mode
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                activeCutoutMode = mode
+                                onMaskChange(activeMaskType, activeSourceId, activeInverted, mode)
+                            },
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
                 }
             }
 
@@ -257,7 +292,7 @@ fun BlendingPage(
                     Text("Mask Source Layer:", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedButton(
-                            onClick = { isSourceDropdownOpen = true },
+                            onClick = { isSourceDropdownOpen = !isSourceDropdownOpen },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp)
                         ) {
@@ -271,29 +306,51 @@ fun BlendingPage(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = colors.onSurface
                                 )
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Layer")
+                                Icon(
+                                    imageVector = if (isSourceDropdownOpen) Icons.Default.KeyboardArrowUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select Layer"
+                                )
                             }
                         }
 
-                        DropdownMenu(
-                            expanded = isSourceDropdownOpen,
-                            onDismissRequest = { isSourceDropdownOpen = false }
-                        ) {
-                            if (allAvailableLayers.isEmpty()) {
-                                DropdownMenuItem(
-                                    text = { Text("No other layers in project") },
-                                    onClick = { isSourceDropdownOpen = false }
-                                )
-                            } else {
-                                allAvailableLayers.forEach { layer ->
-                                    DropdownMenuItem(
-                                        text = { Text("${layer.name} (${layer.type.displayName})") },
-                                        onClick = {
-                                            activeSourceId = layer.id
-                                            isSourceDropdownOpen = false
-                                            onMaskChange(activeMaskType, layer.id, activeInverted)
-                                        }
+                        if (isSourceDropdownOpen) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(colors.surfaceVariant, RoundedCornerShape(8.dp))
+                                    .border(1.dp, colors.outline.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                                    .padding(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                if (allAvailableLayers.isEmpty()) {
+                                    Text(
+                                        text = "No other layers in project",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colors.onSurfaceVariant,
+                                        modifier = Modifier.padding(8.dp)
                                     )
+                                } else {
+                                    allAvailableLayers.forEach { layer ->
+                                        val isChosen = layer.id == activeSourceId
+                                        Surface(
+                                            onClick = {
+                                                activeSourceId = layer.id
+                                                isSourceDropdownOpen = false
+                                                onMaskChange(activeMaskType, layer.id, activeInverted, activeCutoutMode)
+                                            },
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = if (isChosen) colors.primary.copy(alpha = 0.15f) else Color.Transparent,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = "${layer.name} (${layer.type.displayName})",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = if (isChosen) colors.primary else colors.onSurface,
+                                                fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -314,7 +371,7 @@ fun BlendingPage(
                         checked = activeInverted,
                         onCheckedChange = { checked ->
                             activeInverted = checked
-                            onMaskChange(activeMaskType, activeSourceId, checked)
+                            onMaskChange(activeMaskType, activeSourceId, checked, activeCutoutMode)
                         }
                     )
                 }

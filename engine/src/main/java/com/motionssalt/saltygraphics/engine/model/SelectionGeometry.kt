@@ -69,21 +69,22 @@ object SelectionGeometry {
                 start.copy(rotationDegrees=angle.toFloat(),translationX=center.x-offset.x,translationY=center.y-offset.y)
             }
             else -> {
-                val w=bounds.width.toDouble()*start.scaleX; val h=bounds.height.toDouble()*start.scaleY
-                var sx=start.scaleX.toDouble(); var sy=start.scaleY.toDouble()
-                if (handle.x!=0 && handle.y!=0 && start.isScaleLinked) {
-                    val ratio=1+(handle.x*w*delta.x+handle.y*h*delta.y)/(w*w+h*h)
-                    val safe=max(ratio,max(MIN_SCALE/start.scaleX,MIN_SCALE/start.scaleY).toDouble())
-                    sx*=safe; sy*=safe
+                val center = world(bounds.center, start)
+                val w = bounds.width.toDouble() * start.scaleX
+                val h = bounds.height.toDouble() * start.scaleY
+                var sx = start.scaleX.toDouble()
+                var sy = start.scaleY.toDouble()
+                if (handle.x != 0 && handle.y != 0 && start.isScaleLinked) {
+                    val ratio = 1 + 2.0 * (handle.x * w * delta.x + handle.y * h * delta.y) / (w * w + h * h)
+                    val safe = max(ratio, max(MIN_SCALE / start.scaleX, MIN_SCALE / start.scaleY).toDouble())
+                    sx *= safe
+                    sy *= safe
                 } else {
-                    if(handle.x!=0) sx=max(MIN_SCALE.toDouble(),sx+handle.x*delta.x/bounds.width)
-                    if(handle.y!=0) sy=max(MIN_SCALE.toDouble(),sy+handle.y*delta.y/bounds.height)
+                    if (handle.x != 0) sx = max(MIN_SCALE.toDouble(), sx + 2.0 * handle.x * delta.x / bounds.width)
+                    if (handle.y != 0) sy = max(MIN_SCALE.toDouble(), sy + 2.0 * handle.y * delta.y / bounds.height)
                 }
-                val anchor=SelectionPoint(if(handle.x<0) bounds.right else if(handle.x>0) bounds.left else bounds.center.x,
-                    if(handle.y<0) bounds.bottom else if(handle.y>0) bounds.top else bounds.center.y)
-                val fixed=world(anchor,start)
-                val offset=SelectionPoint((anchor.x*sx).toFloat(),(anchor.y*sy).toFloat()).rotated(start.rotationDegrees)
-                start.copy(scaleX=sx.toFloat(),scaleY=sy.toFloat(),translationX=fixed.x-offset.x,translationY=fixed.y-offset.y)
+                val offset = SelectionPoint((bounds.center.x * sx).toFloat(), (bounds.center.y * sy).toFloat()).rotated(start.rotationDegrees)
+                start.copy(scaleX = sx.toFloat(), scaleY = sy.toFloat(), translationX = center.x - offset.x, translationY = center.y - offset.y)
             }
         }
         return if(valid(result) && bounds.corners.all { world(it,result).finite }) result else start

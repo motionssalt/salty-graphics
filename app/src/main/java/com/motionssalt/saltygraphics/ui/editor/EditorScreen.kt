@@ -53,6 +53,28 @@ fun EditorScreen(
 
     var selectedLayerIds by remember { mutableStateOf(setOf<String>()) }
     var activeGroupId by remember { mutableStateOf(initialGroupId) }
+    var layerToRasterize by remember { mutableStateOf<Layer?>(null) }
+
+    fun findGroupPath(layers: List<Layer>, targetId: String): List<Pair<String, String>>? {
+        for (layer in layers) {
+            if (layer.id == targetId && layer.type == LayerType.GROUP) {
+                return listOf(layer.id to layer.name)
+            }
+            if (layer.children.isNotEmpty()) {
+                val sub = findGroupPath(layer.children, targetId)
+                if (sub != null) {
+                    return listOf(layer.id to layer.name) + sub
+                }
+            }
+        }
+        return null
+    }
+
+    val groupBreadcrumbs = remember(projectDocument, activeGroupId) {
+        val target = activeGroupId
+        val docLayers = projectDocument?.layers ?: emptyList()
+        if (target == null) emptyList() else findGroupPath(docLayers, target) ?: emptyList()
+    }
 
     // View mode state
     var zoom by remember { mutableStateOf(1.0f) }
@@ -277,7 +299,8 @@ fun EditorScreen(
             isVectorMenuOpen = false; isVectorSettingsOpen = false; vectorDraft = null
             isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false; isBorderShadowPanelOpen = false
         } else if (activeGroupId != null) {
-            activeGroupId = null // Return to parent document
+            val crumbs = groupBreadcrumbs
+            activeGroupId = if (crumbs.size > 1) crumbs[crumbs.size - 2].first else null
         } else {
             requestSafeExit()
         }
@@ -709,272 +732,325 @@ fun EditorScreen(
                         },
                         onBack = { isBorderShadowPanelOpen = false }
                     )
+                } else if (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) {
+                    val currentShape = currentSelectedLayer.shapeData!!
+                    ShapeSettingsDialog(
+                        initialShape = currentShape,
+                        onShapeChange = { previewShape ->
+                            projectDocument = doc.updateLayer(currentSelectedLayer.id) {
+                                val base = it.copy(shapeData = previewShape)
+                                if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                                    base.copy(fillData = FillData(type = FillType.SOLID, solidColor = previewShape.fillColor, solidOpacity = if (previewShape.hasFill) 1f else 0f))
+                                } else base
+                            }
+                        },
+                        onShapeCommit = { committedShape ->
+                            val updated = doc.updateLayer(currentSelectedLayer.id) {
+                                val base = it.copy(shapeData = committedShape)
+                                if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                                    base.copy(fillData = FillData(type = FillType.SOLID, solidColor = committedShape.fillColor, solidOpacity = if (committedShape.hasFill) 1f else 0f))
+                                } else base
+                            }
+                            recordAndAutoSave("Update Shape", updated)
+                        },
+                        onDismiss = { isShapeSettingsOpen = false }
+                    )
+                } else if (isTextSettingsOpen && currentSelectedLayer?.textData != null) {
+                    val currentText = currentSelectedLayer.textData!!
+                    val candidates = doc.activeLayers.filter { it.type == LayerType.SHAPE || it.type == LayerType.VECTOR }
+                    TextSettingsDialog(
+                        initialData = currentText,
+                        candidatePathLayers = candidates,
+                        onSave = { newTextData ->
+                            val updated = doc.updateLayer(currentSelectedLayer.id) {
+                                val base = it.copy(textData = newTextData)
+                                if (it.fillData == null || it.fillData.type == FillType.SOLID) {
+                                    base.copy(fillData = FillData(type = FillType.SOLID, solidColor = newTextData.color, solidOpacity = 1f))
+                                } else base
+                            }
+                            recordAndAutoSave("Update Text Settings", updated)
+                        },
+                        onDismiss = { isTextSettingsOpen = false }
+                    )
+                } else if (isBlendingOpen && currentSelectedLayer != null) {
+                    val otherLayers = doc.activeLayers.filter { it.id != currentSelectedLayer.id }
+                    BlendingPage(
+                        currentBlendMode = currentSelectedLayer.blendMode,
+                        currentOpacity = currentSelectedLayer.opacity,
+                        currentMaskType = currentSelectedLayer.effectiveMaskType,
+                        currentMaskSourceLayerId = currentSelectedLayer.effectiveMaskSourceLayerId,
+                        isMaskInverted = currentSelectedLayer.effectiveMaskInverted,
+                        currentMaskMode = currentSelectedLayer.effectiveMaskMode,
+                        allAvailableLayers = otherLayers,
+                        onBlendChange = { mode, op ->
+                            val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(blendMode = mode, opacity = op) }
+                            recordAndAutoSave("Update Blending", updated)
+                        },
+                        onMaskChange = { maskType, sourceId, isInverted, maskMode ->
+                            val updated = doc.updateLayer(currentSelectedLayer.id) {
+                                it.copy(
+                                    maskType = maskType,
+                                    maskSourceLayerId = sourceId,
+                                    isMaskInverted = isInverted,
+                                    maskMode = maskMode,
+                                    affectsLayerIds = listOfNotNull(sourceId)
+                                )
+                            }
+                            recordAndAutoSave("Update Mask", updated)
+                        },
+                        onBack = { isBlendingOpen = false }
+                    )
+                } else if (isShapePickerOpen) {
+                    ShapePickerDialog(
+                        onSelectShape = { chosenShape ->
+                            val newLayer = Layer(
+                                name = "${chosenShape.type.displayName} Layer ${doc.layers.size + 1}",
+                                type = LayerType.SHAPE,
+                                shapeData = chosenShape
+                            )
+                            recordAndAutoSave("Add ${chosenShape.type.displayName}", doc.addLayer(newLayer, activeGroupId))
+                            selectedLayerIds = setOf(newLayer.id)
+                            isShapePickerOpen = false
+                            isShapeSettingsOpen = true
+                        },
+                        onDismiss = { isShapePickerOpen = false }
+                    )
                 } else if (!pageOpen) {
 
-            BottomPanel(
-                selectedLayer = currentSelectedLayer,
-                onAddMedia = {
-                    mediaPickerLauncher.launch("image/*")
-                },
-                onAddText = {
-                    val newLayer = Layer(
-                        name = "Text Layer ${doc.layers.size + 1}",
-                        type = LayerType.TEXT,
-                        textData = TextLayerData()
+                    BottomPanel(
+                        selectedLayer = currentSelectedLayer,
+                        groupBreadcrumbs = groupBreadcrumbs,
+                        onPopGroup = {
+                            val crumbs = groupBreadcrumbs
+                            activeGroupId = if (crumbs.size > 1) crumbs[crumbs.size - 2].first else null
+                        },
+                        onJumpToGroup = { idx ->
+                            activeGroupId = if (idx < 0) null else groupBreadcrumbs.getOrNull(idx)?.first
+                        },
+                        onRasterize = {
+                            layerToRasterize = currentSelectedLayer
+                        },
+                        onAddMedia = {
+                            mediaPickerLauncher.launch("image/*")
+                        },
+                        onAddText = {
+                            val newLayer = Layer(
+                                name = "Text Layer ${doc.layers.size + 1}",
+                                type = LayerType.TEXT,
+                                textData = TextLayerData()
+                            )
+                            recordAndAutoSave("Add Text Layer", doc.addLayer(newLayer, activeGroupId))
+                            selectedLayerIds = setOf(newLayer.id)
+                            isTextSettingsOpen = true
+                        },
+                        onAddAdjustment = {
+                            val newLayer = Layer(
+                                name = "Adjustment Layer",
+                                type = LayerType.ADJUSTMENT
+                            )
+                            recordAndAutoSave("Add Adjustment Layer", doc.addLayer(newLayer, activeGroupId))
+                            selectedLayerIds = setOf(newLayer.id)
+                        },
+                        onAddShape = {
+                            isShapePickerOpen = true
+                        },
+                        onAddVector = { isVectorMenuOpen = true },
+                        onEditLayer = {
+                            when (currentSelectedLayer?.type) {
+                                LayerType.TEXT -> isTextSettingsOpen = true
+                                LayerType.SHAPE -> isShapeSettingsOpen = true
+                                LayerType.VECTOR -> { vectorPathIndex = 0; vectorPointIndex = null; vectorTool = VectorTool.SELECT; isVectorSettingsOpen = true }
+                                LayerType.GROUP -> activeGroupId = currentSelectedLayer.id
+                                else -> {}
+                            }
+                        },
+                        onOpenTransform = { isTransformPanelOpen = true },
+                        onOpenEffects = { isEffectsSheetOpen = true },
+                        onOpenBlending = { isBlendingOpen = true },
+                        onOpenFill = {
+                            if (currentSelectedLayer != null) {
+                                isFillPanelOpen = true
+                            }
+                        },
+                        onOpenBorderShadow = {
+                            if (currentSelectedLayer != null) {
+                                isBorderShadowPanelOpen = true
+                            }
+                        },
+                        onDuplicate = {
+                            val target = currentSelectedLayer
+                            if (target != null) {
+                                val dup = target.copy(
+                                    id = java.util.UUID.randomUUID().toString(),
+                                    name = "${target.name} Copy"
+                                )
+                                val currentList = panelLayers
+                                val idx = currentList.indexOfFirst { it.id == target.id }
+                                val updatedList = currentList.toMutableList()
+                                if (idx >= 0) updatedList.add(idx + 1, dup) else updatedList.add(dup)
+                                val updated = if (activeGroupId == null) {
+                                    doc.copy(layers = updatedList)
+                                } else {
+                                    doc.updateLayer(activeGroupId!!) { it.copy(children = updatedList) }
+                                }
+                                selectedLayerIds = setOf(dup.id)
+                                recordAndAutoSave("Duplicate Layer", updated)
+                            }
+                        },
+                        onDelete = {
+                            val count = selectedLayerIds.size
+                            val updated = selectedLayerIds.fold(doc) { d, id -> d.removeLayer(id) }
+                            selectedLayerIds = emptySet()
+                            recordAndAutoSave("Delete Layers", updated)
+                            if (count > 0) {
+                                Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
-                    recordAndAutoSave("Add Text Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                    isTextSettingsOpen = true
-                },
-                onAddAdjustment = {
-                    val newLayer = Layer(
-                        name = "Adjustment Layer",
-                        type = LayerType.ADJUSTMENT
-                    )
-                    recordAndAutoSave("Add Adjustment Layer", doc.addLayer(newLayer, activeGroupId))
-                    selectedLayerIds = setOf(newLayer.id)
-                },
-                onAddShape = {
-                    isShapePickerOpen = true
-                },
-                onAddVector = { isVectorMenuOpen = true },
-                onEditLayer = {
-                    when (currentSelectedLayer?.type) {
-                        LayerType.TEXT -> isTextSettingsOpen = true
-                        LayerType.SHAPE -> isShapeSettingsOpen = true
-                        LayerType.VECTOR -> { vectorPathIndex = 0; vectorPointIndex = null; vectorTool = VectorTool.SELECT; isVectorSettingsOpen = true }
-                        LayerType.GROUP -> activeGroupId = currentSelectedLayer.id
-                        else -> {}
-                    }
-                },
-                onOpenTransform = { isTransformPanelOpen = true },
-                onOpenEffects = { isEffectsSheetOpen = true },
-                onOpenBlending = { isBlendingOpen = true },
-                onOpenFill = {
-                    if (currentSelectedLayer != null) {
-                        isFillPanelOpen = true
-                    }
-                },
-                onOpenBorderShadow = {
-                    if (currentSelectedLayer != null) {
-                        isBorderShadowPanelOpen = true
-                    }
-                },
-                onDuplicate = {
-                    val target = currentSelectedLayer
-                    if (target != null) {
-                        val dup = target.copy(
-                            id = java.util.UUID.randomUUID().toString(),
-                            name = "${target.name} Copy"
+                }
+
+                // Transform Bottom Sheet
+                if (isTransformPanelOpen && currentSelectedLayer != null) {
+                    PanelPage("Transform", onBack = {
+                        externalSmartGuides = emptyList()
+                        externalSnappedGridX = null
+                        externalSnappedGridY = null
+                        isTransformPanelOpen = false
+                    }) {
+                        val targetId = currentSelectedLayer.id
+                        val bounds = selectionBounds(context, doc, currentSelectedLayer)
+                        val otherLayers = doc.activeLayers
+                            .filter { it.id != targetId && it.isVisible && it.type != LayerType.ADJUSTMENT }
+                            .map { (selectionBounds(context, doc, it)) to it.transform }
+                        val otherAngles = doc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
+                        val snapCtx = TransformSnapContext(
+                            bounds = bounds,
+                            otherLayers = otherLayers,
+                            otherAngles = otherAngles,
+                            canvasWidth = doc.canvasSize.width.toFloat(),
+                            canvasHeight = doc.canvasSize.height.toFloat(),
+                            effectiveZoom = zoom,
+                            snapEnabled = doc.editorSettings.snapEnabled,
+                            snapToGrid = doc.editorSettings.snapToGrid,
+                            showGrid = doc.editorSettings.showGrid,
+                            gridSize = doc.editorSettings.gridSize,
+                            isSquareGrid = doc.editorSettings.isSquareGrid,
+                            tolerancePx = doc.editorSettings.snapTolerancePx,
+                            onGuidesChange = { guides, gridX, gridY ->
+                                externalSmartGuides = guides
+                                externalSnappedGridX = gridX
+                                externalSnappedGridY = gridY
+                            }
                         )
-                        val currentList = panelLayers
-                        val idx = currentList.indexOfFirst { it.id == target.id }
-                        val updatedList = currentList.toMutableList()
-                        if (idx >= 0) updatedList.add(idx + 1, dup) else updatedList.add(dup)
-                        val updated = if (activeGroupId == null) {
-                            doc.copy(layers = updatedList)
-                        } else {
-                            doc.updateLayer(activeGroupId!!) { it.copy(children = updatedList) }
-                        }
-                        selectedLayerIds = setOf(dup.id)
-                        recordAndAutoSave("Duplicate Layer", updated)
-                    }
-                },
-                onDelete = {
-                    val count = selectedLayerIds.size
-                    val updated = selectedLayerIds.fold(doc) { d, id -> d.removeLayer(id) }
-                    selectedLayerIds = emptySet()
-                    recordAndAutoSave("Delete Layers", updated)
-                    if (count > 0) {
-                        Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
+                        TransformPanel(
+                            transform = currentSelectedLayer.transform,
+                            snapContext = snapCtx,
+                            onTransformChange = { previewT ->
+                                projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = previewT) }
+                            },
+                            onTransformCommit = { finalT ->
+                                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = finalT) }
+                                recordAndAutoSave("Transform Layer", updated)
+                            },
+                            onClose = {
+                                externalSmartGuides = emptyList()
+                                externalSnappedGridX = null
+                                externalSnappedGridY = null
+                                isTransformPanelOpen = false
+                            }
+                        )
                     }
                 }
-            )
 
-                }
-            // Transform Bottom Sheet
-            if (isTransformPanelOpen && currentSelectedLayer != null) {
-                PanelPage("Transform", onBack = {
-                    externalSmartGuides = emptyList()
-                    externalSnappedGridX = null
-                    externalSnappedGridY = null
-                    isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
-                }) {
-                    val targetId = currentSelectedLayer.id
-                    val bounds = selectionBounds(context, doc, currentSelectedLayer)
-                    val otherLayers = doc.activeLayers
-                        .filter { it.id != targetId && it.isVisible && it.type != LayerType.ADJUSTMENT }
-                        .map { (selectionBounds(context, doc, it)) to it.transform }
-                    val otherAngles = doc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
-                    val snapCtx = TransformSnapContext(
-                        bounds = bounds,
-                        otherLayers = otherLayers,
-                        otherAngles = otherAngles,
-                        canvasWidth = doc.canvasSize.width.toFloat(),
-                        canvasHeight = doc.canvasSize.height.toFloat(),
-                        effectiveZoom = zoom,
-                        snapEnabled = doc.editorSettings.snapEnabled,
-                        snapToGrid = doc.editorSettings.snapToGrid,
-                        showGrid = doc.editorSettings.showGrid,
-                        gridSize = doc.editorSettings.gridSize,
-                        isSquareGrid = doc.editorSettings.isSquareGrid,
-                        tolerancePx = doc.editorSettings.snapTolerancePx,
-                        onGuidesChange = { guides, gridX, gridY ->
-                            externalSmartGuides = guides
-                            externalSnappedGridX = gridX
-                            externalSnappedGridY = gridY
-                        }
-                    )
-                    TransformPanel(
-                        transform = currentSelectedLayer.transform,
-                        snapContext = snapCtx,
-                        onTransformChange = { previewT ->
-                            projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = previewT) }
-                        },
-                        onTransformCommit = { finalT ->
-                            val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = finalT) }
-                            recordAndAutoSave("Transform Layer", updated)
-                        },
-                        onClose = {
-                            externalSmartGuides = emptyList()
-                            externalSnappedGridX = null
-                            externalSnappedGridY = null
-                            isTransformPanelOpen = false
-                        }
-                    )
+                // Effects Bottom Sheet
+                if (isEffectsSheetOpen && currentSelectedLayer != null) {
+                    PanelPage("Effects", onBack = { isEffectsSheetOpen = false }, scrollable = false) {
+                        EffectSettingsSheet(
+                            targetLayer = currentSelectedLayer,
+                            allLayers = doc.activeLayers,
+                            onAddEffect = { effect ->
+                                val def = EffectRegistry.getEffectDefinition(effect.effectId)
+                                val identity = ActionIdentity("Add", def?.name ?: "Effect")
+                                recordCommandAndAutoSave(identity) { latestDoc ->
+                                    latestDoc.updateLayer(currentSelectedLayer.id) {
+                                        it.copy(effects = it.effects + effect)
+                                    }
+                                }
+                            },
+                            onRemoveEffect = { effectId ->
+                                val def = EffectRegistry.getEffectDefinition(effectId)
+                                val identity = ActionIdentity("Remove", def?.name ?: "Effect")
+                                recordCommandAndAutoSave(identity) { latestDoc ->
+                                    latestDoc.updateLayer(currentSelectedLayer.id) {
+                                        it.copy(effects = it.effects.filter { e -> e.effectId != effectId })
+                                    }
+                                }
+                            },
+                            onUpdateEffect = { identity, updatedEffect ->
+                                recordCommandAndAutoSave(identity) { latestDoc ->
+                                    latestDoc.updateLayer(currentSelectedLayer.id) {
+                                        it.copy(effects = it.effects.map { e -> if (e.effectId == updatedEffect.effectId) updatedEffect else e })
+                                    }
+                                }
+                            },
+                            onClose = { isEffectsSheetOpen = false }
+                        )
+                    }
                 }
             }
-
-            // Effects Bottom Sheet
-            if (isEffectsSheetOpen && currentSelectedLayer != null) {
-                PanelPage("Effects", onBack = { isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false }, scrollable = false) {
-                    EffectSettingsSheet(
-                        targetLayer = currentSelectedLayer,
-                        allLayers = doc.activeLayers,
-                        onAddEffect = { effect ->
-                            val def = EffectRegistry.getEffectDefinition(effect.effectId)
-                            val identity = ActionIdentity("Add", def?.name ?: "Effect")
-                            recordCommandAndAutoSave(identity) { latestDoc ->
-                                latestDoc.updateLayer(currentSelectedLayer.id) {
-                                    it.copy(effects = it.effects + effect)
-                                }
-                            }
-                        },
-                        onRemoveEffect = { effectId ->
-                            val def = EffectRegistry.getEffectDefinition(effectId)
-                            val identity = ActionIdentity("Remove", def?.name ?: "Effect")
-                            recordCommandAndAutoSave(identity) { latestDoc ->
-                                latestDoc.updateLayer(currentSelectedLayer.id) {
-                                    it.copy(effects = it.effects.filter { e -> e.effectId != effectId })
-                                }
-                            }
-                        },
-                        onUpdateEffect = { identity, updatedEffect ->
-                            recordCommandAndAutoSave(identity) { latestDoc ->
-                                latestDoc.updateLayer(currentSelectedLayer.id) {
-                                    it.copy(effects = it.effects.map { e -> if (e.effectId == updatedEffect.effectId) updatedEffect else e })
-                                }
-                            }
-                        },
-                        onClose = { isEffectsSheetOpen = false }
-                    )
-                }
-            }
-    // Dialogs
-    val currentShape = currentSelectedLayer?.shapeData
-    if (isShapeSettingsOpen && currentShape != null) {
-        ShapeSettingsDialog(
-            initialShape = currentShape,
-            onShapeChange = { previewShape ->
-                projectDocument = doc.updateLayer(currentSelectedLayer.id) {
-                    val base = it.copy(shapeData = previewShape)
-                    if (it.fillData == null || it.fillData.type == FillType.SOLID) {
-                        base.copy(fillData = FillData(type = FillType.SOLID, solidColor = previewShape.fillColor, solidOpacity = if (previewShape.hasFill) 1f else 0f))
-                    } else base
-                }
-            },
-            onShapeCommit = { committedShape ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) {
-                    val base = it.copy(shapeData = committedShape)
-                    if (it.fillData == null || it.fillData.type == FillType.SOLID) {
-                        base.copy(fillData = FillData(type = FillType.SOLID, solidColor = committedShape.fillColor, solidOpacity = if (committedShape.hasFill) 1f else 0f))
-                    } else base
-                }
-                recordAndAutoSave("Update Shape", updated)
-            },
-            onDismiss = { isShapeSettingsOpen = false }
         )
     }
 
-    val currentText = currentSelectedLayer?.textData
-    if (isTextSettingsOpen && currentText != null) {
-        val candidates = doc.activeLayers.filter { it.type == LayerType.SHAPE || it.type == LayerType.VECTOR }
-        TextSettingsDialog(
-            initialData = currentText,
-            candidatePathLayers = candidates,
-            onSave = { newTextData ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) {
-                    val base = it.copy(textData = newTextData)
-                    if (it.fillData == null || it.fillData.type == FillType.SOLID) {
-                        base.copy(fillData = FillData(type = FillType.SOLID, solidColor = newTextData.color, solidOpacity = 1f))
-                    } else base
-                }
-                recordAndAutoSave("Update Text Settings", updated)
-            },
-            onDismiss = { isTextSettingsOpen = false }
-        )
-    }
-
-    if (isBlendingOpen && currentSelectedLayer != null) {
-        val otherLayers = doc.activeLayers.filter { it.id != currentSelectedLayer.id }
-        BlendingPage(
-            currentBlendMode = currentSelectedLayer.blendMode,
-            currentOpacity = currentSelectedLayer.opacity,
-            currentMaskType = currentSelectedLayer.effectiveMaskType,
-            currentMaskSourceLayerId = currentSelectedLayer.effectiveMaskSourceLayerId,
-            isMaskInverted = currentSelectedLayer.effectiveMaskInverted,
-            allAvailableLayers = otherLayers,
-            onBlendChange = { mode, op ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(blendMode = mode, opacity = op) }
-                recordAndAutoSave("Update Blending", updated)
-            },
-            onMaskChange = { maskType, sourceId, isInverted ->
-                val updated = doc.updateLayer(currentSelectedLayer.id) {
-                    it.copy(
-                        maskType = maskType,
-                        maskSourceLayerId = sourceId,
-                        isMaskInverted = isInverted,
-                        maskMode = if (maskType != com.motionssalt.saltygraphics.engine.model.MaskType.NONE) {
-                            if (isInverted) com.motionssalt.saltygraphics.engine.model.MaskMode.OUT_MASK else com.motionssalt.saltygraphics.engine.model.MaskMode.IN_MASK
-                        } else com.motionssalt.saltygraphics.engine.model.MaskMode.NONE,
-                        affectsLayerIds = listOfNotNull(sourceId)
-                    )
-                }
-                recordAndAutoSave("Update Mask", updated)
-            },
-            onBack = { isBlendingOpen = false }
-        )
-    }
-
-
-
-
-    if (isShapePickerOpen && doc != null) {
-        ShapePickerDialog(
-            onSelectShape = { chosenShape ->
-                val newLayer = Layer(
-                    name = "${chosenShape.type.displayName} Layer ${doc.layers.size + 1}",
-                    type = LayerType.SHAPE,
-                    shapeData = chosenShape
+    // Rasterize Confirmation Dialog (destructive/irreversible operation allowed exception)
+    val layerToRasterizeTarget = layerToRasterize
+    if (layerToRasterizeTarget != null) {
+        AlertDialog(
+            onDismissRequest = { layerToRasterize = null },
+            title = { Text("Rasterize Layer") },
+            text = {
+                Text(
+                    "Rasterizing '${layerToRasterizeTarget.name}' converts vector or text geometry into a bitmap graphic at canvas resolution.\n\n" +
+                    "Do you want to duplicate the original layer before rasterizing, or replace it directly?"
                 )
-                recordAndAutoSave("Add ${chosenShape.type.displayName}", doc.addLayer(newLayer, activeGroupId))
-                selectedLayerIds = setOf(newLayer.id)
-                isShapeSettingsOpen = true
             },
-            onDismiss = { isShapePickerOpen = false }
-        )
-    }
-
+            confirmButton = {
+                Button(onClick = {
+                    val target = layerToRasterizeTarget
+                    layerToRasterize = null
+                    val currentDoc = projectDocument ?: return@Button
+                    val updated = com.motionssalt.saltygraphics.engine.model.LayerRasterizer.rasterizeLayer(
+                        context = context,
+                        document = currentDoc,
+                        layerId = target.id,
+                        duplicateOriginal = false
+                    )
+                    recordAndAutoSave("Rasterize Layer", updated)
+                    fillMediaRevision++
+                }) {
+                    Text("Rasterize")
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { layerToRasterize = null }) {
+                        Text("Cancel")
+                    }
+                    Button(onClick = {
+                        val target = layerToRasterizeTarget
+                        layerToRasterize = null
+                        val currentDoc = projectDocument ?: return@Button
+                        val updated = com.motionssalt.saltygraphics.engine.model.LayerRasterizer.rasterizeLayer(
+                            context = context,
+                            document = currentDoc,
+                            layerId = target.id,
+                            duplicateOriginal = true
+                        )
+                        recordAndAutoSave("Duplicate and Rasterize", updated)
+                        fillMediaRevision++
+                    }) {
+                        Text("Duplicate & Rasterize")
+                    }
+                }
             }
         )
     }

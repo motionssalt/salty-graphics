@@ -162,6 +162,12 @@ object LayerCompositor {
 
         // Group layers composite their children recursively: index 0 is topmost, so draw bottom-to-top
         if (layer.type == LayerType.GROUP) {
+            val canvasCenterX = width / 2f
+            val canvasCenterY = height / 2f
+            canvas.save()
+            canvas.translate(layer.transform.translationX, layer.transform.translationY)
+            canvas.rotate(layer.transform.rotationDegrees, canvasCenterX, canvasCenterY)
+            canvas.scale(layer.transform.scaleX, layer.transform.scaleY, canvasCenterX, canvasCenterY)
             for (child in layer.children.asReversed()) {
                 if (!child.isVisible && !forceVisible) continue
                 val childBmp = renderLayerContent(child, width, height, document, mediaResolver, forceVisible)
@@ -171,6 +177,7 @@ object LayerCompositor {
                 }
                 canvas.drawBitmap(childBmp, 0f, 0f, paint)
             }
+            canvas.restore()
             return bitmap
         }
 
@@ -456,6 +463,31 @@ object LayerCompositor {
                     maskBmp.getPixels(maskPx, 0, width, 0, 0, width, height)
                     applyMask(layerPixels, maskPx, layer.effectiveMaskType, layer.effectiveMaskInverted, width, height)
                 }
+            }
+
+            // Alpha Cutout modes: treat alpha-cutout layer as matte source for composite beneath
+            if (layer.maskMode == MaskMode.IN_MASK) {
+                // Inward mode: cuts out pixels inside source shape across affected composite
+                for (i in backdropPixels.indices) {
+                    val maskA = ((layerPixels[i] ushr 24) and 0xFF) / 255f
+                    val bPx = backdropPixels[i]
+                    val bA = ((bPx ushr 24) and 0xFF) / 255f
+                    val newA = (bA * (1f - maskA)).coerceIn(0f, 1f)
+                    val newAInt = (newA * 255f).roundToInt().coerceIn(0, 255)
+                    backdropPixels[i] = (newAInt shl 24) or (bPx and 0x00FFFFFF)
+                }
+                continue
+            } else if (layer.maskMode == MaskMode.OUT_MASK) {
+                // Outward mode: cuts out pixels outside source shape across affected composite
+                for (i in backdropPixels.indices) {
+                    val maskA = ((layerPixels[i] ushr 24) and 0xFF) / 255f
+                    val bPx = backdropPixels[i]
+                    val bA = ((bPx ushr 24) and 0xFF) / 255f
+                    val newA = (bA * maskA).coerceIn(0f, 1f)
+                    val newAInt = (newA * 255f).roundToInt().coerceIn(0, 255)
+                    backdropPixels[i] = (newAInt shl 24) or (bPx and 0x00FFFFFF)
+                }
+                continue
             }
 
             // Blend layer over backdrop using layer.blendMode and layer.opacity

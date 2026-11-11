@@ -46,8 +46,6 @@ fun TopPanel(
     onToggleCanvasLock: () -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
-    var showViewModeMenu by remember { mutableStateOf(false) }
-    var showOperationMenu by remember { mutableStateOf(false) }
 
     Surface(
         color = colors.surface,
@@ -74,75 +72,19 @@ fun TopPanel(
                     Icon(Icons.Default.Layers, contentDescription = "Layers", tint = colors.primary)
                 }
 
-                // View Mode Dropdown
-                Box {
-                    IconButton(onClick = { showViewModeMenu = true }, modifier = Modifier.size(38.dp)) {
-                        Icon(Icons.Default.ZoomIn, contentDescription = "View Mode", tint = colors.onSurface)
-                    }
-                    DropdownMenu(
-                        expanded = showViewModeMenu,
-                        onDismissRequest = { showViewModeMenu = false },
-                        modifier = Modifier.background(colors.surfaceVariant)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Zoom In (+)", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.ZoomIn, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
-                            enabled = !isCanvasLocked,
-                            onClick = {
-                                if (!isCanvasLocked) onZoomIn()
-                                showViewModeMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Zoom Out (-)", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.ZoomOut, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
-                            enabled = !isCanvasLocked,
-                            onClick = {
-                                if (!isCanvasLocked) onZoomOut()
-                                showViewModeMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Fit to Screen", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.FitScreen, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
-                            enabled = !isCanvasLocked,
-                            onClick = {
-                                if (!isCanvasLocked) onFitToScreen()
-                                showViewModeMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("100% Zoom", color = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.Fullscreen, contentDescription = null, tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.primary) },
-                            enabled = !isCanvasLocked,
-                            onClick = {
-                                if (!isCanvasLocked) onReset100Percent()
-                                showViewModeMenu = false
-                            }
-                        )
-                        HorizontalDivider(color = colors.outline)
-                        DropdownMenuItem(
-                            text = { Text(if (showGrid) "Hide Gridlines" else "Show Gridlines", color = colors.onSurface) },
-                            leadingIcon = { Icon(Icons.Default.GridOn, contentDescription = null, tint = if (showGrid) colors.primary else colors.onSurfaceVariant) },
-                            onClick = {
-                                onToggleGrid()
-                                showViewModeMenu = false
-                            }
-                        )
-                        if (showGrid) {
-                            DropdownMenuItem(
-                                text = { Text("Grid Size: ${gridSize}px", color = colors.onSurfaceVariant) },
-                                onClick = {
-                                    val nextSize = when (gridSize) {
-                                        20 -> 50
-                                        50 -> 100
-                                        else -> 20
-                                    }
-                                    onGridSizeChange(nextSize)
-                                }
-                            )
-                        }
-                    }
+                // View Mode Actions (Zoom, Fit, Grid toggle)
+                IconButton(onClick = { if (!isCanvasLocked) onZoomIn() }, enabled = !isCanvasLocked, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.ZoomIn, contentDescription = "Zoom In", tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface)
+                }
+                IconButton(onClick = { if (!isCanvasLocked) onZoomOut() }, enabled = !isCanvasLocked, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.ZoomOut, contentDescription = "Zoom Out", tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface)
+                }
+                IconButton(onClick = { if (!isCanvasLocked) onFitToScreen() }, enabled = !isCanvasLocked, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.FitScreen, contentDescription = "Fit to Screen", tint = if (isCanvasLocked) colors.onSurface.copy(alpha = 0.38f) else colors.onSurface)
+                }
+                IconButton(onClick = { onToggleGrid() }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.GridOn, contentDescription = "Toggle Grid", tint = if (showGrid) colors.primary else colors.onSurfaceVariant)
+                }
                 }
 
                 // V13: Canvas Lock Toggle

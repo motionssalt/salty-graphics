@@ -82,9 +82,10 @@ fun ValueEditorDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .safeDrawingPadding()
                 .imePadding()
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.BottomCenter
         ) {
             Card(
                 shape = RoundedCornerShape(16.dp),

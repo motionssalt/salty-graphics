@@ -11,6 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.ui.graphics.Color
 import com.motionssalt.saltygraphics.theme.*
 
 @Composable
@@ -123,7 +128,7 @@ fun DropdownControl(
 
         Box() {
             Surface(
-                onClick = { expanded = true },
+                onClick = { expanded = !expanded },
                 shape = RoundedCornerShape(8.dp),
                 color = colors.surfaceVariant,
                 border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
@@ -139,23 +144,44 @@ fun DropdownControl(
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                         color = colors.primary
                     )
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        modifier = Modifier.size(16.dp),
+                        tint = colors.onSurfaceVariant
+                    )
                 }
             }
+        }
 
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(colors.surfaceVariant)
+        if (expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(colors.surfaceVariant, RoundedCornerShape(8.dp))
+                    .border(1.dp, colors.outline.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                    .padding(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option, color = colors.onSurface) },
+                    val isChosen = option == selectedOption
+                    Surface(
                         onClick = {
                             onOptionSelected(option)
                             expanded = false
-                        }
-                    )
+                        },
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isChosen) colors.primary.copy(alpha = 0.15f) else Color.Transparent,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = option,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isChosen) colors.primary else colors.onSurface,
+                            fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
         }

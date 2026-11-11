@@ -18,8 +18,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.motionssalt.saltygraphics.engine.model.ShapeData
 import com.motionssalt.saltygraphics.engine.model.ShapeType
 
@@ -86,69 +84,29 @@ fun ShapePickerDialog(
         )
     )
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
+    PanelPage(title = "Choose a Shape", onBack = onDismiss, scrollable = true) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier.fillMaxWidth().height(260.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surface),
-                border = CardDefaults.outlinedCardBorder(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-            ) {
+            items(shapes) { item ->
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.surfaceVariant.copy(alpha = 0.6f))
+                        .clickable {
+                            onSelectShape(item.defaultShape)
+                            onDismiss()
+                        }
+                        .padding(vertical = 12.dp, horizontal = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Choose a Shape",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.primary
-                        )
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.onSurfaceVariant)
-                        }
-                    }
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(shapes) { item ->
-                            Column(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(colors.surfaceVariant.copy(alpha = 0.6f))
-                                    .clickable {
-                                        onSelectShape(item.defaultShape)
-                                        onDismiss()
-                                    }
-                                    .padding(vertical = 14.dp, horizontal = 4.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(item.icon, contentDescription = item.name, tint = colors.primary, modifier = Modifier.size(36.dp))
-                                Spacer(Modifier.height(6.dp))
-                                Text(item.name, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-                            }
-                        }
-                    }
+                    Icon(item.icon, contentDescription = item.name, tint = colors.primary, modifier = Modifier.size(32.dp))
+                    Spacer(Modifier.height(4.dp))
+                    Text(item.name, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
                 }
             }
         }

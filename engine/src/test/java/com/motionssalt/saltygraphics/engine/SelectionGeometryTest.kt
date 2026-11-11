@@ -8,26 +8,67 @@ import kotlin.math.*
 
 class SelectionGeometryTest {
     private val box=SelectionBounds(-100f,-60f,100f,60f)
-    @Test fun oppositeCornerIsFixedAndLinkedScalePreservesExistingRatio() {
-        val start=Transform2D(translationX=123f,translationY=-40f,scaleX=2f,scaleY=3f,rotationDegrees=37f)
-        val anchor=SelectionPoint(box.left,box.top)
-        val down=SelectionGeometry.world(SelectionPoint(box.right,box.bottom),start)
-        val t=SelectionGeometry.drag(start,box,SelectionHandle.CORNER_BOTTOM_RIGHT,down,down+SelectionPoint(90f,130f))
-        val before=SelectionGeometry.world(anchor,start);val after=SelectionGeometry.world(anchor,t)
-        assertEquals(before.x,after.x,.001f);assertEquals(before.y,after.y,.001f)
-        assertEquals(start.scaleX/start.scaleY,t.scaleX/t.scaleY,.0001f)
+    @Test fun objectCenterIsFixedAndLinkedScalePreservesExistingRatio() {
+        val start = Transform2D(translationX = 123f, translationY = -40f, scaleX = 2f, scaleY = 3f, rotationDegrees = 37f)
+        val center = SelectionGeometry.world(box.center, start)
+        val down = SelectionGeometry.world(SelectionPoint(box.right, box.bottom), start)
+        val t = SelectionGeometry.drag(start, box, SelectionHandle.CORNER_BOTTOM_RIGHT, down, down + SelectionPoint(90f, 130f))
+        val after = SelectionGeometry.world(box.center, t)
+        assertEquals("Center X must remain identical after corner drag", center.x, after.x, .001f)
+        assertEquals("Center Y must remain identical after corner drag", center.y, after.y, .001f)
+        assertEquals("Linked scale preserves aspect ratio", start.scaleX / start.scaleY, t.scaleX / t.scaleY, .0001f)
     }
-    @Test fun freeCornerAndEdgesScaleOnlyIntendedAxesFromOppositeAnchor() {
-        val start=Transform2D(rotationDegrees=90f,isScaleLinked=false)
-        val down=SelectionGeometry.world(SelectionPoint(100f,0f),start)
-        val t=SelectionGeometry.drag(start,box,SelectionHandle.EDGE_RIGHT,down,down+SelectionPoint(0f,100f))
-        assertEquals(1.5f,t.scaleX,.0001f);assertEquals(1f,t.scaleY,0f)
-        val before=SelectionGeometry.world(SelectionPoint(-100f,0f),start)
-        val after=SelectionGeometry.world(SelectionPoint(-100f,0f),t)
-        assertEquals(before.x,after.x,.001f);assertEquals(before.y,after.y,.001f)
-        val free=SelectionGeometry.drag(Transform2D(isScaleLinked=false),box,SelectionHandle.CORNER_BOTTOM_RIGHT,
-            SelectionPoint(100f,60f),SelectionPoint(200f,60f))
-        assertEquals(1.5f,free.scaleX,.0001f);assertEquals(1f,free.scaleY,0f)
+
+    @Test fun scaleAroundCenterForAllHandlesOnUnrotatedAndRotatedLayers() {
+        val handles = listOf(
+            SelectionHandle.CORNER_TOP_LEFT, SelectionHandle.CORNER_TOP_RIGHT,
+            SelectionHandle.CORNER_BOTTOM_RIGHT, SelectionHandle.CORNER_BOTTOM_LEFT,
+            SelectionHandle.EDGE_TOP, SelectionHandle.EDGE_BOTTOM,
+            SelectionHandle.EDGE_LEFT, SelectionHandle.EDGE_RIGHT
+        )
+        val rotations = listOf(0f, 30f, 45f, 90f, 180f, 275f)
+        val linkedStates = listOf(true, false)
+
+        for (rot in rotations) {
+            for (linked in linkedStates) {
+                val start = Transform2D(translationX = 150f, translationY = 220f, scaleX = 1.5f, scaleY = 2.0f, rotationDegrees = rot, isScaleLinked = linked)
+                val expectedCenter = SelectionGeometry.world(box.center, start)
+
+                for (h in handles) {
+                    val handlePoint = SelectionPoint(
+                        if (h.x < 0) box.left else if (h.x > 0) box.right else box.center.x,
+                        if (h.y < 0) box.top else if (h.y > 0) box.bottom else box.center.y
+                    )
+                    val down = SelectionGeometry.world(handlePoint, start)
+                    val dragVector = SelectionPoint(30f, -40f)
+                    val result = SelectionGeometry.drag(start, box, h, down, down + dragVector)
+
+                    val actualCenter = SelectionGeometry.world(box.center, result)
+                    assertEquals("Center X must stay fixed for handle $h at rot $rot linked $linked", expectedCenter.x, actualCenter.x, .001f)
+                    assertEquals("Center Y must stay fixed for handle $h at rot $rot linked $linked", expectedCenter.y, actualCenter.y, .001f)
+                    assertTrue("Resulting scale must be valid", SelectionGeometry.valid(result))
+                }
+            }
+        }
+    }
+
+    @Test fun freeCornerAndEdgesScaleOnlyIntendedAxesAroundCenter() {
+        val start = Transform2D(rotationDegrees = 90f, isScaleLinked = false)
+        val center = SelectionGeometry.world(box.center, start)
+        val down = SelectionGeometry.world(SelectionPoint(100f, 0f), start)
+        val t = SelectionGeometry.drag(start, box, SelectionHandle.EDGE_RIGHT, down, down + SelectionPoint(0f, 100f))
+        assertEquals(2.0f, t.scaleX, .0001f)
+        assertEquals(1f, t.scaleY, 0f)
+        val after = SelectionGeometry.world(box.center, t)
+        assertEquals(center.x, after.x, .001f)
+        assertEquals(center.y, after.y, .001f)
+
+        val free = SelectionGeometry.drag(
+            Transform2D(isScaleLinked = false), box, SelectionHandle.CORNER_BOTTOM_RIGHT,
+            SelectionPoint(100f, 60f), SelectionPoint(200f, 60f)
+        )
+        assertEquals(2.0f, free.scaleX, .0001f)
+        assertEquals(1f, free.scaleY, 0f)
     }
     @Test fun rotationUsesPointerDeltaAndVisibleCenterWithoutJumpingFromTouchSlop() {
         val b=SelectionBounds(20f,10f,120f,90f)

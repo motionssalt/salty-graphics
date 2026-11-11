@@ -458,6 +458,224 @@ fun CanvasView(
                 }
             }
 
+            fun drawLayerElements(nativeCanvas: NativeCanvas, layer: Layer) {
+                when (layer.type) {
+                    LayerType.SHAPE -> {
+                        val shape = layer.shapeData ?: ShapeData()
+                        val halfW = shape.width / 2f
+                        val halfH = shape.height / 2f
+                        val rect = RectF(-halfW, -halfH, halfW, halfH)
+                        val shapePath = when (shape.type) {
+                            ShapeType.RECTANGLE -> NativePath().apply { addRect(rect, NativePath.Direction.CW) }
+                            ShapeType.ROUNDED_RECTANGLE -> NativePath().apply { addRoundRect(rect, shape.cornerRadius, shape.cornerRadius, NativePath.Direction.CW) }
+                            ShapeType.CIRCLE -> NativePath().apply { addOval(rect, NativePath.Direction.CW) }
+                            else -> nativeVectorPath(shape.toVectorPath())
+                        }
+                        val fill = layer.effectiveFill
+                        val stroke = layer.effectiveStroke
+                        val shadow = layer.effectiveShadow
+
+                        // 1. Drop Shadow
+                        if (shadow.isEnabled) {
+                            val shadowPaint = NativePaint()
+                            if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                nativeCanvas.save()
+                                nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
+                                nativeCanvas.drawPath(shapePath, shadowPaint)
+                                nativeCanvas.restore()
+                            }
+                        }
+
+                        // 2. Fill (solid, gradient, media)
+                        val shapeMediaAsset = fill.mediaAssetPath
+                        if (fill.type == FillType.MEDIA && shapeMediaAsset != null) {
+                            val bmp = MediaCache.getOrRequest(context, document.id, shapeMediaAsset)
+                            if (bmp != null) {
+                                nativeCanvas.save()
+                                nativeCanvas.clipPath(shapePath)
+                                FillRenderer.drawMediaFill(nativeCanvas, bmp, fill, rect, shapePath)
+                                nativeCanvas.restore()
+                            }
+                        } else {
+                            val fillPaint = NativePaint()
+                            if (FillRenderer.configureFillPaint(fillPaint, fill, rect)) {
+                                nativeCanvas.drawPath(shapePath, fillPaint)
+                            } else if (shape.hasFill && fill.type == FillType.SOLID && fill.solidOpacity > 0f) {
+                                fillPaint.color = shape.fillColor.toInt()
+                                fillPaint.style = NativePaint.Style.FILL
+                                nativeCanvas.drawPath(shapePath, fillPaint)
+                            }
+                        }
+
+                        // 3. Stroke
+                        val strokePaint = NativePaint()
+                        if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                            FillRenderer.drawPathWithStroke(nativeCanvas, shapePath, stroke, strokePaint)
+                        } else if (shape.hasStroke && shape.strokeWidth > 0) {
+                            val legacyStroke = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
+                                color = shape.strokeColor.toInt()
+                                strokeWidth = shape.strokeWidth
+                                style = NativePaint.Style.STROKE
+                            }
+                            nativeCanvas.drawPath(shapePath, legacyStroke)
+                        }
+                    }
+                    LayerType.TEXT -> {
+                        val textData = layer.textData ?: TextLayerData()
+                        val fill = layer.effectiveFill
+                        val stroke = layer.effectiveStroke
+                        val shadow = layer.effectiveShadow
+                        val paint = selectionTextPaint(context, textData).apply {
+                            color = fill.effectiveSolidArgb.toInt()
+                        }
+                        val bounds = RectF(-textData.boxWidth / 2f, -textData.boxHeight / 2f, textData.boxWidth / 2f, textData.boxHeight / 2f)
+                        FillRenderer.configureFillPaint(paint, fill, bounds) { asset -> MediaCache.getOrRequest(context, document.id, asset) }
+                        val pathLayer = if (textData.followPathLayerId != null) document.findLayerById(textData.followPathLayerId!!) else null
+                        val vectorPath = pathLayer?.vectorPathData ?: pathLayer?.shapeData?.toVectorPath()
+                        val nativePath = if (vectorPath != null && vectorPath.points.size >= 2) {
+                            val path = nativeVectorPath(vectorPath)
+                            val targetMatrix = android.graphics.Matrix().apply {
+                                setTranslate(pathLayer!!.transform.translationX, pathLayer.transform.translationY)
+                                preRotate(pathLayer.transform.rotationDegrees)
+                                preScale(pathLayer.transform.scaleX, pathLayer.transform.scaleY)
+                            }
+                            val textMatrix = android.graphics.Matrix().apply {
+                                setTranslate(layer.transform.translationX, layer.transform.translationY)
+                                preRotate(layer.transform.rotationDegrees)
+                                preScale(layer.transform.scaleX, layer.transform.scaleY)
+                            }
+                            val inverse = android.graphics.Matrix()
+                            if (textMatrix.invert(inverse)) {
+                                inverse.preConcat(targetMatrix)
+                                path.transform(inverse)
+                            }
+                            path
+                        } else null
+
+                        var strokePaint: NativePaint? = null
+                        if (stroke.isEnabled && stroke.width > 0f) {
+                            strokePaint = NativePaint(paint)
+                            FillRenderer.configureStrokePaint(strokePaint, stroke)
+                        } else if (textData.hasOutline) {
+                            strokePaint = NativePaint(paint).apply {
+                                style = NativePaint.Style.STROKE
+                                strokeWidth = textData.outlineWidth
+                                color = textData.outlineColor.toInt()
+                            }
+                        }
+
+                        var shadowPaint: NativePaint? = null
+                        if (shadow.isEnabled) {
+                            shadowPaint = NativePaint(paint)
+                            FillRenderer.configureShadowPaint(shadowPaint, shadow)
+                        }
+
+                        TextLayoutEngine.drawTextLayout(
+                            canvas = nativeCanvas,
+                            textData = textData,
+                            textPaint = paint,
+                            strokePaint = strokePaint,
+                            shadowPaint = shadowPaint,
+                            path = nativePath
+                        )
+                    }
+                    LayerType.MEDIA -> {
+                        val fill = layer.effectiveFill
+                        val stroke = layer.effectiveStroke
+                        val shadow = layer.effectiveShadow
+                        val mediaAsset = if (fill.type == FillType.MEDIA) fill.mediaAssetPath ?: layer.mediaAssetPath else null
+                        val bmp = if (mediaAsset != null) {
+                            MediaCache.getOrRequest(context, document.id, mediaAsset)
+                        } else null
+                        val mw = layer.mediaWidth ?: 300f
+                        val mh = layer.mediaHeight ?: 300f
+                        val halfW = mw / 2f
+                        val halfH = mh / 2f
+                        val dst = RectF(-halfW, -halfH, halfW, halfH)
+                        if (shadow.isEnabled) {
+                            val shadowPaint = NativePaint()
+                            if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                nativeCanvas.save()
+                                nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
+                                nativeCanvas.drawRect(dst, shadowPaint)
+                                nativeCanvas.restore()
+                            }
+                        }
+                        if (bmp != null) {
+                            FillRenderer.drawMediaFill(nativeCanvas, bmp, fill, dst)
+                        } else {
+                            val fillPaint = NativePaint()
+                            if (FillRenderer.configureFillPaint(fillPaint, fill, dst)) nativeCanvas.drawRect(dst, fillPaint)
+                            else if (layer.fillData == null && layer.mediaAssetPath == null) {
+                                nativeCanvas.drawRect(dst, NativePaint().apply { color = 0xFF888888.toInt() })
+                            }
+                        }
+                        val strokePaint = NativePaint()
+                        if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                            val mediaPath = NativePath().apply { addRect(dst, NativePath.Direction.CW) }
+                            FillRenderer.drawPathWithStroke(nativeCanvas, mediaPath, stroke, strokePaint)
+                        }
+                    }
+                    LayerType.VECTOR -> {
+                        val fill = layer.effectiveFill
+                        val stroke = layer.effectiveStroke
+                        val shadow = layer.effectiveShadow
+                        layer.editablePaths.forEach { data ->
+                            val path = nativeVectorPath(data)
+                            val bounds = RectF()
+                            path.computeBounds(bounds, true)
+                            if (shadow.isEnabled) {
+                                val shadowPaint = NativePaint()
+                                if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
+                                    nativeCanvas.save()
+                                    nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
+                                    nativeCanvas.drawPath(path, shadowPaint)
+                                    nativeCanvas.restore()
+                                }
+                            }
+                            val fillPaint = NativePaint()
+                            if (FillRenderer.configureFillPaint(fillPaint, fill, bounds) { asset -> MediaCache.getOrRequest(context, document.id, asset) }) {
+                                nativeCanvas.drawPath(path, fillPaint)
+                            } else if (data.hasFill && fill.type == FillType.SOLID && fill.solidOpacity > 0f) {
+                                fillPaint.color = data.fillColor.toInt()
+                                fillPaint.style = NativePaint.Style.FILL
+                                nativeCanvas.drawPath(path, fillPaint)
+                            }
+                            val strokePaint = NativePaint()
+                            if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
+                                FillRenderer.drawPathWithStroke(nativeCanvas, path, stroke, strokePaint)
+                            } else if (data.hasStroke && data.strokeWidth > 0f) {
+                                drawNativeVector(nativeCanvas, data, 1f)
+                            }
+                        }
+                    }
+                    LayerType.GROUP -> {
+                        for (child in layer.children.asReversed()) {
+                            if (!child.isVisible) continue
+                            val childPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
+                                alpha = (child.opacity * 255).roundToInt().coerceIn(0, 255)
+                                LayerCompositor.applyLayerBlendMode(this, child.blendMode)
+                            }
+                            nativeCanvas.saveLayer(null, childPaint)
+                            nativeCanvas.save()
+                            nativeCanvas.translate(child.transform.translationX, child.transform.translationY)
+                            nativeCanvas.rotate(child.transform.rotationDegrees)
+                            nativeCanvas.scale(child.transform.scaleX, child.transform.scaleY)
+                            drawLayerElements(nativeCanvas, child)
+                            nativeCanvas.restore()
+                            nativeCanvas.restore()
+                        }
+                    }
+                    LayerType.ADJUSTMENT -> Unit
+                    LayerType.QUARANTINED -> {
+                        val qPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
+                            color = 0x40FF0000.toInt()
+                        }
+                        nativeCanvas.drawRoundRect(RectF(-120f, -60f, 120f, 60f), 8f, 8f, qPaint)
+                    }
+                }
+            }
+
             fun drawActiveLayers(nativeCanvas: NativeCanvas, alphaMult: Float = 1.0f) {
                 for (layer in document.activeLayers.asReversed()) {
                     if (!layer.isVisible) continue
@@ -468,7 +686,13 @@ fun CanvasView(
 
                     val layerPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
                         alpha = (layer.opacity * 255 * alphaMult).roundToInt().coerceIn(0, 255)
-                        LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
+                        if (layer.maskMode == MaskMode.IN_MASK) {
+                            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+                        } else if (layer.maskMode == MaskMode.OUT_MASK) {
+                            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+                        } else {
+                            LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
+                        }
                     }
 
                     // saveLayer isolates the layer and applies blend mode and opacity upon restore
@@ -479,236 +703,8 @@ fun CanvasView(
                     nativeCanvas.rotate(layer.transform.rotationDegrees)
                     nativeCanvas.scale(layer.transform.scaleX * effectiveZoom, layer.transform.scaleY * effectiveZoom)
 
-                    when (layer.type) {
-                        LayerType.SHAPE -> {
-                            val shape = layer.shapeData ?: ShapeData()
-                            val halfW = shape.width / 2f
-                            val halfH = shape.height / 2f
-                            val rect = RectF(-halfW, -halfH, halfW, halfH)
-                            val shapePath = when (shape.type) {
-                                ShapeType.RECTANGLE -> NativePath().apply { addRect(rect, NativePath.Direction.CW) }
-                                ShapeType.ROUNDED_RECTANGLE -> NativePath().apply { addRoundRect(rect, shape.cornerRadius, shape.cornerRadius, NativePath.Direction.CW) }
-                                ShapeType.CIRCLE -> NativePath().apply { addOval(rect, NativePath.Direction.CW) }
-                                else -> nativeVectorPath(shape.toVectorPath())
-                            }
-                            val fill = layer.effectiveFill
-                            val stroke = layer.effectiveStroke
-                            val shadow = layer.effectiveShadow
+                    drawLayerElements(nativeCanvas, layer)
 
-                            // 1. Drop Shadow
-                            if (shadow.isEnabled) {
-                                val shadowPaint = NativePaint()
-                                if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                                    nativeCanvas.save()
-                                    nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
-                                    nativeCanvas.drawPath(shapePath, shadowPaint)
-                                    nativeCanvas.restore()
-                                }
-                            }
-
-                            // 2. Fill (solid, gradient, media)
-                            val shapeMediaAsset = fill.mediaAssetPath
-                            if (fill.type == FillType.MEDIA && shapeMediaAsset != null) {
-                                val bmp = MediaCache.getOrRequest(context, document.id, shapeMediaAsset)
-                                if (bmp != null) {
-                                    nativeCanvas.save()
-                                    nativeCanvas.clipPath(shapePath)
-                                    FillRenderer.drawMediaFill(nativeCanvas,bmp,fill,rect,shapePath)
-                                    nativeCanvas.restore()
-                                }
-                            } else {
-                                val fillPaint = NativePaint()
-                                if (FillRenderer.configureFillPaint(fillPaint, fill, rect)) {
-                                    nativeCanvas.drawPath(shapePath, fillPaint)
-                                } else if (shape.hasFill && fill.type == FillType.SOLID && fill.solidOpacity > 0f) {
-                                    fillPaint.color = shape.fillColor.toInt()
-                                    fillPaint.style = NativePaint.Style.FILL
-                                    nativeCanvas.drawPath(shapePath, fillPaint)
-                                }
-                            }
-
-                            // 3. Stroke
-                            val strokePaint = NativePaint()
-                            if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                                FillRenderer.drawPathWithStroke(nativeCanvas, shapePath, stroke, strokePaint)
-                            } else if (shape.hasStroke && shape.strokeWidth > 0) {
-                                val legacyStroke = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
-                                    color = shape.strokeColor.toInt()
-                                    strokeWidth = shape.strokeWidth
-                                    style = NativePaint.Style.STROKE
-                                }
-                                nativeCanvas.drawPath(shapePath, legacyStroke)
-                            }
-                        }
-                        LayerType.TEXT -> {
-                            val textData = layer.textData ?: TextLayerData()
-                            val fill = layer.effectiveFill
-                            val stroke = layer.effectiveStroke
-                            val shadow = layer.effectiveShadow
-                            val paint = selectionTextPaint(context, textData).apply {
-                                color = fill.effectiveSolidArgb.toInt()
-                            }
-                            val bounds = RectF(-textData.boxWidth / 2f, -textData.boxHeight / 2f, textData.boxWidth / 2f, textData.boxHeight / 2f)
-                            FillRenderer.configureFillPaint(paint,fill,bounds) { asset -> MediaCache.getOrRequest(context,document.id,asset) }
-                            val pathLayer = if (textData.followPathLayerId != null) document.findLayerById(textData.followPathLayerId!!) else null
-                            val vectorPath = pathLayer?.vectorPathData ?: pathLayer?.shapeData?.toVectorPath()
-                            val nativePath = if (vectorPath != null && vectorPath.points.size >= 2) {
-                                val path = nativeVectorPath(vectorPath)
-                                val targetMatrix = android.graphics.Matrix().apply {
-                                    setTranslate(pathLayer!!.transform.translationX, pathLayer.transform.translationY)
-                                    preRotate(pathLayer.transform.rotationDegrees)
-                                    preScale(pathLayer.transform.scaleX, pathLayer.transform.scaleY)
-                                }
-                                val textMatrix = android.graphics.Matrix().apply {
-                                    setTranslate(layer.transform.translationX, layer.transform.translationY)
-                                    preRotate(layer.transform.rotationDegrees)
-                                    preScale(layer.transform.scaleX, layer.transform.scaleY)
-                                }
-                                val inverse = android.graphics.Matrix()
-                                if (textMatrix.invert(inverse)) {
-                                    inverse.preConcat(targetMatrix)
-                                    path.transform(inverse)
-                                }
-                                path
-                            } else null
-
-                            var strokePaint: NativePaint? = null
-                            if (stroke.isEnabled && stroke.width > 0f) {
-                                strokePaint = NativePaint(paint)
-                                FillRenderer.configureStrokePaint(strokePaint, stroke)
-                            } else if (textData.hasOutline) {
-                                strokePaint = NativePaint(paint).apply {
-                                    style = NativePaint.Style.STROKE
-                                    strokeWidth = textData.outlineWidth
-                                    color = textData.outlineColor.toInt()
-                                }
-                            }
-
-                            var shadowPaint: NativePaint? = null
-                            if (shadow.isEnabled) {
-                                shadowPaint = NativePaint(paint)
-                                FillRenderer.configureShadowPaint(shadowPaint, shadow)
-                            }
-
-                            TextLayoutEngine.drawTextLayout(
-                                canvas = nativeCanvas,
-                                textData = textData,
-                                textPaint = paint,
-                                strokePaint = strokePaint,
-                                shadowPaint = shadowPaint,
-                                path = nativePath
-                            )
-                        }
-                        LayerType.MEDIA -> {
-                            val fill = layer.effectiveFill
-                            val stroke = layer.effectiveStroke
-                            val shadow = layer.effectiveShadow
-                            val mediaAsset = if (fill.type == FillType.MEDIA) fill.mediaAssetPath ?: layer.mediaAssetPath else null
-                            val bmp = if (mediaAsset != null) {
-                                MediaCache.getOrRequest(context, document.id, mediaAsset)
-                            } else null
-                            val mw = layer.mediaWidth ?: 300f
-                            val mh = layer.mediaHeight ?: 300f
-                            val halfW = mw / 2f
-                            val halfH = mh / 2f
-                            val dst = RectF(-halfW, -halfH, halfW, halfH)
-                            if (shadow.isEnabled) {
-                                val shadowPaint = NativePaint()
-                                if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                                    nativeCanvas.save()
-                                    nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
-                                    nativeCanvas.drawRect(dst, shadowPaint)
-                                    nativeCanvas.restore()
-                                }
-                            }
-                            if (bmp != null) {
-                                val paint = NativePaint(NativePaint.ANTI_ALIAS_FLAG)
-                                FillRenderer.drawMediaFill(nativeCanvas,bmp,fill,dst)
-                            } else {
-                                val fillPaint = NativePaint()
-                                if (FillRenderer.configureFillPaint(fillPaint,fill,dst)) nativeCanvas.drawRect(dst,fillPaint)
-                                else if(layer.fillData==null && layer.mediaAssetPath==null) {
-                                    nativeCanvas.drawRect(dst,NativePaint().apply { color=0xFF888888.toInt() })
-                                }
-                            }
-                            val strokePaint = NativePaint()
-                            if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                                val mediaPath = NativePath().apply { addRect(dst, NativePath.Direction.CW) }
-                                FillRenderer.drawPathWithStroke(nativeCanvas, mediaPath, stroke, strokePaint)
-                            }
-                        }
-                        LayerType.VECTOR -> {
-                            val fill = layer.effectiveFill
-                            val stroke = layer.effectiveStroke
-                            val shadow = layer.effectiveShadow
-                            layer.editablePaths.forEach { data ->
-                                val path = nativeVectorPath(data)
-                                val bounds = RectF()
-                                path.computeBounds(bounds, true)
-                                if (shadow.isEnabled) {
-                                    val shadowPaint = NativePaint()
-                                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                                        nativeCanvas.save()
-                                        nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
-                                        nativeCanvas.drawPath(path, shadowPaint)
-                                        nativeCanvas.restore()
-                                    }
-                                }
-                                val fillPaint = NativePaint()
-                                if (FillRenderer.configureFillPaint(fillPaint, fill, bounds) { asset -> MediaCache.getOrRequest(context,document.id,asset) }) {
-                                    nativeCanvas.drawPath(path, fillPaint)
-                                } else if (data.hasFill && fill.type == FillType.SOLID && fill.solidOpacity > 0f) {
-                                    fillPaint.color = data.fillColor.toInt()
-                                    fillPaint.style = NativePaint.Style.FILL
-                                    nativeCanvas.drawPath(path, fillPaint)
-                                }
-                                val strokePaint = NativePaint()
-                                if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                                    FillRenderer.drawPathWithStroke(nativeCanvas, path, stroke, strokePaint)
-                                } else if (data.hasStroke && data.strokeWidth > 0f) {
-                                    drawNativeVector(nativeCanvas, data, 1f)
-                                }
-                            }
-                        }
-                        LayerType.GROUP -> {
-                            for (child in layer.children) {
-                                if (!child.isVisible) continue
-                                val childPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
-                                    alpha = (child.opacity * 255).roundToInt().coerceIn(0, 255)
-                                    LayerCompositor.applyLayerBlendMode(this, child.blendMode)
-                                }
-                                nativeCanvas.saveLayer(null, childPaint)
-                                val childCenterX = child.transform.translationX * effectiveZoom
-                                val childCenterY = child.transform.translationY * effectiveZoom
-                                nativeCanvas.save()
-                                nativeCanvas.translate(childCenterX, childCenterY)
-                                nativeCanvas.rotate(child.transform.rotationDegrees)
-                                nativeCanvas.scale(child.transform.scaleX * effectiveZoom, child.transform.scaleY * effectiveZoom)
-                                if (child.type == LayerType.SHAPE) {
-                                    val s = child.shapeData ?: ShapeData()
-                                    val rect = RectF(-s.width / 2f, -s.height / 2f, s.width / 2f, s.height / 2f)
-                                    val childFill = child.effectiveFill
-                                    val fp = NativePaint()
-                                    if (FillRenderer.configureFillPaint(fp, childFill, rect)) {
-                                        nativeCanvas.drawRect(rect, fp)
-                                    } else if (s.hasFill && childFill.type == FillType.SOLID && childFill.solidOpacity > 0f) {
-                                        fp.color = s.fillColor.toInt()
-                                        fp.style = NativePaint.Style.FILL
-                                        nativeCanvas.drawRect(rect, fp)
-                                    }
-                                }
-                                nativeCanvas.restore()
-                                nativeCanvas.restore()
-                            }
-                        }
-                        LayerType.ADJUSTMENT -> Unit
-                        LayerType.QUARANTINED -> {
-                            val qPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
-                                color = 0x40FF0000.toInt()
-                            }
-                            nativeCanvas.drawRoundRect(RectF(-120f, -60f, 120f, 60f), 8f, 8f, qPaint)
-                        }
-                    }
                     nativeCanvas.restore() // Restores layer transform
 
                     // Apply non-destructive mask if configured

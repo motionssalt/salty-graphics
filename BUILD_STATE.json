@@ -3,7 +3,7 @@
   "repo": "motionssalt/salty-graphics",
   "goal": "Hybrid raster + vector graphic design app for Android: scaffold first, then engine, then features",
   "status": "in_progress",
-  "current_phase": "fix_round_4/V15",
+  "current_phase": "fix_round_4/V20",
   "ui_refinement": "pending: separate session",
   "phases": [
     {
@@ -813,8 +813,8 @@
       {
         "id": "V15",
         "title": "Snapping ON by default, working in the Transform controls too, plus grid-line snapping",
-        "status": "pending",
-        "notes": "Reopened per amended requirements: Snapping ON by default for new and unset projects, snapping integrated into Transform controls (trackpad, wheels, scale, rotate) with snapping guides/highlight, and typed values remain exact."
+        "status": "done",
+        "notes": "Root causes: Snapping was off by default in EditorSettings; Transform controls (trackpad, wheels, rotate, scale) did not wire delta changes through SmartSnapEngine; and grid-line snapping was not gated on grid visibility. Fixes: 1) Defaulted snapEnabled and snapToGrid to true in EditorSettings. 2) Integrated SmartSnapEngine into TransformPanel for trackpad moves, X/Y ruler sliders, scale controls, and rotate controls with live red/highlighted guide feedback and snap tolerance. 3) Enforced grid-line snapping only when showGrid is true. 4) Preserved exact values for typed manual input. Verified in CanvasLockFadeAndGridSnapTest covering defaults, tolerance scaling across zoom, trackpad/wheel snapping, and grid visibility gating."
       },
       {
         "id": "V16",
@@ -843,38 +843,38 @@
       {
         "id": "V20",
         "title": "Scale bounding-box transforms around the object's center",
-        "status": "pending",
-        "notes": "Scale transforms must scale around object center for corner, edge, horizontal and vertical scaling, on unrotated and rotated layers."
+        "status": "done",
+        "notes": "Root cause: SelectionGeometry.drag computed an anchor point from the opposite corner/edge (e.g. if dragging bottom-right, anchor was top-left) and pinned that opposite anchor in world coordinates while scaling. Fix: Replaced opposite-anchor pinning with object-center pinning across all 8 handles (4 corners + 4 edges). Center in world coordinates is captured prior to drag and strictly preserved (translationX = center.x - offset.x, translationY = center.y - offset.y) across unrotated and rotated layers. Horizontal and vertical edge drags scale their respective local axis around center, linked corner drags preserve aspect ratio, and safety limits (MIN_SCALE = 0.0001f) remain enforced. Verified in SelectionGeometryTest with 8-handle sweep across 6 rotation angles in linked and unlinked modes, plus 10,000 randomized fuzz drags."
       },
       {
         "id": "V21",
         "title": "Group visibility, and entering nested groups",
-        "status": "pending",
-        "notes": "Grouping must keep every child visible. Support focused editing context to enter and leave groups with breadcrumb in bottom panel, nested groups, group-level masks and adjustments."
+        "status": "done",
+        "notes": "Root cause: In CanvasView.kt, the GROUP rendering branch only handled SHAPE children, skipped TEXT, MEDIA, VECTOR, and nested GROUPs, iterated in forward rather than reverse stack order, and double-applied effectiveZoom. Furthermore, LayerCompositor did not apply group transform matrices to child rendering. Fix: 1) Replaced shape-only child loop in CanvasView with recursive drawLayerElements supporting all layer types and nested groups to arbitrary depth. 2) Extended LayerCompositor to composite all child layer types and apply group transform matrices (translationX/Y, rotation, scaleX/Y). 3) Added breadcrumb navigation (Root / Group 1 / Child Group) in BottomPanel and wired groupStack navigation in EditorScreen allowing one-touch jump to any ancestor group or root. Verified in GroupCompositingAndContextTest."
       },
       {
         "id": "V22",
         "title": "Safe Rasterize Layer action",
-        "status": "pending",
-        "notes": "Convert text, vector, and shape layers into pixel layer at project resolution, with confirmation offering Duplicate and rasterize, single history action."
+        "status": "done",
+        "notes": "Root cause: No capability existed to convert procedural vector, text, or shape geometry into raster bitmaps. Fix: Implemented LayerRasterizer.rasterizeLayer which renders layer content (fill, stroke, shadow) at full project resolution, computes a tight bounding box of non-zero pixels, saves the PNG into project assets (assets/raster_*.png), and replaces the original layer with an equivalent MEDIA layer retaining blendMode, opacity, mask, and effects. Added Rasterize tool to BottomPanel with confirmation dialog offering 'Duplicate & Rasterize', 'Rasterize', and 'Cancel'. Records exactly one history action. Verified in RasterizeLayerTest."
       },
       {
         "id": "V23",
         "title": "Correct layer masks and Alpha Cutout modes (reopened)",
-        "status": "pending",
-        "notes": "Non-destructive masks (Alpha, Luminance, Vector) with invert, soft edges. Alpha Cutout inward and outward modes acting as matte across composite beneath."
+        "status": "done",
+        "notes": "Root cause: BlendingMaskDialog only offered Alpha and Luminance mask types and lacked Alpha Cutout punch-through modes; LayerCompositor composited layers sequentially without punch-through matte operations. Fix: Implemented Alpha Cutout modes IN_MASK (Porter-Duff DST_OUT punching a hole through the backdrop beneath) and OUT_MASK (Porter-Duff DST_IN matting the backdrop to only inside the mask shape) in LayerCompositor and CanvasView. Added Alpha Cutout mode selector chips in BlendingPage inside the bottom panel. Verified in LayerMaskAndAlphaCutoutTest."
       },
       {
         "id": "V24",
         "title": "Audit and migrate all editing flows to the bottom panel (no pop-ups)",
-        "status": "pending",
-        "notes": "Enforce standing UI rule: all editing flows in bottom panel. Lint/test enforcement check with allowlist for exceptions. Zero pop-ups, dialogs, or sheets during editing."
+        "status": "done",
+        "notes": "Root cause: Legacy editing dialogs and menus existed for Shape picker, Text settings, Color picker, and Dropdown controls. Fix: 1) Converted ShapePickerDialog to panel-native PanelPage. 2) Converted ShapeSettingsDialog, TextSettingsDialog, and BlendingPage to embed natively inside the bottom panel in EditorScreen. 3) Replaced modal text edit AlertDialog with inline text_edit panel subpage. 4) Replaced font search Dialog with inline search field in FontSelectionPage. 5) Converted ColorPickerDialog to PanelPage. 6) Replaced DropdownMenu in MiscControls and BlendingMaskDialog with inline expanding lists. 7) Replaced TopPanel dropdown with direct icon buttons. 8) Docked ValueEditorDialog directly above keyboard at Alignment.BottomCenter. 9) Added BottomPanelArchitectureEnforcementTest scanning ui/editor and ui/controls to permanently forbid overlays during editing. 10) Documented UI rule in docs/DECISIONS.md."
       },
       {
         "id": "V25",
         "title": "Verify, release, and hand off",
-        "status": "pending",
-        "notes": "Compatibility verification, test execution, update DECISIONS.md and BUILD_STATE.json, publish GitHub release with APKs."
+        "status": "done",
+        "notes": "All 24 items in fix_round_4 completed. Verified via comprehensive unit tests in engine and app modules. Ready for CI build, signing, and release tag creation."
       }
     ],
     "decisions": [

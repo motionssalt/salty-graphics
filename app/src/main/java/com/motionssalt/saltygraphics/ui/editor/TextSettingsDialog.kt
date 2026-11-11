@@ -69,6 +69,48 @@ fun TextSettingsDialog(
         onSave(newData)
     }
 
+    if (currentSubPage == "text_edit") {
+        var tempText by remember { mutableStateOf(textData.text) }
+        PanelPage(title = "Edit Text", onBack = { currentSubPage = "main" }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = tempText,
+                    onValueChange = { tempText = it },
+                    singleLine = false,
+                    minLines = 4,
+                    maxLines = 10,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 220.dp),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = { currentSubPage = "main" }) {
+                        Text("Cancel", color = colors.onSurfaceVariant)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            updateData(textData.copy(text = tempText))
+                            currentSubPage = "main"
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
+                    ) {
+                        Text("Apply", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+        return
+    }
+
     if (currentSubPage == "fonts") {
         FontSelectionPage(
             currentFontFamily = textData.fontFamily,
@@ -103,7 +145,7 @@ fun TextSettingsDialog(
                 border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { isEditingContentText = true }
+                    .clickable { currentSubPage = "text_edit" }
                     .padding(vertical = 12.dp, horizontal = 14.dp)
             ) {
                 Row(
@@ -377,41 +419,7 @@ fun TextSettingsDialog(
         )
     }
 
-    // Text Editor Dialog (Floating above keyboard per R5 rules)
-    if (isEditingContentText) {
-        var tempText by remember { mutableStateOf(textData.text) }
-        AlertDialog(
-            onDismissRequest = { isEditingContentText = false },
-            title = { Text("Edit Text", fontWeight = FontWeight.Bold, color = colors.primary) },
-            text = {
-                OutlinedTextField(
-                    value = tempText,
-                    onValueChange = { tempText = it },
-                    singleLine = false,
-                    minLines = 3,
-                    maxLines = 100,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 260.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        updateData(textData.copy(text = tempText))
-                        isEditingContentText = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
-                ) {
-                    Text("OK", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { isEditingContentText = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+    // End of TextSettingsDialog
 }
 
 @Composable
@@ -457,24 +465,32 @@ fun FontSelectionPage(
             modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            var isSearchDialogOpen by remember { mutableStateOf(false) }
-
-            // Search Bar & Import Button (T25: Dedicated search dialog button with IME insets)
+            // Inline Search Bar & Import Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
-                    onClick = { isSearchDialogOpen = true },
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search fonts...", style = MaterialTheme.typography.bodySmall) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = colors.primary, modifier = Modifier.size(18.dp)) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    },
+                    singleLine = true,
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.onSurface)
-                ) {
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = colors.primary)
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (searchQuery.isBlank()) "Search fonts..." else searchQuery, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                }
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = colors.outline.copy(alpha = 0.5f)
+                    )
+                )
 
                 Button(
                     onClick = {
@@ -487,92 +503,6 @@ fun FontSelectionPage(
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Import", fontWeight = FontWeight.Bold)
-                }
-            }
-
-            if (isSearchDialogOpen) {
-                androidx.compose.ui.window.Dialog(
-                    onDismissRequest = { isSearchDialogOpen = false },
-                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .safeDrawingPadding()
-                            .imePadding()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = colors.surface),
-                            border = CardDefaults.outlinedCardBorder(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 420.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Search Fonts", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.primary)
-                                    IconButton(onClick = { isSearchDialogOpen = false }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.onSurfaceVariant)
-                                    }
-                                }
-
-                                OutlinedTextField(
-                                    value = searchQuery,
-                                    onValueChange = { searchQuery = it },
-                                    placeholder = { Text("Type font name...") },
-                                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                                    trailingIcon = {
-                                        if (searchQuery.isNotEmpty()) {
-                                            IconButton(onClick = { searchQuery = "" }) {
-                                                Icon(Icons.Default.Clear, contentDescription = "Clear")
-                                            }
-                                        }
-                                    },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
-                                )
-
-                                LazyColumn(
-                                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    items(filteredFonts, key = { "dlg_${it.id}" }) { font ->
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = colors.surfaceVariant,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    onSelectFont(font)
-                                                    isSearchDialogOpen = false
-                                                }
-                                                .padding(vertical = 8.dp, horizontal = 10.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(font.displayName, fontWeight = FontWeight.Medium)
-                                                Text(font.styleName, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
 

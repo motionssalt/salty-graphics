@@ -1,5 +1,6 @@
 package com.motionssalt.saltygraphics.ui.editor
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -8,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.engine.model.Layer
 
@@ -22,8 +24,13 @@ fun BottomPanel(
     onOpenFill: (() -> Unit)? = null,
     onOpenBorderShadow: (() -> Unit)? = null,
     onDuplicate: (() -> Unit)? = null,
+    onRasterize: (() -> Unit)? = null,
+    groupBreadcrumbs: List<Pair<String, String>> = emptyList(),
+    onPopGroup: (() -> Unit)? = null,
+    onJumpToGroup: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme
     val tools = if (selectedLayer == null) listOf(
         Tool("Media", Icons.Default.AddPhotoAlternate, onAddMedia),
         Tool("Text", Icons.Default.TextFields, onAddText),
@@ -41,10 +48,51 @@ fun BottomPanel(
         list.add(Tool("Effects", Icons.Default.AutoAwesome, onOpenEffects))
         list.add(Tool("Blending & Mask", Icons.Default.Layers, onOpenBlending))
         if (onDuplicate != null) list.add(Tool("Duplicate", Icons.Default.ControlPointDuplicate, onDuplicate))
+        val isRasterizable = selectedLayer.type in listOf(
+            com.motionssalt.saltygraphics.engine.model.LayerType.TEXT,
+            com.motionssalt.saltygraphics.engine.model.LayerType.VECTOR,
+            com.motionssalt.saltygraphics.engine.model.LayerType.SHAPE
+        )
+        if (onRasterize != null && isRasterizable) list.add(Tool("Rasterize", Icons.Default.PhotoFilter, onRasterize))
         list.add(Tool("Delete", Icons.Default.Delete, onDelete))
         list
     }
-    Column(modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (groupBreadcrumbs.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { onPopGroup?.invoke() },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Exit Group", tint = colors.primary)
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Root",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.primary,
+                        modifier = Modifier.clickable { onJumpToGroup?.invoke(-1) }
+                    )
+                    groupBreadcrumbs.forEachIndexed { idx, crumb ->
+                        Text(" / ", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                        Text(
+                            text = crumb.second,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (idx == groupBreadcrumbs.lastIndex) FontWeight.Bold else FontWeight.Normal,
+                            color = if (idx == groupBreadcrumbs.lastIndex) colors.onSurface else colors.primary,
+                            modifier = Modifier.clickable { onJumpToGroup?.invoke(idx) }
+                        )
+                    }
+                }
+            }
+        }
         tools.chunked(3).forEach { row ->
             Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 row.forEach { tool ->
