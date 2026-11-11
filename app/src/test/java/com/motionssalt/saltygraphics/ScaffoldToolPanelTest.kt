@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.unit.dp
@@ -116,7 +115,19 @@ class ScaffoldToolPanelTest {
                 compose.mainClock.advanceTimeBy(1000)
                 compose.waitForIdle()
                 val name = "tools_${if (isDark) "dark" else "light"}_${selection}.png"
-                val actual = compose.onNodeWithTag("scaffold_tool_panel").captureToImage().asAndroidBitmap()
+                val panel = compose.onNodeWithTag("scaffold_tool_panel").fetchSemanticsNode()
+                val bounds = panel.boundsInWindow
+                val actual = Bitmap.createBitmap(panel.size.width, panel.size.height, Bitmap.Config.ARGB_8888)
+                // PixelCopy waits for a real Surface frame and times out on JVM hosts.
+                // Draw the real Compose View through Robolectric's native Canvas instead.
+                compose.runOnIdle {
+                    val canvas = android.graphics.Canvas(actual)
+                    canvas.translate(-bounds.left, -bounds.top)
+                    host.get().window.decorView.draw(canvas)
+                }
+                val pixels = IntArray(actual.width * actual.height)
+                actual.getPixels(pixels, 0, actual.width, 0, 0, actual.width, actual.height)
+                assertTrue("Native screenshot must contain rendered UI, not a blank bitmap", pixels.distinct().size > 20)
                 val out = File("build/outputs/scaffold-screenshots", name).apply { parentFile.mkdirs() }
                 out.outputStream().use { actual.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 val expected = File("src/test/goldens/scaffold", name)
