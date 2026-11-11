@@ -305,3 +305,16 @@ settings UI test scrolls to a row before asserting it is displayed in the intent
 bounded pane. The nonexistent VectorCreationPage file was removed from the list:
 its real implementation is in VectorPage.kt, which remains scanned. Assertions were
 not disabled or changed to accept blank rendering/corrupt data.
+
+
+### V0 tool-grid native golden review
+Run [43021704055](https://github.com/motionssalt/salty-graphics/actions/runs/43021704055)
+compiled the production registry tool-grid migration and passed callback dispatch,
+eligibility and throwaway registration tests. Its screenshot test failed only because
+reviewed golden files did not exist yet. Six real native Compose screenshots were
+retrieved from its `scaffold-screenshots` artifact and visually inspected: dark/light,
+empty/selected/group, with visible labels/icons and three-column ordering. These are
+now checked in under `app/src/test/goldens/scaffold`. Capture uses the real Compose
+View drawn through native Canvas: PixelCopy waits for a device Surface frame and
+timed out on Robolectric. Blank screenshots are rejected and baseline updates are
+never automatic. Full-suite and reactive-catalog verification remain pending CI.
