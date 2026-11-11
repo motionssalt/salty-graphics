@@ -735,8 +735,8 @@
       {
         "id": "V0b",
         "title": "Beta releases keep landing as 1.0.59 (release versioning bug, do right after V0)",
-        "status": "in_progress",
-        "notes": "Diagnosed root cause: release workflow only published on tag push, old tag v1.0.59 was created without successful publish, and version calculation was using run_number or hardcoded tag instead of querying GitHub Releases API for max(highest v1.0.<n> + 1, 60). Implementing ForgeBuild release contract."
+        "status": "done",
+        "notes": "Root cause: Previous workflow used run_number without querying Releases API, and previous releases were gated on tag push while git tag v1.0.59 was created without successful publish. Replaced build.yml with fast path-separated tests.yml (runs unit/compose tests + assembleDebug on push/PR) and release.yml (manual workflow_dispatch following ForgeBuild contract). Dynamically queries GitHub Releases API and git tags for max(highest existing v1.0.<n> + 1, 60), computes unique tag v1.0.<N>, versionName 1.0.<N>, and strictly increasing versionCode 1000+N (> 189). Includes workflow self-check step asserting version > highest, tag unused in git and API, and code/name agreement. Gradle configured for caching and parallel build."
       },
       {
         "id": "V1",
@@ -953,8 +953,8 @@
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
       "No complete amended acceptance audit for inherited V1\u2013V16/V18\u2013V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-11T22:58:33.719476+00:00",
-    "last_session_note": "Initialized Fix Round 4 with amended requirements (V0b through V32). V0 verified partial recovery complete; starting V0b release versioning fix following ForgeBuild contract.",
+    "last_updated": "2026-11-11T23:01:46.730544+00:00",
+    "last_session_note": "V0b complete: Replaced CI with ForgeBuild contract (tests.yml and release.yml), speed optimizations in gradle.properties, strict dynamic versioning above 59. Starting V6 preview quality fix.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",

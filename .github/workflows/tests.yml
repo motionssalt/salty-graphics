@@ -1,0 +1,58 @@
+name: "Tests and Debug Build"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Run Scaffold Tool Panel Acceptance Tests
+        run: ./gradlew :app:testDebugUnitTest --tests 'com.motionssalt.saltygraphics.ScaffoldToolPanelTest' --stacktrace
+
+      - name: Run Engine and JVM Compose Tests
+        run: ./gradlew test --stacktrace
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/test-results/
+            engine/build/test-results/
+            app/build/reports/tests/
+            engine/build/reports/tests/
+            ui-kit/build/test-results/
+            ui-kit/build/reports/tests/
+
+      - name: Upload Scaffold Screenshot Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scaffold-screenshots
+          path: app/build/outputs/scaffold-screenshots/
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
