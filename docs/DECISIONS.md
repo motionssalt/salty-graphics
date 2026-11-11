@@ -328,3 +328,24 @@ not open the page. The toolbar implementation now lives in :ui-kit, with navigat
 scrolling in its allocated width and operations/Settings pinned. The app facade only
 binds callbacks. This is an accessibility/overflow fix, not visual refinement. The
 regression now asserts Settings is actually displayed before clicking it.
+
+
+## V0 verified partial recovery checkpoint — 2026-11-11
+Code `ebad34bbfdaec12b2b6f97d4b458f09b68bc537d` passed [Actions 43023493374](https://github.com/motionssalt/salty-graphics/actions/runs/43023493374):
+**426 JVM executions**, debug/release across app, engine and ui-kit,
+zero failures/errors/skips. Six reviewed actual native tool-grid goldens match exactly;
+registry runtime insertion/removal, validation, eligibility, callback dispatch and strict
+migrated-entry guards pass. The real editor Settings button is now visible/clickable
+on the phone-sized test viewport; the existing project-settings regression passes.
+Universal, arm64-v8a, armeabi-v7a and x86_64 APK artifacts build successfully and all
+four printed certificate SHA-256 values match the permanent signing certificate.
+
+This is **not V0 or round completion**. Only the bottom tool grid and top-bar layout
+have moved to the library. Remaining screens/panels, strict whole-module boundary,
+typed property paths/live history commands, and every-component screenshot coverage
+remain V0 work. V17, V22, V23 and V24 were reopened on concrete acceptance gaps and
+wait for V0. Inherited done items need their amended final acceptance audit. A transient
+missing-Fill-selection failure in run 43022262233 did not recur in the final debug/release
+suite; its cause is not established, so do not claim a separate proven fix.
+No release/tag, no old release/reference/signing changes, no credential committed,
+no host web/app preview, no physical-phone testing and no UI refinement.

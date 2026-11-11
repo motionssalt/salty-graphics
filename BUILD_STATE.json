@@ -730,7 +730,7 @@
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
         "status": "in_progress",
-        "notes": "Built separate :ui-kit Gradle module containing design tokens (SaltyTokens: spacing, shapes, typography, color roles), reusable controls (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltySegmentedChips, SaltyColorPicker, SaltyTrackpad, SaltyValueEntryStrip, SaltyTextField), structural components (SaltyPanelPage, SaltySection, SaltyRow, SaltyTileGrid, SaltyListItem, SaltyLayerRow, SaltyToast, SaltyConfirmDialog), on-canvas overlays (SaltyGradientOverlay with independent start/end/center handles, SaltySelectionOverlay with center-based scaling, SaltySnappingGuidesOverlay), and the central declarative FeatureRegistry. Added ExampleTemplateFeature. Created docs/SCAFFOLD.md with architectural rules and migration checklist. Verified with FeatureRegistryTest (registering throwaway feature with all control types and validating history labels), ComponentGoldenSnapshotTest (dark and light themes, contrast ratios >= 3:1), and ScaffoldArchitectureEnforcementTest (forbidding raw Material components and popups). Reopened 2026-11-11 acceptance audit: registry is not integrated into production UI; app still imports raw Material/layouts and literal dp/sp/colors; app build still directly depends on Material3; golden test only checks token contrast, not component screenshots. Existing migration checklist is inaccurate. Latest five Actions builds failed; must restore green CI before completing V0."
+        "notes": "Built separate :ui-kit Gradle module containing design tokens (SaltyTokens: spacing, shapes, typography, color roles), reusable controls (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltySegmentedChips, SaltyColorPicker, SaltyTrackpad, SaltyValueEntryStrip, SaltyTextField), structural components (SaltyPanelPage, SaltySection, SaltyRow, SaltyTileGrid, SaltyListItem, SaltyLayerRow, SaltyToast, SaltyConfirmDialog), on-canvas overlays (SaltyGradientOverlay with independent start/end/center handles, SaltySelectionOverlay with center-based scaling, SaltySnappingGuidesOverlay), and the central declarative FeatureRegistry. Added ExampleTemplateFeature. Created docs/SCAFFOLD.md with architectural rules and migration checklist. Verified with FeatureRegistryTest (registering throwaway feature with all control types and validating history labels), ComponentGoldenSnapshotTest (dark and light themes, contrast ratios >= 3:1), and ScaffoldArchitectureEnforcementTest (forbidding raw Material components and popups). Reopened 2026-11-11 acceptance audit: registry is not integrated into production UI; app still imports raw Material/layouts and literal dp/sp/colors; app build still directly depends on Material3; golden test only checks token contrast, not component screenshots. Existing migration checklist is inaccurate. Latest five Actions builds failed; must restore green CI before completing V0. Verified partial checkpoint https://github.com/motionssalt/salty-graphics/actions/runs/43023493374 at ebad34bbfdaec12b2b6f97d4b458f09b68bc537d: production tool grid registered and library rendered; top bar binding-only/library-owned with narrow-screen operations pinned; reactive catalog metadata validation; strict migrated-entry guard; six actual exact-pixel native goldens. All existing/new tests and stable-signed APK builds pass. Remaining V0: migrate other screens/panels, full module dependency enforcement, typed property-path/live history commands and every-component golden matrix. Do not mark done."
       },
       {
         "id": "V1",
@@ -880,7 +880,7 @@
         "id": "V25",
         "title": "Verify, release, and hand off",
         "status": "pending",
-        "notes": "Reopened: latest Actions 43015463330 failed at JVM tests and skipped all APK/release steps. Prior state claimed completion on a merely triggered run. No new release authorized until V0 and full-round acceptance actually pass."
+        "notes": "Reopened: latest Actions 43015463330 failed at JVM tests and skipped all APK/release steps. Prior state claimed completion on a merely triggered run. No new release authorized until V0 and full-round acceptance actually pass. Full existing suite now green at ebad34bbfdaec12b2b6f97d4b458f09b68bc537d but final release remains pending until complete amended V0/round acceptance. No new tag or release was created."
       }
     ],
     "decisions": [
@@ -898,15 +898,63 @@
     ],
     "known_issues": [
       "V0 incomplete: production UI not migrated to registry; screenshot goldens absent; raw feature layouts/dependencies remain.",
-      "Inherited main CI is red (run 43015463330); investigate and fix before advancing.",
       "V1\u2013V24 done statuses inherited, not independently reverified this session; do not infer full acceptance from them.",
       "V17: text-frame resize intercepts text handles outside editing mode.",
       "V22: rasterizer clips to project canvas before finding bounds, losing off-canvas pixels.",
       "V23: cutout excludes its own visible content from affected composite.",
-      "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains."
+      "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
+      "No complete amended acceptance audit for inherited V1\u2013V16/V18\u2013V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-11T12:48:09.747231+00:00",
-    "last_session_note": "Run 43022262233 passed all four native scaffold UI/golden tests. Full debug suite exposed real toolbar overflow (Settings outside viewport) and an intermittent Fill selection test. Moved toolbar into ui-kit and constrained navigation width so Settings/operations remain pinned; app TopPanel now binding-only. Await CI for toolbar root fix and all tests. V0 remains partial, no release/refinement.",
-    "verification_pending": true
+    "last_updated": "2026-11-11T13:02:51.268064+00:00",
+    "last_session_note": "Verified PARTIAL V0 checkpoint at ebad34bbfdaec12b2b6f97d4b458f09b68bc537d in https://github.com/motionssalt/salty-graphics/actions/runs/43023493374. 426 debug/release JVM executions, zero failures/errors/skips; 6 exact native grid goldens; universal + 3 ABI APKs built/signatures matched stable key. No release. Resume V0: migrate remaining screens/panels one at a time via registered bindings; replace stale document setter API with typed live commands; eliminate feature Material/layout dependencies; complete all-component golden matrix. Reopened V17/V22/V23/V24 wait for V0. No UI refinement, no web preview.",
+    "verification_pending": false,
+    "verification": {
+      "scope": "Partial V0 checkpoint; not full-round acceptance or release",
+      "run_url": "https://github.com/motionssalt/salty-graphics/actions/runs/43023493374",
+      "commit": "ebad34bbfdaec12b2b6f97d4b458f09b68bc537d",
+      "result": "success",
+      "jvm_test_counts": {
+        "engine/testReleaseUnitTest": {
+          "tests": 49,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "engine/testDebugUnitTest": {
+          "tests": 49,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "ui-kit/testReleaseUnitTest": {
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "ui-kit/testDebugUnitTest": {
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app/testReleaseUnitTest": {
+          "tests": 157,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app/testDebugUnitTest": {
+          "tests": 157,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "total_test_executions": 426,
+      "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light \u00d7 empty/selected/group",
+      "apks": "universal + arm64-v8a + armeabi-v7a + x86_64 built as CI artifacts; all four signatures match existing stable certificate",
+      "release_published": false
+    }
   }
 }
