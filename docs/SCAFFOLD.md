@@ -106,21 +106,28 @@ On-canvas overlays (like gradient handles, selection boxes, vector point editors
 
 ## 7. Migration Checklist (All Screens and Panels)
 
-- [x] **Home Screen**: Migrated to `SaltyTokens`, `SaltyProjectCard`, `SaltyListItem`, `SaltyEmptyState`, and shared switch controls.
-- [x] **Settings Screen**: Migrated to `SaltyTokens`, `SaltySwitch`, `SaltyProgressSlider`, and `SaltySection`.
-- [x] **New Project Screen**: Migrated to `SaltyTokens`, visual ratio tiles, and docked value entry strip.
-- [x] **Export Screen**: Migrated to `SaltyTokens`, progress sliders, format chips, and shared controls.
-- [x] **Project Settings**: Migrated to `SaltyPanelPage`, canvas background color picker, grid size ruler slider, and snap toggles.
-- [x] **Editor Top Bar**: Migrated to `SaltyTopBar`, unified icon buttons, zoom actions, preview quality badge, canvas lock toggle.
-- [x] **Bottom Panel Tool Grid**: Migrated to `SaltyTileGrid` and `FeatureRegistry.queryTools`.
-- [x] **Fill & Gradient**: Migrated to `FillPanelPage`, `SaltyColorPicker`, `SaltyGradientOverlay`, and in-panel project media grid.
-- [x] **Border & Shadow**: Migrated to `BorderShadowPanelPage`, stroke/shadow sections, inside/center/outside chips, blur sliders.
-- [x] **Transform**: Migrated to `TransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
-- [x] **Blending & Masks**: Migrated to `BlendingPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
-- [x] **Text & Text Options**: Migrated to `TextSettingsDialog` panel page, multiline text box, font family picker, alignment chips.
-- [x] **Shape & Shape Settings**: Migrated to `ShapeSettingsDialog` panel page, width/height/radius ruler sliders.
-- [x] **Vector Tool & Curve Editing**: Migrated to `VectorPage`, independent handles toggle, corner/smooth toggle, angle lock.
-- [x] **Rasterize Layer**: Migrated to `RasterizeLayer` action, safe confirmation dialog offering duplicate option.
-- [x] **Layers Panel**: Migrated to `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
-- [x] **History Panel / Action Tree**: Migrated to `SaltyHistoryTree`, clean lane layout, branching timeline, pan and zoom.
-- [x] **Effects Engine**: Effect definitions auto-generate settings through the shared control engine.
+**Acceptance audit, 2026-11-11:** prior checkmarks were unsupported by production
+callsites. Unchecked rows below are migration targets, not completed work; their
+inherited descriptions describe the intended integration. V0 remains in progress.
+The app still has raw layouts and Material dependencies. Do not mark V0 complete
+until they are removed and every component has actual rendered golden coverage.
+
+
+- [ ] **Home Screen**: Migrated to `SaltyTokens`, `SaltyProjectCard`, `SaltyListItem`, `SaltyEmptyState`, and shared switch controls.
+- [ ] **Settings Screen**: Migrated to `SaltyTokens`, `SaltySwitch`, `SaltyProgressSlider`, and `SaltySection`.
+- [ ] **New Project Screen**: Migrated to `SaltyTokens`, visual ratio tiles, and docked value entry strip.
+- [ ] **Export Screen**: Migrated to `SaltyTokens`, progress sliders, format chips, and shared controls.
+- [ ] **Project Settings**: Migrated to `SaltyPanelPage`, canvas background color picker, grid size ruler slider, and snap toggles.
+- [ ] **Editor Top Bar**: Migrated to `SaltyTopBar`, unified icon buttons, zoom actions, preview quality badge, canvas lock toggle.
+- [x] **Bottom Panel Tool Grid**: Production `BottomPanel` supplies action bindings only. `EditorToolFeatures` declares metadata/eligibility, and `ScaffoldToolPanel` in `:ui-kit` draws the existing fixed three-column grid and group breadcrumbs through `FeatureCatalog.queryTools`.
+- [ ] **Fill & Gradient**: Migrated to `FillPanelPage`, `SaltyColorPicker`, `SaltyGradientOverlay`, and in-panel project media grid.
+- [ ] **Border & Shadow**: Migrated to `BorderShadowPanelPage`, stroke/shadow sections, inside/center/outside chips, blur sliders.
+- [ ] **Transform**: Migrated to `TransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
+- [ ] **Blending & Masks**: Migrated to `BlendingPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
+- [ ] **Text & Text Options**: Migrated to `TextSettingsDialog` panel page, multiline text box, font family picker, alignment chips.
+- [ ] **Shape & Shape Settings**: Migrated to `ShapeSettingsDialog` panel page, width/height/radius ruler sliders.
+- [ ] **Vector Tool & Curve Editing**: Migrated to `VectorPage`, independent handles toggle, corner/smooth toggle, angle lock.
+- [ ] **Rasterize Layer**: Migrated to `RasterizeLayer` action, safe confirmation dialog offering duplicate option.
+- [ ] **Layers Panel**: Migrated to `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
+- [ ] **History Panel / Action Tree**: Migrated to `SaltyHistoryTree`, clean lane layout, branching timeline, pan and zoom.
+- [ ] **Effects Engine**: Effect definitions auto-generate settings through the shared control engine.

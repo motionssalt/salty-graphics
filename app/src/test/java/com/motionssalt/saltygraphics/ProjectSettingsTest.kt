@@ -43,7 +43,7 @@ class ProjectSettingsTest {
             compose.waitUntil(15000) { compose.onAllNodesWithContentDescription("Settings").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("Settings").performClick()
             compose.onNodeWithText("Project settings").assertIsDisplayed()
-            compose.onNodeWithText("Canvas background").assertIsDisplayed()
+            compose.onNodeWithText("Canvas background").performScrollTo().assertIsDisplayed()
             assertFalse(openedAppSettings)
         } finally { host.pause().stop().destroy() }
     }

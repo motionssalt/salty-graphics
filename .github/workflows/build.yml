@@ -60,6 +60,9 @@ jobs:
           echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
           echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
 
+      - name: Run Scaffold Tool Panel Acceptance Tests
+        run: ./gradlew :app:testDebugUnitTest --tests 'com.motionssalt.saltygraphics.ScaffoldToolPanelTest' --stacktrace
+
       - name: Run Engine and JVM Compose Tests
         run: ./gradlew test --stacktrace
 
@@ -75,6 +78,13 @@ jobs:
             engine/build/reports/tests/
             ui-kit/build/test-results/
             ui-kit/build/reports/tests/
+
+      - name: Upload Scaffold Screenshot Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scaffold-screenshots
+          path: app/build/outputs/scaffold-screenshots/
 
       - name: Build Release APKs
         run: ./gradlew assembleRelease --stacktrace

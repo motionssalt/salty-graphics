@@ -17,10 +17,16 @@ import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
  * The scaffold automatically renders them in the bottom panel and wires
  * control changes to the history system with structured action labels.
  */
-object FeatureRegistry {
+open class FeatureCatalog {
     private val features = mutableMapOf<String, FeatureDefinition>()
 
     fun register(feature: FeatureDefinition) {
+        require(feature.id.isNotBlank()) { "Feature id is required" }
+        require(feature.title.isNotBlank()) { "Feature title is required: ${feature.id}" }
+        require(feature.pages.map { it.id }.distinct().size == feature.pages.size) { "Duplicate page id: ${feature.id}" }
+        require(feature.defaultPageId == null || feature.pages.any { it.id == feature.defaultPageId }) {
+            "Default page does not exist: ${feature.id}"
+        }
         features[feature.id] = feature
     }
 
@@ -39,7 +45,8 @@ object FeatureRegistry {
         document: ProjectDocument,
         selectedLayerIds: Set<String>
     ): List<FeatureDefinition> {
-        val hasSelection = selectedLayerIds.isNotEmpty()
+        val selected = selectedLayerIds.mapNotNull(document::findLayerById)
+        val hasSelection = selected.isNotEmpty()
         val targetLayer = if (hasSelection) document.findLayerById(selectedLayerIds.first()) else null
 
         return features.values.filter { feat ->
@@ -48,15 +55,17 @@ object FeatureRegistry {
                 ToolPlacement.NO_SELECTION -> !hasSelection
                 ToolPlacement.LAYER_SELECTED -> hasSelection
             }
-            val layerTypeMatches = if (feat.supportedLayerTypes.isEmpty() || targetLayer == null) {
+            val layerTypeMatches = if (feat.supportedLayerTypes.isEmpty()) {
                 true
             } else {
-                targetLayer.type in feat.supportedLayerTypes
+                selected.isNotEmpty() && selected.all { it.type in feat.supportedLayerTypes }
             }
             placementMatches && layerTypeMatches && feat.visibleCondition(document, selectedLayerIds)
         }
     }
 }
+
+object FeatureRegistry : FeatureCatalog()
 
 /**
  * Declarative Bottom Panel renderer powered by FeatureRegistry.

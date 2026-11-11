@@ -901,7 +901,7 @@
       "Inherited main CI is red (run 43015463330); investigate and fix before advancing.",
       "V1\u2013V24 done statuses inherited, not independently reverified this session; do not infer full acceptance from them."
     ],
-    "last_updated": "2026-11-11T12:28:39.348882+00:00",
-    "last_session_note": "V0 recovery: repaired inherited test harness errors (native graphics, top-first cutout fixture, asset resolver path, history reset, ambiguous snap anchor, nonexistent VectorCreationPage filename); project settings UI failure remains under investigation. Include ui-kit reports in CI. All changes awaiting CI."
+    "last_updated": "2026-11-11T12:30:22.552967+00:00",
+    "last_session_note": "V0 incremental migration: production bottom tool grid now declares EditorToolFeatures and delegates layout/filtering to ui-kit ScaffoldToolPanel/FeatureCatalog. Preserves 3-column layout and action callbacks. Corrected false migration checklist; all other screens still pending. Native fixture repairs and this migration await CI; no release."
   }
 }

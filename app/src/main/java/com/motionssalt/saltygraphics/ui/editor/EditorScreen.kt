@@ -824,6 +824,7 @@ fun EditorScreen(
                 } else if (!pageOpen) {
 
                     BottomPanel(
+                        document = doc,
                         selectedLayer = currentSelectedLayer,
                         groupBreadcrumbs = groupBreadcrumbs,
                         onPopGroup = {
