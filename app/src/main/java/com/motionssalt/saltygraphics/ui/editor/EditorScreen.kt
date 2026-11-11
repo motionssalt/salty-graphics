@@ -60,6 +60,9 @@ fun EditorScreen(
     var showGrid by remember { mutableStateOf(false) }
     var gridSize by remember { mutableStateOf(20) }
     var isCanvasLocked by rememberSaveable { mutableStateOf(false) }
+    var externalSmartGuides by remember { mutableStateOf<List<com.motionssalt.saltygraphics.engine.model.SmartGuideLine>>(emptyList()) }
+    var externalSnappedGridX by remember { mutableStateOf<Float?>(null) }
+    var externalSnappedGridY by remember { mutableStateOf<Float?>(null) }
 
     // Panel visibility states
     var isLayersPanelOpen by remember { mutableStateOf(false) }
@@ -388,6 +391,9 @@ fun EditorScreen(
                 isCanvasLocked = isCanvasLocked,
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
+                externalSmartGuides = externalSmartGuides,
+                externalSnappedGridX = externalSnappedGridX,
+                externalSnappedGridY = externalSnappedGridY,
                 onZoomPanChange = { newZoom, newPan ->
                     zoom = newZoom
                     panOffset = newPan
@@ -788,9 +794,40 @@ fun EditorScreen(
                 }
             // Transform Bottom Sheet
             if (isTransformPanelOpen && currentSelectedLayer != null) {
-                PanelPage("Transform", onBack = { isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false }) {
+                PanelPage("Transform", onBack = {
+                    externalSmartGuides = emptyList()
+                    externalSnappedGridX = null
+                    externalSnappedGridY = null
+                    isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false
+                }) {
+                    val targetId = currentSelectedLayer.id
+                    val bounds = selectionBounds(context, doc, currentSelectedLayer)
+                    val otherLayers = doc.activeLayers
+                        .filter { it.id != targetId && it.isVisible && it.type != LayerType.ADJUSTMENT }
+                        .map { (selectionBounds(context, doc, it)) to it.transform }
+                    val otherAngles = doc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
+                    val snapCtx = TransformSnapContext(
+                        bounds = bounds,
+                        otherLayers = otherLayers,
+                        otherAngles = otherAngles,
+                        canvasWidth = doc.canvasSize.width.toFloat(),
+                        canvasHeight = doc.canvasSize.height.toFloat(),
+                        effectiveZoom = zoom,
+                        snapEnabled = doc.editorSettings.snapEnabled,
+                        snapToGrid = doc.editorSettings.snapToGrid,
+                        showGrid = doc.editorSettings.showGrid,
+                        gridSize = doc.editorSettings.gridSize,
+                        isSquareGrid = doc.editorSettings.isSquareGrid,
+                        tolerancePx = doc.editorSettings.snapTolerancePx,
+                        onGuidesChange = { guides, gridX, gridY ->
+                            externalSmartGuides = guides
+                            externalSnappedGridX = gridX
+                            externalSnappedGridY = gridY
+                        }
+                    )
                     TransformPanel(
                         transform = currentSelectedLayer.transform,
+                        snapContext = snapCtx,
                         onTransformChange = { previewT ->
                             projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = previewT) }
                         },
@@ -798,7 +835,12 @@ fun EditorScreen(
                             val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = finalT) }
                             recordAndAutoSave("Transform Layer", updated)
                         },
-                        onClose = { isTransformPanelOpen = false }
+                        onClose = {
+                            externalSmartGuides = emptyList()
+                            externalSnappedGridX = null
+                            externalSnappedGridY = null
+                            isTransformPanelOpen = false
+                        }
                     )
                 }
             }
@@ -917,7 +959,7 @@ fun EditorScreen(
 
 
 
-    if (isShapePickerOpen) {
+    if (isShapePickerOpen && doc != null) {
         ShapePickerDialog(
             onSelectShape = { chosenShape ->
                 val newLayer = Layer(

@@ -208,8 +208,8 @@ data class EditorSettings(
     val gridSize: Int = 20,
     val gridColor: Long = 0x66808080L,
     val isSquareGrid: Boolean = false, // When false (default), grid matches canvas aspect ratio so last row/col is not cropped (T26)
-    val snapEnabled: Boolean = false, // General object / Smart Guides snapping
-    val snapToGrid: Boolean = false, // V15: Optional grid-line snapping separate from general snapping
+    val snapEnabled: Boolean = true, // General object / Smart Guides snapping (V15: ON by default)
+    val snapToGrid: Boolean = true, // V15: Grid-line snapping (ON by default, engages while grid is visible)
     val snapTolerancePx: Float = 8f,
     val defaultPreviewQuality: com.motionssalt.saltygraphics.engine.render.PreviewQuality = com.motionssalt.saltygraphics.engine.render.PreviewQuality.HIGH
 )

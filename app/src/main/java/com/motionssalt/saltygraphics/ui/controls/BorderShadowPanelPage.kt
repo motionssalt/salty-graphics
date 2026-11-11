@@ -142,8 +142,8 @@ fun BorderShadowPanelPage(
                         SegmentedChipsControl(
                             label = "Alignment",
                             options = StrokeAlignment.entries.map { it.displayName },
-                            selected = liveStroke.alignment.displayName,
-                            onSelect = { name ->
+                            selectedOption = liveStroke.alignment.displayName,
+                            onOptionSelected = { name ->
                                 val align = StrokeAlignment.entries.firstOrNull { it.displayName == name } ?: StrokeAlignment.CENTER
                                 onStrokeCommit("Change stroke alignment", liveStroke.copy(alignment = align))
                             }
@@ -152,8 +152,8 @@ fun BorderShadowPanelPage(
                         SegmentedChipsControl(
                             label = "Line Style",
                             options = listOf("Solid", "Dashed"),
-                            selected = if (liveStroke.isDashed) "Dashed" else "Solid",
-                            onSelect = { style ->
+                            selectedOption = if (liveStroke.isDashed) "Dashed" else "Solid",
+                            onOptionSelected = { style ->
                                 onStrokeCommit("Change stroke style", liveStroke.copy(isDashed = style == "Dashed"))
                             }
                         )
@@ -184,8 +184,8 @@ fun BorderShadowPanelPage(
                         SegmentedChipsControl(
                             label = "Line Cap",
                             options = VectorCap.entries.map { it.name },
-                            selected = liveStroke.cap.name,
-                            onSelect = { capName ->
+                            selectedOption = liveStroke.cap.name,
+                            onOptionSelected = { capName ->
                                 val cap = VectorCap.entries.firstOrNull { it.name == capName } ?: VectorCap.ROUND
                                 onStrokeCommit("Change stroke cap", liveStroke.copy(cap = cap))
                             }
@@ -194,8 +194,8 @@ fun BorderShadowPanelPage(
                         SegmentedChipsControl(
                             label = "Line Join",
                             options = VectorJoin.entries.map { it.name },
-                            selected = liveStroke.join.name,
-                            onSelect = { joinName ->
+                            selectedOption = liveStroke.join.name,
+                            onOptionSelected = { joinName ->
                                 val join = VectorJoin.entries.firstOrNull { it.name == joinName } ?: VectorJoin.ROUND
                                 onStrokeCommit("Change stroke join", liveStroke.copy(join = join))
                             }
@@ -263,8 +263,8 @@ fun BorderShadowPanelPage(
                         SegmentedChipsControl(
                             label = "Shadow Blend",
                             options = shadowModes.map { it.displayName },
-                            selected = liveShadow.blendMode.displayName,
-                            onSelect = { modeName ->
+                            selectedOption = liveShadow.blendMode.displayName,
+                            onOptionSelected = { modeName ->
                                 val mode = shadowModes.firstOrNull { it.displayName == modeName } ?: BlendMode.NORMAL
                                 onShadowCommit("Change shadow blend", liveShadow.copy(blendMode = mode))
                             }

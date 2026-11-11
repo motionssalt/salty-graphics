@@ -94,7 +94,10 @@ fun CanvasView(
     onUpdateLayerTransforms: ((Map<String, Transform2D>) -> Unit)? = null,
     onCommitLayerTransforms: ((Map<String, Transform2D>) -> Unit)? = null,
     onUpdateTextData: ((String, TextLayerData) -> Unit)? = null,
-    onCommitTextData: ((String, TextLayerData) -> Unit)? = null
+    onCommitTextData: ((String, TextLayerData) -> Unit)? = null,
+    externalSmartGuides: List<SmartGuideLine> = emptyList(),
+    externalSnappedGridX: Float? = null,
+    externalSnappedGridY: Float? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -112,6 +115,10 @@ fun CanvasView(
     var activeSmartGuides by remember { mutableStateOf<List<SmartGuideLine>>(emptyList()) }
     var activeSnappedGridX by remember { mutableStateOf<Float?>(null) }
     var activeSnappedGridY by remember { mutableStateOf<Float?>(null) }
+
+    val displaySmartGuides = if (activeSmartGuides.isNotEmpty()) activeSmartGuides else externalSmartGuides
+    val displaySnappedGridX = activeSnappedGridX ?: externalSnappedGridX
+    val displaySnappedGridY = activeSnappedGridY ?: externalSnappedGridY
 
     // Use rememberUpdatedState to avoid gesture coroutine teardown on rapid zoom/pan changes
     val currentZoom by rememberUpdatedState(zoom)
@@ -323,8 +330,8 @@ fun CanvasView(
                                     activeSmartGuides = emptyList()
                                 }
 
-                                // V15: Optional grid-line snapping with transient feedback
-                                if (activeDoc.editorSettings.snapToGrid && handle == SelectionHandle.BODY) {
+                                // V15: Optional grid-line snapping with transient feedback (engages only when grid is visible)
+                                if (activeDoc.editorSettings.snapToGrid && activeDoc.editorSettings.showGrid && handle == SelectionHandle.BODY) {
                                     val gridSnap = SmartSnapEngine.snapToGridLines(
                                         targetBounds = bounds,
                                         targetTransform = rawTransform,
@@ -396,7 +403,7 @@ fun CanvasView(
                         var x = topLeft.x
                         while (x <= topLeft.x + scaledW + 0.1f) {
                             val docX = (x - center.x) / effectiveZoom
-                            val isSnapped = activeSnappedGridX != null && abs(docX - activeSnappedGridX!!) < (4f / effectiveZoom)
+                            val isSnapped = displaySnappedGridX != null && abs(docX - displaySnappedGridX!!) < (4f / effectiveZoom)
                             drawLine(
                                 color = if (isSnapped) snapHighlightColor else gridColor,
                                 start = Offset(x, topLeft.y),
@@ -408,7 +415,7 @@ fun CanvasView(
                         var y = topLeft.y
                         while (y <= topLeft.y + scaledH + 0.1f) {
                             val docY = (y - center.y) / effectiveZoom
-                            val isSnapped = activeSnappedGridY != null && abs(docY - activeSnappedGridY!!) < (4f / effectiveZoom)
+                            val isSnapped = displaySnappedGridY != null && abs(docY - displaySnappedGridY!!) < (4f / effectiveZoom)
                             drawLine(
                                 color = if (isSnapped) snapHighlightColor else gridColor,
                                 start = Offset(topLeft.x, y),
@@ -428,7 +435,7 @@ fun CanvasView(
                         for (c in 0..cols) {
                             val x = topLeft.x + c * colSpacing
                             val docX = (x - center.x) / effectiveZoom
-                            val isSnapped = activeSnappedGridX != null && abs(docX - activeSnappedGridX!!) < (4f / effectiveZoom)
+                            val isSnapped = displaySnappedGridX != null && abs(docX - displaySnappedGridX!!) < (4f / effectiveZoom)
                             drawLine(
                                 color = if (isSnapped) snapHighlightColor else gridColor,
                                 start = Offset(x, topLeft.y),
@@ -439,7 +446,7 @@ fun CanvasView(
                         for (r in 0..rows) {
                             val y = topLeft.y + r * rowSpacing
                             val docY = (y - center.y) / effectiveZoom
-                            val isSnapped = activeSnappedGridY != null && abs(docY - activeSnappedGridY!!) < (4f / effectiveZoom)
+                            val isSnapped = displaySnappedGridY != null && abs(docY - displaySnappedGridY!!) < (4f / effectiveZoom)
                             drawLine(
                                 color = if (isSnapped) snapHighlightColor else gridColor,
                                 start = Offset(topLeft.x, y),
@@ -832,8 +839,8 @@ fun CanvasView(
             }
 
             // Visible Red Smart Guides (T21: Figma/Illustrator style snap indicators)
-            if (activeSmartGuides.isNotEmpty()) {
-                activeSmartGuides.forEach { guide ->
+            if (displaySmartGuides.isNotEmpty()) {
+                displaySmartGuides.forEach { guide ->
                     val redColor = Color(0xFFFF1744) // Bright crisp alignment red
                     if (guide.orientation == GuideOrientation.VERTICAL) {
                         val sx = center.x + guide.position * effectiveZoom

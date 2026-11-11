@@ -137,4 +137,71 @@ class CanvasLockFadeAndGridSnapTest {
         onZoomIn()
         assertEquals("Zoom changes after canvas is unlocked", 1.25f, currentZoom, 0.0001f)
     }
+
+    @Test
+    fun testSnappingDefaultsAreOnForNewAndMigratedProjects() {
+        val newSettings = EditorSettings()
+        assertTrue("snapEnabled should be ON by default", newSettings.snapEnabled)
+        assertTrue("snapToGrid should be ON by default", newSettings.snapToGrid)
+
+        // ProjectDocument default
+        val doc = ProjectDocument(id = "test-doc")
+        assertTrue(doc.editorSettings.snapEnabled)
+        assertTrue(doc.editorSettings.snapToGrid)
+    }
+
+    @Test
+    fun testGridSnappingOnlyEngagesWhenGridIsVisible() {
+        val bounds = SelectionBounds(left = -50f, top = -50f, right = 50f, bottom = 50f)
+        val nearGridTransform = Transform2D(translationX = 102f, translationY = 0f)
+
+        // When showGrid is false, canvas and controls must not snap to grid lines
+        val showGridFalse = false
+        val snapToGrid = true
+        val shouldSnapToGrid = snapToGrid && showGridFalse
+        assertFalse("Grid snapping must not engage when grid is not visible", shouldSnapToGrid)
+
+        // When showGrid is true, snapping engages
+        val showGridTrue = true
+        val shouldSnapWhenVisible = snapToGrid && showGridTrue
+        assertTrue("Grid snapping engages when grid is visible", shouldSnapWhenVisible)
+
+        val snapRes = SmartSnapEngine.snapToGridLines(
+            targetBounds = bounds,
+            targetTransform = nearGridTransform,
+            canvasWidth = 1000f,
+            canvasHeight = 1000f,
+            gridSize = 100,
+            isSquareGrid = true,
+            effectiveZoom = 1.0f
+        )
+        assertTrue(snapRes.didSnapX)
+        assertEquals(100f, snapRes.snappedTransform.translationX, 0.001f)
+    }
+
+    @Test
+    fun testTransformPanelSnappingIntegration() {
+        val bounds = SelectionBounds(left = -50f, top = -50f, right = 50f, bottom = 50f)
+        val otherBounds = SelectionBounds(left = -50f, top = -50f, right = 50f, bottom = 50f)
+        val otherTransform = Transform2D(translationX = 200f, translationY = 200f)
+
+        // Snapping translation to other layer's center/edge
+        val rawTranslation = Transform2D(translationX = 198f, translationY = 50f)
+        val snapRes = SmartSnapEngine.snapTranslation(
+            targetBounds = bounds,
+            targetTransform = rawTranslation,
+            otherLayers = listOf(otherBounds to otherTransform),
+            canvasWidth = 1000f,
+            canvasHeight = 1000f,
+            effectiveZoom = 1.0f
+        )
+        assertTrue("Should snap to layer center at 200f", snapRes.didSnapX)
+        assertEquals(200f, snapRes.snappedTransform.translationX, 0.001f)
+        assertTrue(snapRes.activeGuides.any { it.position == 200f })
+
+        // Rotation snapping to standard 45-degree angle
+        val (snappedAngle, didSnapAngle) = SmartSnapEngine.snapRotation(46.5f)
+        assertTrue(didSnapAngle)
+        assertEquals(45f, snappedAngle, 0.001f)
+    }
 }

@@ -242,8 +242,17 @@ object SgProjectArchive {
                 id = id,
                 name = name,
                 canvasSize = canvasSize,
-                editorSettings = jsonTree["editorSettings"]?.let {
-                    runCatching { json.decodeFromJsonElement<EditorSettings>(it) }.getOrDefault(EditorSettings())
+                editorSettings = jsonTree["editorSettings"]?.let { elem ->
+                    runCatching {
+                        val parsed = json.decodeFromJsonElement<EditorSettings>(elem)
+                        val obj = elem as? kotlinx.serialization.json.JsonObject
+                        val snapExplicit = obj?.containsKey("snapEnabled") == true
+                        val gridSnapExplicit = obj?.containsKey("snapToGrid") == true
+                        parsed.copy(
+                            snapEnabled = if (snapExplicit) parsed.snapEnabled else true,
+                            snapToGrid = if (gridSnapExplicit) parsed.snapToGrid else true
+                        )
+                    }.getOrDefault(EditorSettings())
                 } ?: EditorSettings(),
                 layers = recoveredLayers,
                 selectedLayerIds = selectedIds,

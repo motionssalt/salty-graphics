@@ -18,16 +18,36 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.motionssalt.saltygraphics.engine.model.SelectionBounds
+import com.motionssalt.saltygraphics.engine.model.SmartGuideLine
+import com.motionssalt.saltygraphics.engine.model.SmartSnapEngine
 import com.motionssalt.saltygraphics.engine.model.Transform2D
 import com.motionssalt.saltygraphics.theme.*
 import com.motionssalt.saltygraphics.ui.controls.RulerSlider
 import com.motionssalt.saltygraphics.ui.controls.ValueEditorDialog
+
+data class TransformSnapContext(
+    val bounds: SelectionBounds,
+    val otherLayers: List<Pair<SelectionBounds, Transform2D>> = emptyList(),
+    val otherAngles: List<Float> = emptyList(),
+    val canvasWidth: Float,
+    val canvasHeight: Float,
+    val effectiveZoom: Float = 1.0f,
+    val snapEnabled: Boolean = true,
+    val snapToGrid: Boolean = true,
+    val showGrid: Boolean = false,
+    val gridSize: Int = 50,
+    val isSquareGrid: Boolean = true,
+    val tolerancePx: Float = 8f,
+    val onGuidesChange: (List<SmartGuideLine>, Float?, Float?) -> Unit = { _, _, _ -> }
+)
 
 @Composable
 fun TransformPanel(
     transform: Transform2D,
     onTransformChange: (Transform2D) -> Unit,
     onTransformCommit: (Transform2D) -> Unit = onTransformChange,
+    snapContext: TransformSnapContext? = null,
     onClose: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -36,6 +56,57 @@ fun TransformPanel(
 
     var isTrackpadXEditorOpen by remember { mutableStateOf(false) }
     var isTrackpadYEditorOpen by remember { mutableStateOf(false) }
+
+    fun applyTranslationSnapping(rawTransform: Transform2D): Transform2D {
+        if (snapContext == null) return rawTransform
+        var currentT = rawTransform
+        var guides = emptyList<SmartGuideLine>()
+        var snappedGridX: Float? = null
+        var snappedGridY: Float? = null
+
+        if (snapContext.snapEnabled) {
+            val snapRes = SmartSnapEngine.snapTranslation(
+                targetBounds = snapContext.bounds,
+                targetTransform = currentT,
+                otherLayers = snapContext.otherLayers,
+                canvasWidth = snapContext.canvasWidth,
+                canvasHeight = snapContext.canvasHeight,
+                effectiveZoom = snapContext.effectiveZoom,
+                tolerancePx = snapContext.tolerancePx
+            )
+            currentT = snapRes.snappedTransform
+            guides = snapRes.activeGuides
+        }
+
+        if (snapContext.snapToGrid && snapContext.showGrid) {
+            val gridSnap = SmartSnapEngine.snapToGridLines(
+                targetBounds = snapContext.bounds,
+                targetTransform = currentT,
+                canvasWidth = snapContext.canvasWidth,
+                canvasHeight = snapContext.canvasHeight,
+                gridSize = snapContext.gridSize,
+                isSquareGrid = snapContext.isSquareGrid,
+                effectiveZoom = snapContext.effectiveZoom,
+                tolerancePx = snapContext.tolerancePx
+            )
+            currentT = gridSnap.snappedTransform
+            snappedGridX = gridSnap.snappedGridX
+            snappedGridY = gridSnap.snappedGridY
+        }
+
+        snapContext.onGuidesChange(guides, snappedGridX, snappedGridY)
+        return currentT
+    }
+
+    fun applyRotationSnapping(rawDegrees: Float): Float {
+        if (snapContext == null || !snapContext.snapEnabled) return rawDegrees
+        val (snapped, didSnap) = SmartSnapEngine.snapRotation(rawDegrees, snapContext.otherAngles)
+        return if (didSnap) snapped else rawDegrees
+    }
+
+    fun clearGuides() {
+        snapContext?.onGuidesChange(emptyList(), null, null)
+    }
 
     Surface(
         color = colors.surface,
@@ -101,11 +172,17 @@ fun TransformPanel(
                         label = "Scale",
                         value = uniformScale * 100f,
                         onValueChange = {
-                            val updated = currentTransform.setScaleUniform(it / 100f)
+                            val targetScale = it / 100f
+                            // Snap scale to 100% (1.0f) if within 2%
+                            val snappedScale = if (snapContext?.snapEnabled == true && kotlin.math.abs(targetScale - 1f) <= 0.02f) 1f else targetScale
+                            val updated = currentTransform.setScaleUniform(snappedScale)
                             currentTransform = updated
                             onTransformChange(updated)
                         },
-                        onValueChangeFinished = { onTransformCommit(currentTransform) },
+                        onValueChangeFinished = {
+                            clearGuides()
+                            onTransformCommit(currentTransform)
+                        },
                         minValue = 1f,
                         maxValue = 10000f,
                         defaultValue = 100f,
@@ -117,11 +194,16 @@ fun TransformPanel(
                         label = "Scale X",
                         value = currentTransform.scaleX * 100f,
                         onValueChange = {
-                            val updated = currentTransform.copy(scaleX = it / 100f)
+                            val targetScale = it / 100f
+                            val snappedScale = if (snapContext?.snapEnabled == true && kotlin.math.abs(targetScale - 1f) <= 0.02f) 1f else targetScale
+                            val updated = currentTransform.copy(scaleX = snappedScale)
                             currentTransform = updated
                             onTransformChange(updated)
                         },
-                        onValueChangeFinished = { onTransformCommit(currentTransform) },
+                        onValueChangeFinished = {
+                            clearGuides()
+                            onTransformCommit(currentTransform)
+                        },
                         minValue = 1f,
                         maxValue = 10000f,
                         defaultValue = 100f,
@@ -132,11 +214,16 @@ fun TransformPanel(
                         label = "Scale Y",
                         value = currentTransform.scaleY * 100f,
                         onValueChange = {
-                            val updated = currentTransform.copy(scaleY = it / 100f)
+                            val targetScale = it / 100f
+                            val snappedScale = if (snapContext?.snapEnabled == true && kotlin.math.abs(targetScale - 1f) <= 0.02f) 1f else targetScale
+                            val updated = currentTransform.copy(scaleY = snappedScale)
                             currentTransform = updated
                             onTransformChange(updated)
                         },
-                        onValueChangeFinished = { onTransformCommit(currentTransform) },
+                        onValueChangeFinished = {
+                            clearGuides()
+                            onTransformCommit(currentTransform)
+                        },
                         minValue = 1f,
                         maxValue = 10000f,
                         defaultValue = 100f,
@@ -175,15 +262,22 @@ fun TransformPanel(
                             .clip(RoundedCornerShape(10.dp))
                             .background(colors.background)
                             .border(1.dp, colors.outline.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
-                            .pointerInput(currentTransform.moveSensitivity) {
+                            .pointerInput(currentTransform.moveSensitivity, snapContext) {
                                 detectDragGestures(
-                                    onDragEnd = { onTransformCommit(currentTransform) },
-                                    onDragCancel = { onTransformCommit(currentTransform) },
+                                    onDragEnd = {
+                                        clearGuides()
+                                        onTransformCommit(currentTransform)
+                                    },
+                                    onDragCancel = {
+                                        clearGuides()
+                                        onTransformCommit(currentTransform)
+                                    },
                                     onDrag = { change, dragAmount ->
                                         change.consume()
-                                        val updated = currentTransform.translateBy(dragAmount.x, dragAmount.y)
-                                        currentTransform = updated
-                                        onTransformChange(updated)
+                                        val raw = currentTransform.translateBy(dragAmount.x, dragAmount.y)
+                                        val snapped = applyTranslationSnapping(raw)
+                                        currentTransform = snapped
+                                        onTransformChange(snapped)
                                     }
                                 )
                             },
@@ -253,11 +347,15 @@ fun TransformPanel(
                         label = "Move X",
                         value = currentTransform.translationX,
                         onValueChange = {
-                            val updated = currentTransform.copy(translationX = it)
-                            currentTransform = updated
-                            onTransformChange(updated)
+                            val raw = currentTransform.copy(translationX = it)
+                            val snapped = applyTranslationSnapping(raw)
+                            currentTransform = snapped
+                            onTransformChange(snapped)
                         },
-                        onValueChangeFinished = { onTransformCommit(currentTransform) },
+                        onValueChangeFinished = {
+                            clearGuides()
+                            onTransformCommit(currentTransform)
+                        },
                         minValue = -100000f,
                         maxValue = 100000f,
                         defaultValue = 0f,
@@ -268,11 +366,15 @@ fun TransformPanel(
                         label = "Move Y",
                         value = currentTransform.translationY,
                         onValueChange = {
-                            val updated = currentTransform.copy(translationY = it)
-                            currentTransform = updated
-                            onTransformChange(updated)
+                            val raw = currentTransform.copy(translationY = it)
+                            val snapped = applyTranslationSnapping(raw)
+                            currentTransform = snapped
+                            onTransformChange(snapped)
                         },
-                        onValueChangeFinished = { onTransformCommit(currentTransform) },
+                        onValueChangeFinished = {
+                            clearGuides()
+                            onTransformCommit(currentTransform)
+                        },
                         minValue = -100000f,
                         maxValue = 100000f,
                         defaultValue = 0f,
@@ -288,11 +390,15 @@ fun TransformPanel(
                     label = "Rotate",
                     value = currentTransform.rotationDegrees,
                     onValueChange = {
-                        val updated = currentTransform.copy(rotationDegrees = it)
+                        val snappedAngle = applyRotationSnapping(it)
+                        val updated = currentTransform.copy(rotationDegrees = snappedAngle)
                         currentTransform = updated
                         onTransformChange(updated)
                     },
-                    onValueChangeFinished = { onTransformCommit(currentTransform) },
+                    onValueChangeFinished = {
+                        clearGuides()
+                        onTransformCommit(currentTransform)
+                    },
                     minValue = -36000f,
                     maxValue = 36000f,
                     defaultValue = 0f,
