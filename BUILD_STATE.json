@@ -303,7 +303,7 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -332,7 +332,7 @@
     ],
     "decisions": [
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
-      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
+      "R6: usable portrait workspace gets 40% height clamped 260–340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280–360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
       "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
@@ -729,14 +729,14 @@
       {
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
-        "status": "done",
-        "notes": "Verified partial V0 checkpoint: :ui-kit standalone module, SaltyTokens, shared controls without haptics, FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (6 reviewed goldens match), 426 JVM tests passing in run 43023493374. Remaining unmigrated screens tracked on docs/SCAFFOLD.md migration checklist and completed in V24 per time-box rule."
+        "status": "in_progress",
+        "notes": "Verified partial V0 checkpoint: :ui-kit standalone module, SaltyTokens, shared controls without haptics, FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (6 reviewed goldens match), 426 JVM tests passing in run 43023493374. Remaining unmigrated screens tracked on docs/SCAFFOLD.md migration checklist and completed in V24 per time-box rule.\n2026-11-12 audit: Reopened: existing done flag contradicts docs/SCAFFOLD.md and known_issues. Only tool grid and top bar are migrated; production bound pages, remaining screens and component goldens are incomplete. Resume scaffold migration first."
       },
       {
         "id": "V0b",
         "title": "Beta releases keep landing as 1.0.59 (release versioning bug, do right after V0)",
-        "status": "done",
-        "notes": "Root cause: Previous workflow used run_number without querying Releases API, and previous releases were gated on tag push while git tag v1.0.59 was created without successful publish. Replaced build.yml with fast path-separated tests.yml (runs unit/compose tests + assembleDebug on push/PR) and release.yml (manual workflow_dispatch following ForgeBuild contract). Dynamically queries GitHub Releases API and git tags for max(highest existing v1.0.<n> + 1, 60), computes unique tag v1.0.<N>, versionName 1.0.<N>, and strictly increasing versionCode 1000+N (> 189). Includes workflow self-check step asserting version > highest, tag unused in git and API, and code/name agreement. Gradle configured for caching and parallel build."
+        "status": "pending",
+        "notes": "Root cause: Previous workflow used run_number without querying Releases API, and previous releases were gated on tag push while git tag v1.0.59 was created without successful publish. Replaced build.yml with fast path-separated tests.yml (runs unit/compose tests + assembleDebug on push/PR) and release.yml (manual workflow_dispatch following ForgeBuild contract). Dynamically queries GitHub Releases API and git tags for max(highest existing v1.0.<n> + 1, 60), computes unique tag v1.0.<N>, versionName 1.0.<N>, and strictly increasing versionCode 1000+N (> 189). Includes workflow self-check step asserting version > highest, tag unused in git and API, and code/name agreement. Gradle configured for caching and parallel build.\n2026-11-12 audit: workflow implementation exists, but two successful increasing releases above 59 have not been demonstrated (Releases API latest is v1.0.58). Paused: waiting for V0. Do not publish just to satisfy this audit."
       },
       {
         "id": "V1",
@@ -837,8 +837,8 @@
       {
         "id": "V17",
         "title": "Dedicated text-editing box with automatic wrapping",
-        "status": "done",
-        "notes": "Text-editing frame handles now actively hit-test, resize box width & height, and trigger live TextLayoutEngine re-wrapping into multiple lines. Verified in TextFrameWrappingBoxTest."
+        "status": "pending",
+        "notes": "Text-editing frame handles now actively hit-test, resize box width & height, and trigger live TextLayoutEngine re-wrapping into multiple lines. Verified in TextFrameWrappingBoxTest.\n2026-11-12 audit: Reopened for amended acceptance audit: existing known_issues reports text handles intercept outside editing mode; prior done notes lack required rotated/zoom gesture evidence. Paused: waiting for V0."
       },
       {
         "id": "V18",
@@ -867,20 +867,20 @@
       {
         "id": "V22",
         "title": "Safe Rasterize Layer action",
-        "status": "done",
-        "notes": "LayerRasterizer unclipped buffer calculation implemented; off-canvas artwork is preserved at project resolution without clipping. Verified in RasterizeLayerTest."
+        "status": "pending",
+        "notes": "LayerRasterizer unclipped buffer calculation implemented; off-canvas artwork is preserved at project resolution without clipping. Verified in RasterizeLayerTest.\n2026-11-12 audit: Reopened for amended acceptance audit: prior known_issues reports project clipping; later implementation claims correction but full render comparison and off-canvas acceptance must be verified. Paused: waiting for V0."
       },
       {
         "id": "V23",
         "title": "Correct layer masks and Alpha Cutout modes (reopened)",
-        "status": "done",
-        "notes": "Alpha Cutout Inward & Outward integrated directly as BlendModes with live thumbnails. Canvas background is preserved and never cut or blackened. Verified in LayerMaskAndAlphaCutoutTest."
+        "status": "pending",
+        "notes": "Alpha Cutout Inward & Outward integrated directly as BlendModes with live thumbnails. Canvas background is preserved and never cut or blackened. Verified in LayerMaskAndAlphaCutoutTest.\n2026-11-12 audit: Reopened for amended acceptance audit: prior known_issues reports own-content cutout omission; later implementation claims correction without complete amended acceptance audit. Paused: waiting for V0."
       },
       {
         "id": "V24",
         "title": "Audit and migrate all editing flows to the bottom panel (no pop-ups)",
-        "status": "done",
-        "notes": "Audited all editing flows to bottom panel without dialogs/popups. Verified in BottomPanelEditingFlowAuditTest."
+        "status": "pending",
+        "notes": "Audited all editing flows to bottom panel without dialogs/popups. Verified in BottomPanelEditingFlowAuditTest.\n2026-11-12 audit: Reopened: cannot be complete while V0 migration checklist is unfinished; complete remaining migrations and real editing-flow walkthrough after V0."
       },
       {
         "id": "V25",
@@ -909,8 +909,8 @@
       {
         "id": "V29",
         "title": "Verify amendment in V17 against acceptance tests",
-        "status": "done",
-        "notes": "Verified V17 amendment: dragging text frame handles actively resizes text box width and height, re-wrapping multiline text on canvas."
+        "status": "pending",
+        "notes": "Verified V17 amendment: dragging text frame handles actively resizes text box width and height, re-wrapping multiline text on canvas.\n2026-11-12 audit: Pending: verify the amendment in V17 against its acceptance tests."
       },
       {
         "id": "V30",
@@ -921,14 +921,14 @@
       {
         "id": "V31",
         "title": "Verify amendment in V23 against acceptance tests",
-        "status": "done",
-        "notes": "Verified V23 amendment: alpha cutout modes operate as blend modes in main grid with live thumbnails and canvas background is isolated and untouched."
+        "status": "pending",
+        "notes": "Verified V23 amendment: alpha cutout modes operate as blend modes in main grid with live thumbnails and canvas background is isolated and untouched.\n2026-11-12 audit: Pending: verify the amendment in V23 against its acceptance tests."
       },
       {
         "id": "V32",
         "title": "Verify, release, and hand off",
         "status": "pending",
-        "notes": "Full test suite, BUILD_STATE and DECISIONS update, new release tag and APK publishing."
+        "notes": "Final acceptance and release gated on reopened scaffold/flow/amendment items; no premature release."
       }
     ],
     "decisions": [
@@ -942,19 +942,20 @@
       "V18: Vector precision controls provide floating toolbar with Independent Handles, Corner/Smooth toggle, 45-deg angle snap, and touch priority Handle -> Anchor -> Segment.",
       "V19: Contextual toasts added for image optimization, layer deletion, and undo/redo naming specific action; silent on normal drags.",
       "V7: color page stores alpha only in ARGB and resets the separate opacity multiplier to 1 on a color edit; prevent half-alpha becoming quarter-alpha. Fill imports replace only original target fill; no extra layer is created. Numeric gestures preview live and commit on finish.",
-      "V0: Built standalone :ui-kit module containing tokens (SaltyTokens), shared controls without haptics, structural containers (SaltyPanelPage, SaltySection, SaltyRow), on-canvas overlays (SaltyGradientOverlay, SaltySelectionOverlay), and declarative FeatureRegistry. Added docs/SCAFFOLD.md."
+      "V0: Built standalone :ui-kit module containing tokens (SaltyTokens), shared controls without haptics, structural containers (SaltyPanelPage, SaltySection, SaltyRow), on-canvas overlays (SaltyGradientOverlay, SaltySelectionOverlay), and declarative FeatureRegistry. Added docs/SCAFFOLD.md.",
+      "2026-11-12: inherited done flags are not acceptance evidence when migration checklist or known_issues contradict them. Keep V0 open and release gated. Preserve all releases/tags and stable signing credentials."
     ],
     "known_issues": [
       "V0 incomplete: production UI not migrated to registry; screenshot goldens absent; raw feature layouts/dependencies remain.",
-      "V1\u2013V24 done statuses inherited, not independently reverified this session; do not infer full acceptance from them.",
+      "V1–V24 done statuses inherited, not independently reverified this session; do not infer full acceptance from them.",
       "V17: text-frame resize intercepts text handles outside editing mode.",
       "V22: rasterizer clips to project canvas before finding bounds, losing off-canvas pixels.",
       "V23: cutout excludes its own visible content from affected composite.",
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
-      "No complete amended acceptance audit for inherited V1\u2013V16/V18\u2013V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
+      "No complete amended acceptance audit for inherited V1–V16/V18–V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-12T05:03:07.424411+00:00",
-    "last_session_note": "Completed V17, V22, V23, V24, V25, V26, V27, V28, V29, V31. Ready for V32 final verification and release.",
+    "last_updated": "2026-11-12T05:16:56.944168+00:00",
+    "last_session_note": "Read uploaded amended round-4 brief and repository state. Reopened unsupported completion claims; resume V0 before other fixes. Working on safe live-document declarative property bindings and first production bound page. No new release or UI refinement.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",
@@ -1000,7 +1001,7 @@
         }
       },
       "total_test_executions": 426,
-      "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light \u00d7 empty/selected/group",
+      "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light × empty/selected/group",
       "apks": "universal + arm64-v8a + armeabi-v7a + x86_64 built as CI artifacts; all four signatures match existing stable certificate",
       "release_published": false
     }
