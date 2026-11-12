@@ -402,3 +402,28 @@ claim V6's actual-render-resolution acceptance has been reverified.
 This is a V0 checkpoint, not round completion: remaining screens, strict whole-module
 dependency boundaries, registered custom components/overlays and full library golden
 coverage remain open. No release, no host preview, no UI refinement, signing unchanged.
+
+
+### V0 Project Settings scoped acceptance and golden review
+Run [43162713529](https://github.com/motionssalt/salty-graphics/actions/runs/43162713529)
+passed the typed mutation, history, numeric pointer/cancellation, production Settings
+entry, inline quality/visibility and scoped architecture tests. Its only failure was
+missing reviewed settings PNG baselines. The native production-theme captures have
+now been visually reviewed: real labels/controls, readable text, gray canvas ARGB,
+clear switch states, and distinct light/dark semantic colors. They are accepted as
+`settings_dark.png` and `settings_light.png`; no automatic golden acceptance exists.
+This covers the shared settings page viewport, NOT the whole library state matrix.
+
+Review first rejected identical light/dark images: SaltyTokens had a hard-dark default
+and the production theme never provided its selected colors. A semantic Material-to-
+token bridge now respects app light/dark/dynamic colors, without feature-local styles.
+The screenshot test fails if both themes produce identical pixels.
+
+Inherited baseline repairs kept all assertions active: two top-level amendment tests
+were moved inside their annotated Robolectric classes; grouping now holds real layer
+rows instead of clicking an invisible zero-size compatibility node (which was removed);
+the blend audit targets actual thumbnail descriptions rather than a duplicate category
+heading. Text editing now shares library frame bounds for drawing and hit testing,
+not one-line glyph bounds; non-editing transforms retain their prior geometry. Full
+V17/V23 acceptance and whole editing-flow migration remain open, regardless of these
+narrow baseline repairs. Full batch suite verification is pending the next run.
