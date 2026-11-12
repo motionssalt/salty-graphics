@@ -24,8 +24,18 @@ enum class BoundControlType {
 
 data class PropertyBinding<T>(
     val getter: (ProjectDocument, String?) -> T,
-    val setter: (ProjectDocument, String?, T) -> Pair<ProjectDocument, String> // Returns (updatedDoc, historyLabel)
-)
+    val setter: (ProjectDocument, String?, T) -> Pair<ProjectDocument, String>,
+    val path: DocumentPropertyPath<T>? = null
+) {
+    constructor(path: DocumentPropertyPath<T>) : this(
+        getter = path.read,
+        setter = { live, layerId, value ->
+            if (path.exists(live, layerId)) path.write(live, layerId, value) to path.identity(live, layerId, value).toLabel()
+            else live to "No change"
+        },
+        path = path
+    )
+}
 
 data class FeatureControlDef<T>(
     val id: String,
@@ -39,7 +49,8 @@ data class FeatureControlDef<T>(
     val segmentOptions: List<com.motionssalt.saltygraphics.uikit.controls.SegmentChipItem<T>>? = null,
     val defaultValue: T,
     val isVisible: ((ProjectDocument, String?) -> Boolean)? = null,
-    val customRenderer: (@Composable (current: T, onUpdate: (T) -> Unit) -> Unit)? = null
+    val customRenderer: (@Composable (current: T, onUpdate: (T) -> Unit) -> Unit)? = null,
+    val isEnabled: (ProjectDocument, String?) -> Boolean = { _, _ -> true }
 )
 
 data class FeatureSectionDef(
@@ -48,11 +59,14 @@ data class FeatureSectionDef(
     val controls: List<FeatureControlDef<*>>
 )
 
+data class FeatureReadoutDef(val id: String, val text: (ProjectDocument, String?) -> String)
+
 data class FeaturePageDef(
     val id: String,
     val title: String,
     val sections: List<FeatureSectionDef>,
-    val customPageContent: (@Composable (doc: ProjectDocument, layerId: String?, onDocUpdate: (ProjectDocument, String) -> Unit, onBack: () -> Unit) -> Unit)? = null
+    val customPageContent: (@Composable (doc: ProjectDocument, layerId: String?, onDocUpdate: (ProjectDocument, String) -> Unit, onBack: () -> Unit) -> Unit)? = null,
+    val readouts: List<FeatureReadoutDef> = emptyList()
 )
 
 data class FeatureDefinition(

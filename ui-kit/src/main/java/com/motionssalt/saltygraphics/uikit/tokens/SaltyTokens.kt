@@ -37,6 +37,8 @@ object SaltySpacing {
     val rowSpacing: Dp = 8.dp
     val itemSpacing: Dp = 8.dp
     val toolGridSpacing: Dp = 8.dp
+    val rulerHeight: Dp = 44.dp
+    val progressHeight: Dp = 32.dp
     val controlHeight: Dp = 40.dp
     val touchTargetMin: Dp = 48.dp
     val breadcrumbButton: Dp = 28.dp

@@ -36,50 +36,50 @@ No literal `dp`, `sp`, or raw hex color values in feature code.
 
 To add a feature, create a declaration file that calls `FeatureRegistry.register(definition)`.
 
-### Worked Example:
-```kotlin
-val myFeature = FeatureDefinition(
-    id = "blur_effect",
-    title = "Blur",
-    icon = Icons.Default.BlurOn,
-    placement = ToolPlacement.LAYER_SELECTED,
-    supportedLayerTypes = setOf(LayerType.MEDIA, LayerType.SHAPE),
-    pages = listOf(
-        FeaturePageDef(
-            id = "blur_main",
-            title = "Blur Settings",
-            sections = listOf(
-                FeatureSectionDef(
-                    id = "blur_sec",
-                    title = "Parameters",
-                    controls = listOf(
-                        FeatureControlDef(
-                            id = "blur_radius",
-                            label = "Radius",
-                            type = BoundControlType.RULER_SLIDER,
-                            range = 0f..100f,
-                            step = 1f,
-                            unit = "px",
-                            defaultValue = 10f,
-                            binding = PropertyBinding(
-                                getter = { doc, layerId -> getBlurRadius(doc, layerId) },
-                                setter = { doc, layerId, radius ->
-                                    val updated = setBlurRadius(doc, layerId, radius)
-                                    updated to "Adjust Blur Radius" // Automatic history label!
-                                }
-                            )
-                        )
-                    )
-                )
-            )
-        )
-    )
-)
+### Worked example: typed production settings
+`app/.../ui/editor/ProjectSettingsFeature.kt` declares the actual project settings page.
+`ProjectSettingsPage.kt` passes only its definition, document and event callbacks to
+`ScaffoldFeaturePage`. It imports no layout widgets, Material components or UI literals.
+The catalog is constructed with `requireTypedBindings = true`, so missing property paths,
+feature-owned custom layouts, invalid defaults/options and invalid ranges fail early.
 
-FeatureRegistry.register(myFeature)
+```kotlin
+val size = FeatureControlDef(
+    id = "grid_size", label = "Grid size", type = BoundControlType.RULER_SLIDER,
+    binding = PropertyBinding(DocumentPropertyPath(
+        key = "editorSettings.gridSize", target = "Grid", property = "size",
+        read = { doc, _ -> doc.editorSettings.gridSize.toFloat() },
+        write = { live, _, value ->
+            live.updateEditorSettings { it.copy(gridSize = value.toInt()) }
+        }
+    )),
+    range = 1f..1024f, step = 1f, unit = "px", defaultValue = 20f
+)
 ```
 
-Once registered, the tool appears automatically in the bottom panel tool grid, navigates into its page stack, and commits structured history commands on modification.
+A property path is a typed lens. Its write copies **only its own property** from the
+live input; never close over a document/settings snapshot. `FeatureChange` contains
+only the binding, value, document id and stable target id. At dispatch the host uses:
+```kotlin
+val live = tree.currentDocument
+if (change.appliesTo(live)) {
+    recordCommandAndAutoSave(change.identity(live), change::apply)
+}
+```
+The shared renderer generates specific verb/target/property identities. Numeric and
+color gestures call `onPreview` without adding history nodes, then `onCommit` once.
+Cancel/back/disposal clears an outstanding preview. The editor previews against the
+current committed document and does not autosave draft frames. An old event therefore
+cannot overwrite an unrelated setting or affect a different project/deleted target.
+Typed numeric input is range-checked and applied exactly, without quantizing to a step.
+Color rows open a page **inside the same fixed panel**; Hex with alpha and Transparent
+commit the same typed binding. Dropdown choices expand inline. Read-only diagnostics
+are `FeatureReadoutDef` data, not custom feature layouts.
+
+The legacy getter/setter constructor remains temporarily for unmigrated examples and
+tests. It is rejected by strict production catalogs; it is not a sanctioned new-feature
+integration route. Registered custom component/overlay extensibility and remaining
+control types still need migration; do not interpret this API checkpoint as full V0.
 
 ---
 
@@ -117,7 +117,7 @@ until they are removed and every component has actual rendered golden coverage.
 - [ ] **Settings Screen**: Migrated to `SaltyTokens`, `SaltySwitch`, `SaltyProgressSlider`, and `SaltySection`.
 - [ ] **New Project Screen**: Migrated to `SaltyTokens`, visual ratio tiles, and docked value entry strip.
 - [ ] **Export Screen**: Migrated to `SaltyTokens`, progress sliders, format chips, and shared controls.
-- [ ] **Project Settings**: Migrated to `SaltyPanelPage`, canvas background color picker, grid size ruler slider, and snap toggles.
+- [ ] **Project Settings**: Production declaration and typed commands now use `ScaffoldFeaturePage` with shared controls, panel-native color pages, inline quality selector and readouts. Targeted UI/history/PNG verification pending; numeric footer/IME audit remains part of V0/V24.
 - [x] **Editor Top Bar**: `TopPanel` is now a binding-only facade over `SaltyEditorTopBar` in `:ui-kit`. Shared library owns layout/tokens; navigation is horizontally scrollable and operations/settings remain pinned on narrow screens. Screenshot matrix remains pending.
 - [x] **Bottom Panel Tool Grid**: Production `BottomPanel` supplies action bindings only. `EditorToolFeatures` declares metadata/eligibility, and `ScaffoldToolPanel` in `:ui-kit` draws the existing fixed three-column grid and group breadcrumbs through `FeatureCatalog.queryTools`.
 - [ ] **Fill & Gradient**: Migrated to `FillPanelPage`, `SaltyColorPicker`, `SaltyGradientOverlay`, and in-panel project media grid.
@@ -145,10 +145,11 @@ rendering. The host supplies only `availableActions` and callback dispatch.
 
 A separate `ScaffoldMigrationBoundaryTest` locks down the migrated bottom grid and
 registration file. It intentionally does **not** imply the remaining app or module
-boundary is clean. `ScaffoldFeaturePage` still needs production integration, typed
-property-path validation, live-document commands, one history command per gesture,
-and a complete custom-component registry before V0 is complete. Its old pair-of-document
-setter API must not be used to capture and overwrite stale full document snapshots.
+boundary is clean. `ScaffoldFeaturePage` now has its first production integration in Project Settings, typed
+property lenses, live-document commands and separate preview/commit events. A complete
+custom-component registry, all remaining screens and every-component golden matrices
+still remain before V0 is complete. Legacy pair-of-document setters must never capture
+and overwrite stale full document snapshots.
 
 `TokenContrastTest` checks token math only. Native rendered tool-grid PNG tests live
 in `ScaffoldToolPanelTest`: missing/changed checked-in baselines fail (no auto-accept).

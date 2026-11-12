@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
@@ -31,12 +32,25 @@ fun SaltyProgressSlider(
     unit: String = "",
     label: String = "",
     defaultValue: Float = 0f,
-    onValueClick: (() -> Unit)? = null
+    onValueClick: (() -> Unit)? = null,
+    onValueCancel: () -> Unit = {}
 ) {
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
 
-    val fraction = ((value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f)
+    val liveValue by rememberUpdatedState(value)
+    val changeCallback by rememberUpdatedState(onValueChange)
+    val commitCallback by rememberUpdatedState(onValueCommit)
+    val cancelCallback by rememberUpdatedState(onValueCancel)
+    val liveRange by rememberUpdatedState(range)
+    val liveStep by rememberUpdatedState(step)
+    var dragValue by remember { mutableFloatStateOf(value) }
+    fun valueAt(fraction: Float): Float {
+        val raw = liveRange.start + fraction * (liveRange.endInclusive - liveRange.start)
+        return if (liveStep > 0f) (liveRange.start +
+            Math.round((raw - liveRange.start) / liveStep) * liveStep).coerceIn(liveRange.start, liveRange.endInclusive) else raw
+    }
+    val fraction = if (range.start == range.endInclusive) 0f else ((value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -77,30 +91,26 @@ fun SaltyProgressSlider(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(32.dp)
+                .height(SaltyTokens.spacing.progressHeight)
                 .clip(shapes.pill)
                 .background(colors.surfaceVariant)
-                .pointerInput(range, step) {
+                .testTag("progress_track")
+                .pointerInput(Unit) {
                     detectTapGestures { offset ->
-                        val newFraction = (offset.x / size.width).coerceIn(0f, 1f)
-                        val rawValue = range.start + newFraction * (range.endInclusive - range.start)
-                        val stepped = if (step > 0f) {
-                            (Math.round(rawValue / step) * step).coerceIn(range.start, range.endInclusive)
-                        } else rawValue
-                        onValueChange(stepped)
-                        onValueCommit(stepped)
+                        val next = valueAt((offset.x / size.width).coerceIn(0f, 1f))
+                        changeCallback(next)
+                        commitCallback(next)
                     }
                 }
-                .pointerInput(range, step) {
+                .pointerInput(Unit) {
                     detectDragGestures(
-                        onDragEnd = { onValueCommit(value) }
+                        onDragStart = { dragValue = liveValue },
+                        onDragEnd = { commitCallback(dragValue) },
+                        onDragCancel = { cancelCallback() }
                     ) { change, _ ->
-                        val newFraction = (change.position.x / size.width).coerceIn(0f, 1f)
-                        val rawValue = range.start + newFraction * (range.endInclusive - range.start)
-                        val stepped = if (step > 0f) {
-                            (Math.round(rawValue / step) * step).coerceIn(range.start, range.endInclusive)
-                        } else rawValue
-                        onValueChange(stepped)
+                        change.consume()
+                        dragValue = valueAt((change.position.x / size.width).coerceIn(0f, 1f))
+                        changeCallback(dragValue)
                     }
                 },
             contentAlignment = Alignment.CenterStart

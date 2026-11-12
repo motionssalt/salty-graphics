@@ -31,10 +31,20 @@ fun SaltyColorPicker(
     onColorChange: (Long) -> Unit,
     modifier: Modifier = Modifier,
     supportsAlpha: Boolean = true,
-    supportsTransparent: Boolean = true
+    supportsTransparent: Boolean = true,
+    onColorCommit: (Long) -> Unit = {},
+    onColorCancel: () -> Unit = {}
 ) {
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
+
+    val colorCallback by rememberUpdatedState(onColorChange)
+    val commitCallback by rememberUpdatedState(onColorCommit)
+    val cancelCallback by rememberUpdatedState(onColorCancel)
+    var lastColor by remember { mutableLongStateOf(colorArgb) }
+    var hexInput by remember(colorArgb) { mutableStateOf("%08X".format(colorArgb)) }
+    val parsedHex = hexInput.removePrefix("#").takeIf { it.length == 6 || it.length == 8 }
+        ?.toLongOrNull(16)?.let { if (hexInput.removePrefix("#").length == 6) it or 0xFF000000L else it }
 
     // Deconstruct ARGB
     val a = ((colorArgb shr 24) and 0xFF).toFloat() / 255f
@@ -53,14 +63,19 @@ fun SaltyColorPicker(
         outHsv
     }
 
-    var hue by remember(colorArgb) { mutableFloatStateOf(hsv[0]) }
-    var sat by remember(colorArgb) { mutableFloatStateOf(hsv[1]) }
-    var valueVal by remember(colorArgb) { mutableFloatStateOf(hsv[2]) }
-    var alpha by remember(colorArgb) { mutableFloatStateOf(a) }
+    var hue by remember { mutableFloatStateOf(hsv[0]) }
+    var sat by remember { mutableFloatStateOf(hsv[1]) }
+    var valueVal by remember { mutableFloatStateOf(hsv[2]) }
+    var alpha by remember { mutableFloatStateOf(a) }
+
+    LaunchedEffect(colorArgb) {
+        hue = hsv[0]; sat = hsv[1]; valueVal = hsv[2]; alpha = a; lastColor = colorArgb
+    }
 
     fun updateColor(h: Float, s: Float, v: Float, aF: Float) {
         val rgb = android.graphics.Color.HSVToColor((aF * 255).toInt(), floatArrayOf(h, s, v))
-        onColorChange((rgb.toLong() and 0xFFFFFFFFL))
+        lastColor = rgb.toLong() and 0xFFFFFFFFL
+        colorCallback(lastColor)
     }
 
     Column(
@@ -97,7 +112,7 @@ fun SaltyColorPicker(
 
             if (supportsTransparent) {
                 TextButton(
-                    onClick = { updateColor(0f, 0f, 0f, 0f) }
+                    onClick = { updateColor(hue, sat, valueVal, 0f); commitCallback(lastColor) }
                 ) {
                     Text(
                         text = "Transparent",
@@ -108,6 +123,12 @@ fun SaltyColorPicker(
             }
         }
 
+        SaltyTextField(value = hexInput, onValueChange = { hexInput = it }, label = "Hex with alpha",
+            isError = parsedHex == null)
+        TextButton(onClick = {
+            parsedHex?.let { lastColor = it; colorCallback(it); commitCallback(it) }
+        }, enabled = parsedHex != null) { Text("Apply color") }
+
         // 2D Saturation / Value Gradient Box
         val pureHueColor = Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, 1f, 1f)))
         BoxWithConstraints(
@@ -115,8 +136,12 @@ fun SaltyColorPicker(
                 .fillMaxWidth()
                 .height(140.dp)
                 .clip(shapes.md)
-                .pointerInput(hue) {
-                    detectDragGestures { change, _ ->
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragEnd = { commitCallback(lastColor) },
+                        onDragCancel = { cancelCallback() }
+                    ) { change, _ ->
+                        change.consume()
                         val xF = (change.position.x / size.width).coerceIn(0f, 1f)
                         val yF = (1f - (change.position.y / size.height)).coerceIn(0f, 1f)
                         sat = xF
@@ -167,7 +192,11 @@ fun SaltyColorPicker(
                 .height(28.dp)
                 .clip(shapes.pill)
                 .pointerInput(Unit) {
-                    detectDragGestures { change, _ ->
+                    detectDragGestures(
+                        onDragEnd = { commitCallback(lastColor) },
+                        onDragCancel = { cancelCallback() }
+                    ) { change, _ ->
+                        change.consume()
                         val f = (change.position.x / size.width).coerceIn(0f, 1f)
                         hue = f * 360f
                         updateColor(hue, sat, valueVal, alpha)
@@ -189,8 +218,12 @@ fun SaltyColorPicker(
                     .fillMaxWidth()
                     .height(28.dp)
                     .clip(shapes.pill)
-                    .pointerInput(hue, sat, valueVal) {
-                        detectDragGestures { change, _ ->
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                        onDragEnd = { commitCallback(lastColor) },
+                        onDragCancel = { cancelCallback() }
+                    ) { change, _ ->
+                        change.consume()
                             val f = (change.position.x / size.width).coerceIn(0f, 1f)
                             alpha = f
                             updateColor(hue, sat, valueVal, alpha)

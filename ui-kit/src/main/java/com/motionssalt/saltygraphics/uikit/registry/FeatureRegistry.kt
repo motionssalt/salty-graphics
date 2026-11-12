@@ -2,10 +2,15 @@ package com.motionssalt.saltygraphics.uikit.registry
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.motionssalt.saltygraphics.engine.model.LayerType
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.uikit.controls.*
 import com.motionssalt.saltygraphics.uikit.structure.*
@@ -17,7 +22,7 @@ import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
  * The scaffold automatically renders them in the bottom panel and wires
  * control changes to the history system with structured action labels.
  */
-open class FeatureCatalog {
+open class FeatureCatalog(private val requireTypedBindings: Boolean = false) {
     // Snapshot-backed and ordered: runtime registration must appear immediately,
     // without losing the declaration order when metadata is replaced.
     private val features = mutableStateListOf<FeatureDefinition>()
@@ -32,11 +37,17 @@ open class FeatureCatalog {
         for (page in feature.pages) {
             require(page.id.isNotBlank() && page.title.isNotBlank()) { "Page metadata is required: ${feature.id}" }
             require(page.sections.map { it.id }.distinct().size == page.sections.size) { "Duplicate section id: ${page.id}" }
+            require(!requireTypedBindings || page.customPageContent == null) { "Typed pages cannot bypass the scaffold" }
+            require(page.readouts.all { it.id.isNotBlank() } && page.readouts.map { it.id }.distinct().size == page.readouts.size) {
+                "Invalid readout id: ${page.id}"
+            }
             val controls = page.sections.flatMap { it.controls }
             require(controls.map { it.id }.distinct().size == controls.size) { "Duplicate control id: ${page.id}" }
             for (section in page.sections) require(section.id.isNotBlank()) { "Section id is required" }
             for (control in controls) {
                 require(control.id.isNotBlank() && control.label.isNotBlank()) { "Control metadata is required" }
+                require(!requireTypedBindings || control.binding.path != null) { "Typed property path required: ${control.id}" }
+                require(!requireTypedBindings || control.customRenderer == null) { "Register custom components in the library, not feature layout" }
                 require(control.defaultValue != null) { "Default value is required: ${control.id}" }
                 control.range?.let { range ->
                     require(range.start.isFinite() && range.endInclusive.isFinite() && range.start <= range.endInclusive) {
@@ -54,6 +65,10 @@ open class FeatureCatalog {
                     BoundControlType.CUSTOM -> control.customRenderer != null
                 }
                 require(validType) { "Default/options do not match control type: ${control.id}" }
+                if (control.defaultValue is Float) require(control.defaultValue.isFinite() &&
+                    (control.range == null || control.defaultValue in control.range)) { "Default outside range: ${control.id}" }
+                if (control.type == BoundControlType.INLINE_DROPDOWN) require(control.options.orEmpty().any { it.value == control.defaultValue })
+                if (control.type == BoundControlType.SEGMENTED_CHIPS) require(control.segmentOptions.orEmpty().any { it.value == control.defaultValue })
             }
         }
         val existing = features.indexOfFirst { it.id == feature.id }
@@ -97,50 +112,83 @@ open class FeatureCatalog {
 
 object FeatureRegistry : FeatureCatalog()
 
-/**
- * Declarative Bottom Panel renderer powered by FeatureRegistry.
- * Generates panel pages and control bindings automatically using shared components.
- */
+/** All feature pages use property events; a feature never receives or submits a whole snapshot. */
 @Composable
 fun ScaffoldFeaturePage(
     feature: FeatureDefinition,
     pageId: String,
     document: ProjectDocument,
     layerId: String?,
-    onDocUpdate: (ProjectDocument, historyLabel: String) -> Unit,
+    onCommit: (FeatureChange<*>) -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPreview: (FeatureChange<*>?) -> Unit = {}
 ) {
-    val pageDef = feature.pages.firstOrNull { it.id == pageId }
-        ?: feature.pages.firstOrNull()
-        ?: return
+    val page = feature.pages.firstOrNull { it.id == pageId } ?: return
+    var colorControlId by remember(feature.id, pageId, layerId) { mutableStateOf<String?>(null) }
+    var numericControlId by remember(feature.id, pageId, layerId) { mutableStateOf<String?>(null) }
+    var preview by remember(feature.id, pageId, layerId) { mutableStateOf<FeatureChange<*>?>(null) }
+    val previewCallback by rememberUpdatedState(onPreview)
+    val commitCallback by rememberUpdatedState(onCommit)
+    fun cancel() { if (preview != null) { preview = null; previewCallback(null) } }
+    fun commit(change: FeatureChange<*>) { preview = null; commitCallback(change) }
+    fun update(change: FeatureChange<*>) { preview = change; previewCallback(change) }
+    DisposableEffect(feature.id, pageId, layerId) { onDispose { cancel() } }
 
-    if (pageDef.customPageContent != null) {
-        pageDef.customPageContent.invoke(document, layerId, onDocUpdate, onBack)
+    val controls = page.sections.flatMap { it.controls }
+    val color = controls.firstOrNull { it.id == colorControlId && it.type == BoundControlType.COLOR_PICKER }
+    if (color != null) {
+        @Suppress("UNCHECKED_CAST") val bound = color as FeatureControlDef<Long>
+        SaltyPanelPage(bound.label, { cancel(); colorControlId = null }, modifier.testTag("scaffold_color_page")) {
+            SaltyColorPicker(
+                colorArgb = bound.binding.getter(document, layerId),
+                onColorChange = { update(bound.change(document, layerId, it)) },
+                onColorCommit = { commit(bound.change(document, layerId, it)) },
+                onColorCancel = { cancel() }
+            )
+        }
         return
     }
-
-    SaltyPanelPage(
-        title = pageDef.title,
-        onBack = onBack,
-        modifier = modifier
-    ) {
-        pageDef.sections.forEach { sec ->
-            SaltySection(
-                title = sec.title
-            ) {
-                sec.controls.forEach { ctrl ->
-                    val isVis = ctrl.isVisible?.invoke(document, layerId) ?: true
-                    if (isVis) {
-                        RenderBoundControl(
-                            control = ctrl,
-                            document = document,
-                            layerId = layerId,
-                            onUpdate = { updated, label -> onDocUpdate(updated, label) }
-                        )
+    val numeric = controls.firstOrNull { it.id == numericControlId }
+    SaltyPanelPage(page.title, { cancel(); onBack() }, modifier.testTag("scaffold_feature_page"), footer = {
+        if (numeric != null) {
+            @Suppress("UNCHECKED_CAST") val bound = numeric as FeatureControlDef<Float>
+            SaltyValueEntryStrip(bound.label, bound.binding.getter(document, layerId), bound.range ?: (0f..100f), bound.unit.orEmpty(),
+                onConfirm = { numericControlId = null; commit(bound.change(document, layerId, it)) },
+                onDismiss = { numericControlId = null })
+        }
+    }) {
+        page.sections.forEach { section ->
+            SaltySection(title = section.title) {
+                section.controls.forEach { control ->
+                    if (control.isVisible?.invoke(document, layerId) != false) {
+                        key(feature.id, pageId, layerId, control.id) {
+                            val enabled = feature.enabledCondition(document, setOfNotNull(layerId)) &&
+                                control.isEnabled(document, layerId) &&
+                                (control.binding.path?.exists?.invoke(document, layerId) ?: true)
+                            // Consume pointer input above disabled children and expose disabled semantics.
+                            val stateModifier = if (enabled) Modifier else Modifier.alpha(.38f)
+                                .semantics { disabled() }.pointerInput(Unit) {
+                                    awaitPointerEventScope { while (true) {
+                                        awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                                    } }
+                                }
+                            Box(Modifier.testTag("control_${control.id}").then(stateModifier)) {
+                                RenderBoundControl(control, document, layerId,
+                                    onCommit = { if (enabled) commit(it) },
+                                    onPreview = { if (enabled) update(it) },
+                                    onCancel = { cancel() },
+                                    onOpenColor = { if (enabled) colorControlId = control.id },
+                                    onOpenValue = { if (enabled) { cancel(); numericControlId = control.id } })
+                            }
+                        }
                     }
                 }
             }
+        }
+        page.readouts.forEach { readout ->
+            Text(readout.text(document, layerId), style = SaltyTokens.typography.bodySmall,
+                color = SaltyTokens.colors.textSecondary, modifier = Modifier.testTag("readout_${readout.id}"))
         }
     }
 }
@@ -151,112 +199,45 @@ private fun <T> RenderBoundControl(
     control: FeatureControlDef<T>,
     document: ProjectDocument,
     layerId: String?,
-    onUpdate: (ProjectDocument, String) -> Unit
+    onCommit: (FeatureChange<*>) -> Unit,
+    onPreview: (FeatureChange<*>) -> Unit,
+    onCancel: () -> Unit,
+    onOpenColor: () -> Unit,
+    onOpenValue: () -> Unit
 ) {
-    val currentVal = control.binding.getter(document, layerId)
-
-    if (control.customRenderer != null) {
-        control.customRenderer.invoke(currentVal) { newVal ->
-            val (updated, label) = control.binding.setter(document, layerId, newVal)
-            onUpdate(updated, label)
-        }
-        return
-    }
-
+    val current = control.binding.getter(document, layerId)
+    fun commit(value: T) = onCommit(control.change(document, layerId, value))
+    fun preview(value: T) = onPreview(control.change(document, layerId, value))
     when (control.type) {
-        BoundControlType.SWITCH -> {
-            val boolVal = currentVal as? Boolean ?: false
-            SaltyRow(label = control.label) {
-                SaltySwitch(
-                    checked = boolVal,
-                    onCheckedChange = { checked ->
-                        val (updated, label) = (control.binding as PropertyBinding<Boolean>).setter(document, layerId, checked)
-                        onUpdate(updated, label)
-                    }
-                )
+        BoundControlType.SWITCH -> SaltyRow(label = control.label) {
+            SaltySwitch(current as Boolean, { commit(it as T) })
+        }
+        BoundControlType.RULER_SLIDER, BoundControlType.PROGRESS_SLIDER -> {
+            val range = control.range ?: (0f..100f)
+            val onChange: (Float) -> Unit = { preview(it as T) }
+            val onFinished: (Float) -> Unit = { commit(it as T) }
+            Column {
+                if (control.type == BoundControlType.RULER_SLIDER) {
+                    SaltyRulerSlider(value = current as Float, label = control.label, range = range,
+                        step = control.step ?: 1f, unit = control.unit.orEmpty(), defaultValue = control.defaultValue as Float,
+                        onValueChange = onChange, onValueCommit = onFinished, onValueCancel = onCancel,
+                        onValueClick = onOpenValue)
+                } else {
+                    SaltyProgressSlider(value = current as Float, label = control.label, range = range,
+                        step = control.step ?: 1f, unit = control.unit.orEmpty(), defaultValue = control.defaultValue as Float,
+                        onValueChange = onChange, onValueCommit = onFinished, onValueCancel = onCancel,
+                        onValueClick = onOpenValue)
+                }
             }
         }
-        BoundControlType.RULER_SLIDER -> {
-            val floatVal = (currentVal as? Number)?.toFloat() ?: 0f
-            val range = control.range ?: (-1000f..1000f)
-            val step = control.step ?: 1f
-            val unit = control.unit ?: ""
-
-            SaltyRulerSlider(
-                value = floatVal,
-                label = control.label,
-                range = range,
-                step = step,
-                unit = unit,
-                onValueChange = { newVal ->
-                    val (updated, label) = (control.binding as PropertyBinding<Float>).setter(document, layerId, newVal)
-                    onUpdate(updated, label)
-                }
-            )
+        BoundControlType.INLINE_DROPDOWN -> SaltyInlineDropdown(current, control.options.orEmpty(), ::commit, label = control.label)
+        BoundControlType.SEGMENTED_CHIPS -> SaltySegmentedChips(current, control.segmentOptions.orEmpty(), ::commit, label = control.label)
+        BoundControlType.COLOR_PICKER -> SaltyRow(label = control.label) {
+            TextButton(onClick = onOpenColor) {
+                Text("#%08X".format(current as Long), color = SaltyTokens.colors.primary)
+            }
         }
-        BoundControlType.PROGRESS_SLIDER -> {
-            val floatVal = (currentVal as? Number)?.toFloat() ?: 0f
-            val range = control.range ?: (0f..100f)
-            val step = control.step ?: 1f
-            val unit = control.unit ?: ""
-
-            SaltyProgressSlider(
-                value = floatVal,
-                label = control.label,
-                range = range,
-                step = step,
-                unit = unit,
-                onValueChange = { newVal ->
-                    val (updated, label) = (control.binding as PropertyBinding<Float>).setter(document, layerId, newVal)
-                    onUpdate(updated, label)
-                }
-            )
-        }
-        BoundControlType.INLINE_DROPDOWN -> {
-            val opts = control.options ?: emptyList()
-            SaltyInlineDropdown(
-                selected = currentVal,
-                options = opts,
-                label = control.label,
-                onSelect = { selectedVal ->
-                    val (updated, label) = control.binding.setter(document, layerId, selectedVal)
-                    onUpdate(updated, label)
-                }
-            )
-        }
-        BoundControlType.SEGMENTED_CHIPS -> {
-            val opts = control.segmentOptions ?: emptyList()
-            SaltySegmentedChips(
-                selected = currentVal,
-                options = opts,
-                label = control.label,
-                onSelect = { selectedVal ->
-                    val (updated, label) = control.binding.setter(document, layerId, selectedVal)
-                    onUpdate(updated, label)
-                }
-            )
-        }
-        BoundControlType.COLOR_PICKER -> {
-            val colorLong = (currentVal as? Long) ?: ((currentVal as? Number)?.toLong() ?: 0xFFFFFFFFL)
-            SaltyColorPicker(
-                colorArgb = colorLong,
-                onColorChange = { newArgb ->
-                    val (updated, label) = (control.binding as PropertyBinding<Long>).setter(document, layerId, newArgb)
-                    onUpdate(updated, label)
-                }
-            )
-        }
-        BoundControlType.TEXT_FIELD -> {
-            val strVal = currentVal as? String ?: ""
-            SaltyTextField(
-                value = strVal,
-                label = control.label,
-                onValueChange = { newStr ->
-                    val (updated, label) = (control.binding as PropertyBinding<String>).setter(document, layerId, newStr)
-                    onUpdate(updated, label)
-                }
-            )
-        }
-        BoundControlType.CUSTOM -> {}
+        BoundControlType.TEXT_FIELD -> SaltyTextField(current as String, { commit(it as T) }, label = control.label)
+        BoundControlType.CUSTOM -> control.customRenderer?.invoke(current, ::commit)
     }
 }

@@ -6,7 +6,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.Job
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import kotlinx.coroutines.CancellationException
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
@@ -38,25 +43,30 @@ fun SaltyRulerSlider(
     unit: String = "",
     label: String = "",
     defaultValue: Float = 0f,
-    onValueClick: (() -> Unit)? = null
+    onValueClick: (() -> Unit)? = null,
+    onValueCancel: () -> Unit = {}
 ) {
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
     val coroutineScope = rememberCoroutineScope()
 
-    var internalValue by remember(value) { mutableFloatStateOf(value) }
+    var internalValue by remember { mutableFloatStateOf(value) }
+    var dragging by remember { mutableStateOf(false) }
+    val liveValue by rememberUpdatedState(value)
+    val changeCallback by rememberUpdatedState(onValueChange)
+    val commitCallback by rememberUpdatedState(onValueCommit)
+    val cancelCallback by rememberUpdatedState(onValueCancel)
+    val liveRange by rememberUpdatedState(range)
+    val liveStep by rememberUpdatedState(step)
+    var fling by remember { mutableStateOf<Job?>(null) }
+    LaunchedEffect(value) { if (!dragging) internalValue = value }
+    DisposableEffect(Unit) { onDispose { fling?.cancel() } }
     val decayAnim = remember { Animatable(0f) }
 
     val tickSpacingPx = 16f
     val stepsPerTick = step.coerceAtLeast(0.01f)
     val pxPerUnit = tickSpacingPx / stepsPerTick
 
-    val draggableState = rememberDraggableState { deltaPx ->
-        val deltaValue = -deltaPx / pxPerUnit
-        val newValue = (internalValue + deltaValue).coerceIn(range.start, range.endInclusive)
-        internalValue = newValue
-        onValueChange(newValue)
-    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -100,22 +110,37 @@ fun SaltyRulerSlider(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp)
+                .height(SaltyTokens.spacing.rulerHeight)
                 .background(colors.surfaceVariant.copy(alpha = 0.5f), shape = shapes.sm)
-                .draggable(
-                    state = draggableState,
-                    orientation = Orientation.Horizontal,
-                    onDragStopped = { velocity ->
-                        coroutineScope.launch {
-                            decayAnim.snapTo(internalValue)
-                            decayAnim.animateDecay(-velocity / pxPerUnit, exponentialDecay()) {
-                                internalValue = this.value.coerceIn(range.start, range.endInclusive)
-                                onValueChange(internalValue)
+                .testTag("ruler_track")
+                .pointerInput(Unit) {
+                    val velocity = VelocityTracker()
+                    detectDragGestures(
+                        onDragStart = { fling?.cancel(); velocity.resetTracking(); internalValue = liveValue; dragging = true },
+                        onDragEnd = {
+                            val unitsPerSecond = -velocity.calculateVelocity().x * liveStep.coerceAtLeast(.01f) / tickSpacingPx
+                            fling = coroutineScope.launch {
+                                try {
+                                    decayAnim.snapTo(internalValue)
+                                    decayAnim.animateDecay(unitsPerSecond, exponentialDecay()) {
+                                        internalValue = this.value.coerceIn(liveRange.start, liveRange.endInclusive)
+                                        changeCallback(internalValue)
+                                        if (this.value !in liveRange) cancelAnimation()
+                                    }
+                                    dragging = false
+                                    commitCallback(internalValue)
+                                } catch (_: CancellationException) { /* next gesture owns the preview */ }
                             }
-                            onValueCommit(internalValue)
-                        }
+                        },
+                        onDragCancel = { dragging = false; internalValue = liveValue; cancelCallback() }
+                    ) { change, amount ->
+                        velocity.addPosition(change.uptimeMillis, change.position)
+                        change.consume()
+                        internalValue = (internalValue - amount.x * liveStep.coerceAtLeast(.01f) / tickSpacingPx)
+                            .coerceIn(liveRange.start, liveRange.endInclusive)
+                        changeCallback(internalValue)
                     }
-                ),
+                },
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {

@@ -377,3 +377,28 @@ no host web/app preview, no physical-phone testing and no UI refinement.
 
 - **V28 (Eyedropper Color Picker Component)**:
   - Solution: Added `EyedropperLoupeOverlay` with magnified 9x9 pixel grid and center reticle sampling composite colors live from the canvas.
+
+
+## V0 production property pages — verification pending (2026-11-12)
+The inherited head did not compile: text editing state was passed to TopPanel instead
+of CanvasView, and a new shadow fixture used derived offset properties as constructor
+arguments. The binding was moved to CanvasView and the fixture now uses 45 degrees and
+sqrt(200) distance (the same 10px offsets); pixel assertions were retained.
+
+Project settings now registers typed property lenses and readouts; its feature facade
+contains no hand-coded layout. Scaffold pages dispatch property/value events, not full
+snapshots. The host applies each mutation against ActionTree.currentDocument. This
+prevents an event created before another control's change from restoring stale settings.
+Numeric/color preview frames do not add history or autosave; release commits once,
+back/cancellation/disposal restores the committed state. Switch state is exposed through
+standard toggleable semantics. Shared progress/ruler input reads current callbacks;
+color input keeps stable HSV state and supports hexadecimal alpha entry.
+
+No global callbacks are retained in the registry. Existing PreviewQuality aliases are
+mapped to canonical choices for display/binding only; opening settings does not rewrite
+a saved project. Diagnostics retain their previous formula; this migration does not
+claim V6's actual-render-resolution acceptance has been reverified.
+
+This is a V0 checkpoint, not round completion: remaining screens, strict whole-module
+dependency boundaries, registered custom components/overlays and full library golden
+coverage remain open. No release, no host preview, no UI refinement, signing unchanged.

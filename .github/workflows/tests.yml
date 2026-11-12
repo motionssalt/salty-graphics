@@ -3,8 +3,26 @@ name: "Tests and Debug Build"
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'app/**'
+      - 'engine/**'
+      - 'ui-kit/**'
+      - 'gradle/**'
+      - '**/*.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew*'
+      - '.github/workflows/tests.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'app/**'
+      - 'engine/**'
+      - 'ui-kit/**'
+      - 'gradle/**'
+      - '**/*.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew*'
+      - '.github/workflows/tests.yml'
   workflow_dispatch:
 
 permissions:
@@ -28,11 +46,13 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Run Scaffold Tool Panel Acceptance Tests
-        run: ./gradlew :app:testDebugUnitTest --tests 'com.motionssalt.saltygraphics.ScaffoldToolPanelTest' --stacktrace
+      - name: Run Scaffold Acceptance Tests
+        run: |
+          ./gradlew :ui-kit:testDebugUnitTest --stacktrace
+          ./gradlew :app:testDebugUnitTest --tests 'com.motionssalt.saltygraphics.ScaffoldToolPanelTest' --tests 'com.motionssalt.saltygraphics.ProjectSettingsScaffoldTest' --tests 'com.motionssalt.saltygraphics.ProjectSettingsTest' --tests 'com.motionssalt.saltygraphics.ScaffoldMigrationBoundaryTest' --stacktrace
 
       - name: Run Engine and JVM Compose Tests
-        run: ./gradlew test --stacktrace
+        run: ./gradlew testDebugUnitTest --stacktrace
 
       - name: Upload Test Reports
         if: always()

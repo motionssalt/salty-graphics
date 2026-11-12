@@ -3,7 +3,7 @@ package com.motionssalt.saltygraphics.uikit.controls
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -51,11 +51,12 @@ fun SaltySwitch(
             .border(width = 1.5.dp, color = trackBorderColor.copy(alpha = alpha), shape = shapes.pill)
             .then(
                 if (enabled && onCheckedChange != null) {
-                    Modifier.clickable(
+                    Modifier.toggleable(
+                        value = checked,
                         interactionSource = interactionSource,
                         indication = null,
                         role = Role.Switch,
-                        onClick = { onCheckedChange(!checked) }
+                        onValueChange = onCheckedChange
                     )
                 } else Modifier
             ),

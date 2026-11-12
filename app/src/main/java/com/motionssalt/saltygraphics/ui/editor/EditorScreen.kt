@@ -647,11 +647,13 @@ fun EditorScreen(
                 } else if (isProjectSettingsOpen) {
                     ProjectSettingsPage(
                         document = doc,
-                        onUpdateSetting = { identity, transform ->
-                            recordSettingChange(identity, transform)
+                        onCommit = { change ->
+                            val live = tree.currentDocument
+                            if (change.appliesTo(live)) recordCommandAndAutoSave(change.identity(live), change::apply)
                         },
-                        onNameChange = { newName ->
-                            recordCommandAndAutoSave(ActionIdentity("Rename", "Project")) { it.copy(name = newName) }
+                        onPreview = { change ->
+                            val live = tree.currentDocument
+                            projectDocument = change?.apply(live) ?: live
                         },
                         onBack = { isProjectSettingsOpen = false }
                     )

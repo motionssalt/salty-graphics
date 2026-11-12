@@ -30,6 +30,7 @@ fun SaltyPanelPage(
     modifier: Modifier = Modifier,
     action: (@Composable () -> Unit)? = null,
     scrollable: Boolean = true,
+    footer: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val colors = SaltyTokens.colors
@@ -94,5 +95,6 @@ fun SaltyPanelPage(
             verticalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.sectionSpacing),
             content = content
         )
+        footer?.invoke()
     }
 }
