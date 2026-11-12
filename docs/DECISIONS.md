@@ -458,3 +458,16 @@ stable signing credentials and applicationId are untouched. No UI refinement.
 - **V23/V31 Alpha Cutout & Layer Masks**:
   - Alpha Cutout Inward and Outward integrated in `BlendCategory.CUTOUT` in the main blend mode grid with live thumbnail previews. Compositor isolates layer compositing before drawing onto canvas background, guaranteeing canvas background remains untouched and never blackened. Tested in `LayerMaskAndAlphaCutoutTest.kt`.
 
+
+## V0 Shape geometry: property-only scaffold migration (2026-11-12)
+The old Shape UI was handwritten and submitted a full captured shape/document with
+"Update Shape" labels. Its editor callbacks also rebuilt a solid fill with opacity
+1 or 0 while changing dimensions. This could discard an independent fill-opacity edit.
+Shape geometry is now six typed, conditionally visible registry controls. Both preview
+and commit rebase on the live history document and target id, modifying one geometry
+property only; paint, transforms and unrelated properties remain untouched. The old
+ranges/reset defaults and integer polygon/star counts are retained. Shared components
+own all layout, numeric entry and gesture lifecycle. Shape creation picker, remaining
+screens, custom-component/overlay registration, whole-module dependencies and full
+component goldens are still V0 work. No release or UI refinement at this checkpoint.
+Verification is pending the batch Actions run; no acceptance is claimed before it passes.

@@ -125,7 +125,7 @@ until they are removed and every component has actual rendered golden coverage.
 - [ ] **Transform**: Migrated to `TransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
 - [ ] **Blending & Masks**: Migrated to `BlendingPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
 - [ ] **Text & Text Options**: Migrated to `TextSettingsDialog` panel page, multiline text box, font family picker, alignment chips.
-- [ ] **Shape & Shape Settings**: Migrated to `ShapeSettingsDialog` panel page, width/height/radius ruler sliders.
+- [ ] **Shape & Shape Settings**: Geometry page is now a typed `ShapeSettingsFeature` declaration rendered by `ScaffoldFeaturePage`; production UI/history/render acceptance added (awaiting CI). Shape creation picker remains a separate migration target, so this combined row is not checked off.
 - [ ] **Vector Tool & Curve Editing**: Migrated to `VectorPage`, independent handles toggle, corner/smooth toggle, angle lock.
 - [ ] **Rasterize Layer**: Migrated to `RasterizeLayer` action, safe confirmation dialog offering duplicate option.
 - [ ] **Layers Panel**: Migrated to `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
@@ -156,3 +156,23 @@ in `ScaffoldToolPanelTest`: missing/changed checked-in baselines fail (no auto-a
 CI uploads actual PNGs for inspection. Golden review must check that images contain
 real controls, readable labels and intended states, not accept a blank image just to
 make CI green. Other components still need their complete state/theme matrix.
+
+### V0 Shape geometry migration checkpoint
+`ShapeSettingsFeature.kt` declares width, height, rounded-corner radius, polygon sides,
+star points and inner-radius ratio as typed lenses. `ShapeSettingsDialog` is retained
+as a historical entry-point name only; it contains no dialog, feature layout or tokens.
+The production editor dispatches against `ActionTree.currentDocument`, previews without
+history/autosave and commits one specifically labelled command per finished gesture.
+Shape-specific controls use data visibility and existence predicates; a stale event
+cannot change a deleted target, another project, or an incompatible shape type.
+
+Geometry writes must **not** reconstruct FillData: the old editor callback forced a
+solid fill's opacity to 1 (or 0) and copied an entire captured ShapeData on resize.
+The migrated lens changes just its property, preserving fill alpha, stroke, effects,
+transforms, sibling/nested layers and edits made since an event was created.
+Existing numeric ranges and reset values are retained; typed width/height values stay
+exact rather than snapping to integer steps. No new component styling was introduced.
+Tests cover typed bindings, randomized stale events, .sg round trips, actual pointer
+preview/commit/cancel, compositor pixel changes and the real editor Edit/Undo/Redo path.
+Existing shared ruler/settings goldens remain active; this is not a claim of completed
+whole-library golden matrices or finished V0.

@@ -743,27 +743,16 @@ fun EditorScreen(
                         onBack = { isBorderShadowPanelOpen = false }
                     )
                 } else if (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) {
-                    val currentShape = currentSelectedLayer.shapeData!!
                     ShapeSettingsDialog(
-                        initialShape = currentShape,
-                        onShapeChange = { previewShape ->
-                            projectDocument = doc.updateLayer(currentSelectedLayer.id) {
-                                val base = it.copy(shapeData = previewShape)
-                                val fd = it.fillData
-                                if (fd == null || fd.type == FillType.SOLID) {
-                                    base.copy(fillData = FillData(type = FillType.SOLID, solidColor = previewShape.fillColor, solidOpacity = if (previewShape.hasFill) 1f else 0f))
-                                } else base
-                            }
+                        document = doc,
+                        layerId = currentSelectedLayer.id,
+                        onCommit = { change ->
+                            val live = tree.currentDocument
+                            if (change.appliesTo(live)) recordCommandAndAutoSave(change.identity(live), change::apply)
                         },
-                        onShapeCommit = { committedShape ->
-                            val updated = doc.updateLayer(currentSelectedLayer.id) {
-                                val base = it.copy(shapeData = committedShape)
-                                val fd = it.fillData
-                                if (fd == null || fd.type == FillType.SOLID) {
-                                    base.copy(fillData = FillData(type = FillType.SOLID, solidColor = committedShape.fillColor, solidOpacity = if (committedShape.hasFill) 1f else 0f))
-                                } else base
-                            }
-                            recordAndAutoSave("Update Shape", updated)
+                        onPreview = { change ->
+                            val live = tree.currentDocument
+                            projectDocument = change?.apply(live) ?: live
                         },
                         onDismiss = { isShapeSettingsOpen = false }
                     )

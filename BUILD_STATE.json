@@ -730,7 +730,7 @@
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
         "status": "in_progress",
-        "notes": "Verified V0 scaffold implementation: standalone :ui-kit module, SaltyTokens (spacing, shapes, typography, semantic theme-bridge colors), shared controls without haptics (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltyColorPicker, SaltySegmentedChips, SaltyTextField, SaltyTrackpad, SaltyValueEntryStrip), FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (reviewed dark and light goldens match), and Project Settings fully migrated to typed declaration-only scaffold page. Remaining screens tracked on docs/SCAFFOLD.md.\n2026-11-12 acceptance reconciliation: Reopened: docs/SCAFFOLD.md and the verified 43163047303 checkpoint explicitly leave most screens, strict module boundaries, custom-component/overlay registration and full component goldens incomplete. Resume migration before other fixes; earlier done status certified a partial checkpoint as whole-item completion."
+        "notes": "Verified V0 scaffold implementation: standalone :ui-kit module, SaltyTokens (spacing, shapes, typography, semantic theme-bridge colors), shared controls without haptics (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltyColorPicker, SaltySegmentedChips, SaltyTextField, SaltyTrackpad, SaltyValueEntryStrip), FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (reviewed dark and light goldens match), and Project Settings fully migrated to typed declaration-only scaffold page. Remaining screens tracked on docs/SCAFFOLD.md.\n2026-11-12 acceptance reconciliation: Reopened: docs/SCAFFOLD.md and the verified 43163047303 checkpoint explicitly leave most screens, strict module boundaries, custom-component/overlay registration and full component goldens incomplete. Resume migration before other fixes; earlier done status certified a partial checkpoint as whole-item completion.\nShape geometry checkpoint: migrated six geometry controls to typed declaration-only scaffold and live per-property editor commands; fixed geometry callbacks resetting independent solid-fill opacity. Added boundary, binding/property/archive, pointer/cancel/render and production editor tests. Awaiting CI; V0 remains in_progress."
       },
       {
         "id": "V0b",
@@ -1061,8 +1061,8 @@
       "2026-11-12: Follow V0-first order. Preserve inherited implementation notes, reopen unsupported whole-item acceptance, track amended checks explicitly under V36. Use existing test workflow and no emulator/build-screenshot iteration."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-12T11:05:38.971696+00:00",
-    "last_session_note": "V0 resumed from verified partial scaffold checkpoint. Reconciled overstated done statuses with docs/SCAFFOLD.md; next migrate Shape settings as typed declarative controls, test production UI/history and enforce its boundary. No release or UI refinement.",
+    "last_updated": "2026-11-12T11:12:47.506678+00:00",
+    "last_session_note": "V0 Shape geometry migration implemented and regression tests added; run batch Actions, fix failures, then continue remaining scaffold migration. Shape creation picker and other unchecked screens remain incomplete. No release or UI refinement.",
     "verification_pending": false,
     "verification": {
       "scope": "Full Fix Round 4 acceptance test suite and release build",
