@@ -492,3 +492,12 @@ Chooser fixtures also use the actual production `darkTheme` API. No tests were d
 Local compilation is unavailable because this environment has no Android SDK; Actions
 is the verification environment. Final batch acceptance and chooser golden review
 remain pending. No release, signing changes, host preview or UI refinement.
+
+### V0 chooser native golden review — 2026-11-12
+Native CI `picker_dark.png` and `picker_light.png` from run 43208362220 were visually
+reviewed: both contain the real shared Back/title header and all seven labelled/icon
+choices in a readable three-column layout at 412x300, with distinct dark/light colors.
+Accepted as checked-in library goldens. The test rejects missing/changed images and
+blank/equal-theme output; there is no automatic acceptance. That run's only failures
+were missing chooser goldens and the older unscoped Back selector (already corrected
+in 6be390c). Final batch verification is still pending; no whole-round acceptance.

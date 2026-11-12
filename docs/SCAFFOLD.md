@@ -197,3 +197,8 @@ labels and editor path creation/system SVG picker routes are preserved. Producti
 Vector settings/toolbars are not migrated by this change; that checklist row remains
 open. New tests exercise both the declaration-only chooser and the real editor's
 create-path/undo flow. These are pending CI acceptance, not a full vector certification.
+
+Reviewed chooser golden baselines: `app/src/test/goldens/scaffold/picker_dark.png`
+and `picker_light.png` (native Actions 43208362220). Both have real controls, readable
+labels and distinct themes; comparisons are strict pixels. This covers the chooser
+library surface, not the remaining whole-library component/state/theme matrix.
