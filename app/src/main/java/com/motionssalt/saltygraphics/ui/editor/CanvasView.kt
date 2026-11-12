@@ -73,6 +73,8 @@ fun toComposeBlendMode(mode: com.motionssalt.saltygraphics.engine.model.BlendMod
         com.motionssalt.saltygraphics.engine.model.BlendMode.SATURATION -> androidx.compose.ui.graphics.BlendMode.Saturation
         com.motionssalt.saltygraphics.engine.model.BlendMode.COLOR -> androidx.compose.ui.graphics.BlendMode.Color
         com.motionssalt.saltygraphics.engine.model.BlendMode.LUMINOSITY -> androidx.compose.ui.graphics.BlendMode.Luminosity
+        com.motionssalt.saltygraphics.engine.model.BlendMode.ALPHA_CUTOUT_INWARD -> androidx.compose.ui.graphics.BlendMode.DstOut
+        com.motionssalt.saltygraphics.engine.model.BlendMode.ALPHA_CUTOUT_OUTWARD -> androidx.compose.ui.graphics.BlendMode.DstIn
     }
 }
 
@@ -729,9 +731,9 @@ fun CanvasView(
 
                     val layerPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
                         alpha = (layer.opacity * 255 * alphaMult).roundToInt().coerceIn(0, 255)
-                        if (layer.blendMode == BlendMode.ALPHA_CUTOUT_INWARD || layer.maskMode == MaskMode.IN_MASK) {
+                        if (layer.blendMode == com.motionssalt.saltygraphics.engine.model.BlendMode.ALPHA_CUTOUT_INWARD || layer.maskMode == MaskMode.IN_MASK) {
                             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
-                        } else if (layer.blendMode == BlendMode.ALPHA_CUTOUT_OUTWARD || layer.maskMode == MaskMode.OUT_MASK) {
+                        } else if (layer.blendMode == com.motionssalt.saltygraphics.engine.model.BlendMode.ALPHA_CUTOUT_OUTWARD || layer.maskMode == MaskMode.OUT_MASK) {
                             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
                         } else {
                             LayerCompositor.applyLayerBlendMode(this, layer.blendMode)

@@ -1,4 +1,7 @@
 package com.motionssalt.saltygraphics.ui.controls
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.clipPath
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
