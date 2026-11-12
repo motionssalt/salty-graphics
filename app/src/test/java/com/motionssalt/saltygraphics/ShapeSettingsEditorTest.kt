@@ -21,7 +21,7 @@ class ShapeSettingsEditorTest : SelectionPanelFixture() {
         tapArtwork(240f)
         compose.onNode(hasText("160 px") and hasAnyAncestor(hasTestTag("control_shape_width"))).assertExists()
         compose.onAllNodes(isDialog()).assertCountEquals(0)
-        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNode(hasContentDescription("Back") and hasAnyAncestor(hasTestTag("scaffold_feature_page"))).performClick()
         compose.onNodeWithText("Transform", useUnmergedTree = true).assertIsDisplayed()
     }
 }

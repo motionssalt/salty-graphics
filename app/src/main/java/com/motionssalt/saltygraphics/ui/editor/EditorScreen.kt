@@ -622,7 +622,7 @@ fun EditorScreen(
                     (isTextSettingsOpen && currentSelectedLayer?.textData != null) ||
                     (currentSelectedLayer != null && (isTransformPanelOpen || isEffectsSheetOpen || isBlendingOpen || isFillPanelOpen || isBorderShadowPanelOpen))
                 if (isVectorMenuOpen) {
-                    VectorCreationPage(onChoose = { choice ->
+                    VectorCreationPage(document = doc, onChoose = { choice ->
                         if (choice == "Import SVG") svgLauncher.launch(arrayOf("image/svg+xml", "text/xml", "application/xml", "application/octet-stream"))
                         else {
                             val path = when (choice) {

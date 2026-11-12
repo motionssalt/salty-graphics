@@ -480,3 +480,15 @@ defaults and callback order are preserved. The chooser stays in the fixed bottom
 Tests include a runtime throwaway choice and enabled/available filtering, production
 shape dispatch and native dark/light golden captures of this library surface. Golden
 review and this checkpoint's full-suite result are still pending; V0 is not complete.
+
+### V0 vector creation reuse and batch verification notes
+Vector creation now uses the same registered library chooser as shape creation; no
+second layout was added. Existing choice labels, geometry factory and SVG system
+picker route remain unchanged. The vector editing page remains a migration target.
+Run 43207618272 compiled production and new shape code; 184/185 app JVM tests passed.
+The only failure was the new test matching both toolbar Back and panel Back; the
+selector is now scoped to the scaffold page, without weakening its navigation check.
+Chooser fixtures also use the actual production `darkTheme` API. No tests were disabled.
+Local compilation is unavailable because this environment has no Android SDK; Actions
+is the verification environment. Final batch acceptance and chooser golden review
+remain pending. No release, signing changes, host preview or UI refinement.
