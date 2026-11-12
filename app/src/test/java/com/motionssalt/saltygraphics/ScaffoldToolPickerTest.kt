@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.engine.model.ShapeType
 import com.motionssalt.saltygraphics.theme.SaltyGraphicsTheme
-import com.motionssalt.saltygraphics.theme.ThemeChoice
 import com.motionssalt.saltygraphics.ui.editor.ShapePickerDialog
 import com.motionssalt.saltygraphics.ui.editor.ShapePickerFeature
 import com.motionssalt.saltygraphics.uikit.registry.*
@@ -40,7 +39,7 @@ class ScaffoldToolPickerTest {
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         val picked = mutableListOf<com.motionssalt.saltygraphics.engine.model.ShapeData>()
         var dismissals = 0
-        host.get().setContent { SaltyGraphicsTheme(themeChoice = ThemeChoice.DARK, dynamicColor = false) {
+        host.get().setContent { SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {
             ShapePickerDialog(ProjectDocument(), { picked += it }, { dismissals++ })
         } }
         try {
@@ -69,7 +68,7 @@ class ScaffoldToolPickerTest {
             register(FeatureDefinition("hidden", "Unavailable", Icons.Default.Star, ToolPlacement.ALWAYS))
         }
         var clicks = 0
-        host.get().setContent { SaltyGraphicsTheme(themeChoice = ThemeChoice.DARK, dynamicColor = false) {
+        host.get().setContent { SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {
             ScaffoldToolPicker("Choices", catalog, ProjectDocument(), setOf("one", "later"), { clicks++ }, {})
         } }
         try {
@@ -88,7 +87,7 @@ class ScaffoldToolPickerTest {
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         var dark by mutableStateOf(true)
         host.get().setContent { SaltyGraphicsTheme(
-            themeChoice = if (dark) ThemeChoice.DARK else ThemeChoice.LIGHT, dynamicColor = false
+            darkTheme = dark, dynamicColor = false
         ) {
             ScaffoldToolPicker("Choose a Shape", ShapePickerFeature.catalog, ProjectDocument(),
                 ShapePickerFeature.availableActions, {}, {}, Modifier.requiredSize(412.dp, 300.dp))
