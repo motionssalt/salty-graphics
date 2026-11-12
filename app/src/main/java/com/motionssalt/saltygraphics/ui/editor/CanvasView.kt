@@ -172,6 +172,7 @@ fun CanvasView(
                     var isTextFrameDrag = false
                     var textStartBoxWidth = 0f
                     var textStartBoxHeight = 0f
+                    var latestTextData: TextLayerData? = null
                     var ids = currentSelectedIds
                     val isSelectedTextLayer = target != null && target.type == LayerType.TEXT && target.textData != null
                     if(target != null && bounds != null && !target.isLocked) {
@@ -191,8 +192,8 @@ fun CanvasView(
                         if (isSelectedTextLayer && textEditingActive && closest != null && closest != SelectionHandle.ROTATE && closest != SelectionHandle.BODY) {
                             handle = closest
                             isTextFrameDrag = true
-                            textStartBoxWidth = target.textData!!.boxWidth
-                            textStartBoxHeight = target.textData!!.boxHeight
+                            textStartBoxWidth = max(50f, target.textData!!.boxWidth)
+                            textStartBoxHeight = max(30f, target.textData!!.boxHeight)
                         } else {
                             handle = closest
                                 ?: if(local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
@@ -250,11 +251,15 @@ fun CanvasView(
                                 // Android cancellation synthesizes consumed up changes. They are not a release/commit.
                                 val cancelled=event.changes.any { it.isConsumed }
                                 if(cancelled && transform!=start) preview(start)
+                                if(cancelled && isTextFrameDrag && targetId != null) {
+                                    val originalText = activeDoc.findLayerById(targetId)?.textData
+                                    if(originalText != null) updateTextData?.invoke(targetId, originalText)
+                                }
                                 // A tap is selection, not a transform/history command.
-                                if(!cancelled && !multiTouch && isTextFrameDrag && targetId != null) {
-                                    val currentTextData = activeDoc.findLayerById(targetId)?.textData
-                                    if (currentTextData != null) {
-                                        commitTextData?.invoke(targetId, currentTextData)
+                                if(!cancelled && !multiTouch && isTextFrameDrag && targetId != null && dragDistance >= touchSlop) {
+                                    val finalData = latestTextData ?: currentDoc.findLayerById(targetId)?.textData
+                                    if (finalData != null) {
+                                        commitTextData?.invoke(targetId, finalData)
                                     }
                                 } else if(!cancelled && !multiTouch && transform!=start) {
                                     val batch=values(transform)
@@ -342,9 +347,11 @@ fun CanvasView(
                                     }
                                     else -> Unit
                                 }
-                                val layerText = activeDoc.findLayerById(targetId)?.textData
+                                val layerText = (activeDoc.findLayerById(targetId) ?: currentDoc.findLayerById(targetId))?.textData
                                 if (layerText != null) {
-                                    updateTextData?.invoke(targetId, layerText.copy(boxWidth = newBoxW, boxHeight = newBoxH, boxMode = TextBoxMode.PARAGRAPH))
+                                    val updatedText = layerText.copy(boxWidth = newBoxW, boxHeight = newBoxH, boxMode = TextBoxMode.PARAGRAPH)
+                                    latestTextData = updatedText
+                                    updateTextData?.invoke(targetId, updatedText)
                                 }
                                 change.consume()
                             } else if(bounds!=null && dragDistance>=touchSlop) {

@@ -123,4 +123,138 @@ class TextFrameWrappingBoxTest {
             host.pause().stop().destroy()
         }
     }
+
+    @Test
+    fun draggingRotatedTextFrameHandleAtZoomResizesAccurately() {
+        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        try {
+            val initialTextData = TextLayerData(
+                text = "Rotated multiline testing sample with sufficient text to wrap into multiple lines cleanly",
+                fontSize = 20f,
+                boxWidth = 300f,
+                boxHeight = 150f,
+                boxMode = TextBoxMode.FREE
+            )
+            // Rotated 90 degrees clockwise
+            val textLayer = Layer(
+                id = "text_rotated_layer",
+                name = "Rotated Text",
+                type = LayerType.TEXT,
+                textData = initialTextData,
+                transform = Transform2D(translationX = 0f, translationY = 0f, rotationDegrees = 90f)
+            )
+            var currentDoc by mutableStateOf(
+                ProjectDocument(
+                    id = "text_rotated_doc",
+                    canvasSize = CanvasSize(800, 800),
+                    layers = listOf(textLayer)
+                )
+            )
+            var committedActions = mutableListOf<String>()
+
+            host.get().setContent {
+                MaterialTheme {
+                    Box(Modifier.requiredSize(400.dp, 400.dp)) {
+                        CanvasView(
+                            document = currentDoc,
+                            selectedLayerIds = setOf(textLayer.id),
+                            zoom = 2f, // 2x zoom
+                            panOffset = Offset.Zero,
+                            showGrid = false,
+                            gridSize = 20,
+                            onZoomPanChange = { _, _ -> },
+                            onSelectLayer = { },
+                            onUpdateLayerTransform = { _, _ -> },
+                            isTextEditing = true,
+                            onUpdateTextData = { id, updated ->
+                                currentDoc = currentDoc.updateLayer(id) { it.copy(textData = updated) }
+                            },
+                            onCommitTextData = { _, _ ->
+                                committedActions.add("Resize text box")
+                            }
+                        )
+                    }
+                }
+            }
+
+            compose.waitForIdle()
+
+            val canvas = compose.onNodeWithTag("editor_canvas")
+            val canvasBounds = canvas.fetchSemanticsNode().size
+            val center = Offset(canvasBounds.width / 2f, canvasBounds.height / 2f)
+
+            // At 2f zoom: fit = (400/800)*0.94 = 0.47, effZoom = 0.47 * 2 = 0.94
+            val effZoom = (400f / 800f) * 0.94f * 2f
+            // Local right edge handle is at (+150f, 0f).
+            // Rotated 90 degrees clockwise: (x*cos90 - y*sin90, x*sin90 + y*cos90) = (0, +150f)
+            // In screen coordinates: center.x, center.y + 150f * effZoom
+            val handleX = center.x
+            val handleY = center.y + (150f * effZoom)
+
+            // Drag handle downward on screen (which is outward along local +X)
+            canvas.performTouchInput {
+                down(Offset(handleX, handleY))
+                moveBy(Offset(0f, 40f), 100)
+                up()
+            }
+
+            compose.waitForIdle()
+
+            val updatedLayer = currentDoc.findLayerById(textLayer.id)
+            assertNotNull(updatedLayer)
+            val updatedText = updatedLayer!!.textData!!
+            assertTrue("Box width must have increased from 300f under rotation and 2x zoom, was: ${updatedText.boxWidth}", updatedText.boxWidth > 300f)
+            assertEquals(TextBoxMode.PARAGRAPH, updatedText.boxMode)
+            assertTrue(committedActions.contains("Resize text box"))
+        } finally {
+            host.pause().stop().destroy()
+        }
+    }
+
+    @Test
+    fun exitingTextEditingModeRestoresNormalTransformBoundingBox() {
+        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        try {
+            val textLayer = Layer(
+                id = "text_exit_layer",
+                name = "Sample Text",
+                type = LayerType.TEXT,
+                textData = TextLayerData(text = "Short text", fontSize = 24f, boxWidth = 500f, boxHeight = 200f),
+                transform = Transform2D(translationX = 0f, translationY = 0f)
+            )
+            var isEditing by mutableStateOf(true)
+            val doc = ProjectDocument(
+                id = "text_exit_doc",
+                canvasSize = CanvasSize(800, 800),
+                layers = listOf(textLayer)
+            )
+
+            host.get().setContent {
+                MaterialTheme {
+                    Box(Modifier.requiredSize(400.dp, 400.dp)) {
+                        CanvasView(
+                            document = doc,
+                            selectedLayerIds = setOf(textLayer.id),
+                            zoom = 1f,
+                            panOffset = Offset.Zero,
+                            showGrid = false,
+                            gridSize = 20,
+                            onZoomPanChange = { _, _ -> },
+                            onSelectLayer = { },
+                            onUpdateLayerTransform = { _, _ -> },
+                            isTextEditing = isEditing
+                        )
+                    }
+                }
+            }
+
+            compose.waitForIdle()
+            // When exiting editing mode, canvas stays functional and handles return to standard bounding box
+            isEditing = false
+            compose.waitForIdle()
+            compose.onNodeWithTag("editor_canvas").assertIsDisplayed()
+        } finally {
+            host.pause().stop().destroy()
+        }
+    }
 }

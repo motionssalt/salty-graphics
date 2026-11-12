@@ -1042,7 +1042,8 @@ fun EditorScreen(
                         layerId = target.id,
                         duplicateOriginal = false
                     )
-                    recordAndAutoSave("Rasterize Layer", updated)
+                    val label = "Rasterize ${target.type.name.lowercase()}"
+                    recordAndAutoSave(label, updated)
                     fillMediaRevision++
                 }) {
                     Text("Rasterize")
@@ -1063,7 +1064,8 @@ fun EditorScreen(
                             layerId = target.id,
                             duplicateOriginal = true
                         )
-                        recordAndAutoSave("Duplicate and Rasterize", updated)
+                        val label = "Duplicate and rasterize ${target.type.name.lowercase()}"
+                        recordAndAutoSave(label, updated)
                         fillMediaRevision++
                     }) {
                         Text("Duplicate & Rasterize")

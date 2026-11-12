@@ -108,4 +108,43 @@ class RasterizeLayerTest {
         assertEquals(120f, rasterized.transform.translationX, 2f)
     }
 
+    @Test
+    fun rasterizeVectorLayerCreatesPixelMediaLayer() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val path = VectorPathData(
+            points = listOf(
+                BezierPoint(-40f, -40f),
+                BezierPoint(40f, -40f),
+                BezierPoint(40f, 40f),
+                BezierPoint(-40f, 40f)
+            ),
+            isClosed = true,
+            hasFill = true,
+            fillColor = 0xFF0000FFL
+        )
+        val vectorLayer = Layer(
+            id = "vector1",
+            name = "Vector Path",
+            type = LayerType.VECTOR,
+            vectorPathData = path
+        )
+        val doc = ProjectDocument(
+            id = "test_vector_raster",
+            name = "Vector Raster Test",
+            canvasSize = CanvasSize(width = 300, height = 300),
+            layers = listOf(vectorLayer)
+        )
+        val updatedDoc = LayerRasterizer.rasterizeLayer(context, doc, "vector1", duplicateOriginal = false)
+        assertEquals(1, updatedDoc.layers.size)
+        val rasterized = updatedDoc.layers.first()
+        assertEquals(LayerType.MEDIA, rasterized.type)
+        assertNotNull(rasterized.mediaAssetPath)
+        val asset = File(File(context.filesDir, "projects/${doc.id}_assets"), rasterized.mediaAssetPath!!)
+        assertTrue(asset.isFile)
+        val pixels = android.graphics.BitmapFactory.decodeFile(asset.absolutePath)
+        assertNotNull(pixels)
+        assertTrue(pixels.width in 75..85)
+        assertTrue(pixels.height in 75..85)
+    }
+
 }

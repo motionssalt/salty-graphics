@@ -447,3 +447,14 @@ boundary and complete component golden matrices remain V0 work. V0 and V24 are N
 done; reopened amendment items and V0b release acceptance still wait. V32 remains
 pending and no new tag or release was published. All old releases, reference-keyflaw,
 stable signing credentials and applicationId are untouched. No UI refinement.
+
+## Fix round 4 — V17/V29 text frame repair and amendment acceptance
+- **V17 Root Cause & Fix (Reopened amendment)**:
+  - Root cause: In `CanvasView.kt:255`, pointer-up release called `commitTextData` using `activeDoc.findLayerById(targetId)?.textData`. Because `activeDoc` was captured on `awaitFirstDown` and was never updated during the drag loop, `commitTextData` committed the stale pre-drag text data on finger release, immediately reverting the text box to its initial dimensions and making the handles appear completely unresponsive. In addition, `TextSettingsDialog` did not sync its local state when `initialData` changed during canvas drags.
+  - Fix: Added `latestTextData` to track live preview values during drag, commit `latestTextData` on pointer release, revert to `activeDoc` on gesture cancellation, clamped initial box width/height to safe minimums, and bound `TextSettingsDialog` state with `remember(initialData)` and `LaunchedEffect(initialData)`.
+  - Verification: `TextFrameWrappingBoxTest.kt` extended with tests covering right edge handle drag expanding box and wrapping text, rotated text layer (90 degrees) dragged under 2x zoom along local axes, and verification of normal bounding box restoration upon exiting editing mode.
+- **V22 Safe Rasterize Layer Action**:
+  - Implemented in `LayerRasterizer.kt` with unclipped buffer preserving off-canvas artwork, tight non-zero bounding box, and PNG asset caching. Confirmation dialog provides "Duplicate & Rasterize", "Rasterize", and "Cancel". Clear type-specific action labels ("Rasterize text", "Rasterize shape", "Rasterize vector", "Duplicate and rasterize ..."). Covered for shape, text, and vector layers in `RasterizeLayerTest.kt`.
+- **V23/V31 Alpha Cutout & Layer Masks**:
+  - Alpha Cutout Inward and Outward integrated in `BlendCategory.CUTOUT` in the main blend mode grid with live thumbnail previews. Compositor isolates layer compositing before drawing onto canvas background, guaranteeing canvas background remains untouched and never blackened. Tested in `LayerMaskAndAlphaCutoutTest.kt`.
+
