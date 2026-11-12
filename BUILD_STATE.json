@@ -764,9 +764,9 @@
       },
       {
         "id": "V5",
-        "title": "Remove haptic feedback from scroll controls",
-        "status": "done",
-        "notes": "Root cause: RulerSlider.kt fired CLOCK_TICK haptic ticks on every scroll/scrub step and KEYBOARD_TAP on label tap; ProgressSliderControl.kt fired KEYBOARD_TAP on reset. Fix: Removed all performHapticFeedback and HapticFeedbackConstants calls from RulerSlider.kt and ProgressSliderControl.kt. Verified with testScrollControlsHaveZeroHapticCalls confirming zero haptic feedback references."
+        "title": "Moderate the haptics on scroll controls (do not remove them)",
+        "status": "pending",
+        "notes": "Reopened per Fix Round 4 requirements: Victor likes scroll haptics but they are too aggressive. Moderate with lightest tick, fire only on major ticks/snaps (every 5th/10th, zero, default, whole units), min 60ms interval, no haptics during fling free-spin, and add Settings option 'Scroll haptics: Off, Light, Normal' (default Light)."
       },
       {
         "id": "V6",
@@ -908,27 +908,99 @@
       },
       {
         "id": "V29",
-        "title": "Verify amendment in V17 against acceptance tests",
-        "status": "done",
-        "notes": "Verified V17 amendment: dragging text frame handles actively resizes text box width and height live and re-wraps text without snapping back on release. Verified across right edge, bottom edge, corner handles, rotated text layer under 2x zoom, and bounding box restoration upon editing exit in TextFrameWrappingBoxTest.kt."
+        "title": "Selective haptic feedback (tracker #1)",
+        "status": "pending",
+        "notes": "Tactile moments only: snap engaging, alignment guide locking, key toggles. View.performHapticFeedback with CLOCK_TICK / SEGMENT_TICK. Follows V5 moderated caps for scroll controls."
       },
       {
         "id": "V30",
-        "title": "Verify amendment in V8 against acceptance tests",
-        "status": "done",
-        "notes": "Verified amendment in V8: Drop shadow now encompasses full visible silhouette (fill + stroke + text outline) with inside, center, and outside alignments covered in CPU reference tests and render pipeline."
+        "title": "Fill, Border and Shadow become ordinary effects (tracker #6, Victor's decision), and V31: Blend mode applies last (tracker #7)",
+        "status": "pending",
+        "notes": "Fill, Border (stroke) and Shadow become ordinary effects in Effects menu. Removed from tool grid. Freely reorderable by user. Whole effect stack renders first into layer offscreen buffer, then opacity, mask and blend mode are applied last on top."
       },
       {
         "id": "V31",
-        "title": "Verify amendment in V23 against acceptance tests",
-        "status": "done",
-        "notes": "Verified V23 amendment: alpha cutout modes operate as blend modes in main grid with live thumbnails and canvas background is isolated and untouched. Verified in LayerMaskAndAlphaCutoutTest.kt."
+        "title": "Blend mode applies last (tracker #7)",
+        "status": "pending",
+        "notes": "Layer blend mode, opacity, and mask are composited after all layer effects have processed into the layer offscreen buffer."
       },
       {
         "id": "V32",
-        "title": "Verify, release, and hand off",
-        "status": "done",
-        "notes": "Verified all fixes (V17 & V29 text box dragging, V22 safe rasterize, V23 & V31 alpha cutout modes with canvas background isolation, V24 bottom panel editing flows). All CI acceptance tests and debug build passed in GitHub Actions CI run 43176369776. Stable signed release v1.0.60 published to GitHub Releases (run 43177692777) with universal and per-ABI APKs matching stable release certificate SHA-256."
+        "title": "Gradient editor opens directly (tracker #3)",
+        "status": "pending",
+        "notes": "Opening gradient fill goes straight into gradient editor without extra 'Edit Gradient' button. Tapping stops opens color picker page in bottom panel."
+      },
+      {
+        "id": "V33",
+        "title": "Modern color picker with eyedropper (tracker #2, extends V28)",
+        "status": "pending",
+        "notes": "Bottom-panel page: top fill tabs (None, Solid, Gradient, Image), compact 3-column picker (HSV square, circular hue ring with #HEX and Alpha%, vertical checkered alpha slider), right-side tool rail (eyedropper, wheel/box, swatches), swatch palette view. No popups or full-screen overlays."
+      },
+      {
+        "id": "V34",
+        "title": "In-app toasts anchored in a canvas corner (tracker #5, amends V19)",
+        "status": "pending",
+        "notes": "Custom in-app toast shown in bottom-left corner of canvas area. Small, auto-dismissing, queued (max 2 visible), never covers bottom panel controls or blocks canvas touches."
+      },
+      {
+        "id": "V35",
+        "title": "Control design language (tracker #8)",
+        "status": "pending",
+        "notes": "Shared library look: scrub-ruler horizontal tick slider with central accent line, rounded label pill on left, rounded value box on right with tap-to-type, stacked X/Y readouts; navigation persistent Back on left and vertical icon rail on right; visual diagram toggles for caps and joins; collapsible accordions for blend categories."
+      },
+      {
+        "id": "V36",
+        "title": "Verification of amendments",
+        "status": "pending",
+        "notes": "Verify amendments to V6 (proxy render diagnostic and actual scale), V8 (shadow includes stroke), V9 (hold-to-select without checkboxes), V10 (real content thumbnails), V11 (toggle icon), V17 (drag frame handles live rewrap), V23 (cutout blend modes with canvas background isolated)."
+      },
+      {
+        "id": "E1",
+        "title": "Engine capabilities for real effects",
+        "status": "pending",
+        "notes": "Multi-pass shader effects with mip chain and target pool, per-effect expanded bounds, half-float targets (RGBA16F with RGBA8 fallback), resolution-independent units, pass caching hooks, backdrop input."
+      },
+      {
+        "id": "E2",
+        "title": "CPU reference implementation of Deep Glow and its tests",
+        "status": "pending",
+        "notes": "CPU reference implementation of Deep Glow: luminance threshold, five-level Gaussian mip chain (radii 3,5,7,9,11), composite with lerpF, tint and optical exposure, premultiplied alpha."
+      },
+      {
+        "id": "E3",
+        "title": "Deep Glow GPU pipeline",
+        "status": "pending",
+        "notes": "GPU GLSL ES 3.x passes matching CPU reference within tolerance, expanded bounds, resolution independence, half-float targets, mip cache, Output switch (Final or Glow only)."
+      },
+      {
+        "id": "E4",
+        "title": "Deep Glow effect definition, controls and looks",
+        "status": "pending",
+        "notes": "Registered in EffectRegistry under Light & Glow with controls (Threshold, Intensity, Radius, Exposure, Tint, Tint color, Output, Look presets: Cyberpunk, Solar Flare, Deep Violet, Quantum Core, Off) and history labels."
+      },
+      {
+        "id": "E5",
+        "title": "Thumbnail library and the Deep Glow thumbnail",
+        "status": "pending",
+        "notes": "Procedural thumbnail library: definitions, templates (lighting-preview and generic), presets, fallback chain, off-thread cached rendering."
+      },
+      {
+        "id": "E6",
+        "title": "Behaviour across layer types and with the rest of the pipeline",
+        "status": "pending",
+        "notes": "Matrix test: media, text, shape, vector, group, adjustment layer crossed with opacity, blend mode, masks, stroke/shadow, off-canvas display, transforms, multi-effect stack."
+      },
+      {
+        "id": "E7",
+        "title": "Document the effect work",
+        "status": "pending",
+        "notes": "Document Deep Glow algorithm, adaptations, new effect guide, thumbnail library, and engine capabilities in docs/DECISIONS.md."
+      },
+      {
+        "id": "V37",
+        "title": "Verify, release, and hand off (covers every V and E item)",
+        "status": "pending",
+        "notes": "Run all tests, verify backwards compatibility with earlier .sg projects, publish new release with unique tag and version > 60 via GitHub Actions release workflow."
       }
     ],
     "decisions": [
@@ -946,8 +1018,8 @@
       "V0b: ForgeBuild contract implemented in release.yml. Automatically detects existing tags and releases, computes N = max(highest + 1, 60), tags v1.0.<N>, version name 1.0.<N>, version code 1000 + N > 189."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-12T07:50:00.000000+00:00",
-    "last_session_note": "Fix Round 4 successfully completed. All unit and acceptance tests passed in CI run 43176369776. Release v1.0.60 built, signed with stable release certificate (SHA-256 96:65:26:AF:4F:0A:85:3C:95:AA:8E:16:37:3F:ED:70:9D:58:A8:8D:6B:27:54:6C:63:93:E9:E3:9A:FC:47:85), and published to GitHub Releases (run 43177692777).",
+    "last_updated": "2026-11-12T10:11:15.748Z",
+    "last_session_note": "Starting Fix Round 4 updated scope: V5 moderated haptics, V29-V36 tracker items, E1-E7 Deep Glow and Thumbnail Library, V37 release.",
     "verification_pending": false,
     "verification": {
       "scope": "Full Fix Round 4 acceptance test suite and release build",
