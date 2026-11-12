@@ -24,7 +24,7 @@ class ShapeSettingsBindingTest {
             .updateLayer(target.id) { it.copy(
                 shapeData = it.shapeData!!.copy(height = 730f),
                 fillData = FillData(solidColor = 0x40112233L, solidOpacity = .2f),
-                transform = Transform2D(rotation = 37f)) }
+                transform = Transform2D(rotationDegrees = 37f)) }
         val result = width.apply(changed)
         assertEquals(changed.findLayerById(target.id)!!.copy(
             shapeData = changed.findLayerById(target.id)!!.shapeData!!.copy(width = 410.25f)),
