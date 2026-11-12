@@ -358,6 +358,86 @@ class FillEditorMutationTest : FillEditorFixture() {
         }
     }
 
+    @Test
+    fun testShadowIncludesStrokeOutlineForShape() {
+        val size = 200
+        val center = size / 2f
+        val radius = 30f
+        val strokeWidth = 20f
+
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bmp)
+        val path = Path().apply {
+            addCircle(center, center, radius, Path.Direction.CW)
+        }
+        val stroke = StrokeData(
+            isEnabled = true,
+            color = 0xFFFF0000L,
+            width = strokeWidth,
+            alignment = StrokeAlignment.OUTSIDE,
+            opacity = 1f
+        )
+        val shadow = ShadowData(
+            isEnabled = true,
+            color = 0xFF000000L,
+            opacity = 1f,
+            blurRadius = 0f,
+            offsetX = 10f,
+            offsetY = 10f
+        )
+        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        FillRenderer.configureShadowPaint(shadowPaint, shadow)
+        FillRenderer.drawPathShadowWithStroke(canvas, path, stroke, shadow, shadowPaint)
+
+        // The outside stroke extends the silhouette by 20px (up to radius 50 from center+10).
+        // Sample at distance 40 from center+10: must have shadow alpha > 0 because of outside stroke.
+        val sampleX = (center + 10f + 40f).toInt()
+        val sampleY = (center + 10f).toInt()
+        val pixel = bmp.getPixel(sampleX, sampleY)
+        assertTrue("Shadow must be present behind outside stroke region", Color.alpha(pixel) > 200)
+    }
+
+    @Test
+    fun testShadowIncludesTextOutline() {
+        val size = 200
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bmp)
+        val textData = TextLayerData(
+            text = "A",
+            fontSize = 40f,
+            boxWidth = 100f,
+            boxHeight = 100f,
+            hasOutline = true,
+            outlineWidth = 15f
+        )
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 40f
+            color = Color.WHITE
+        }
+        val strokePaint = Paint(textPaint).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 15f
+            color = Color.RED
+        }
+        val shadowPaint = Paint(textPaint).apply {
+            style = Paint.Style.FILL
+            color = Color.BLACK
+        }
+        com.motionssalt.saltygraphics.engine.render.TextLayoutEngine.drawTextLayout(
+            canvas = canvas,
+            textData = textData,
+            textPaint = textPaint,
+            strokePaint = strokePaint,
+            shadowPaint = shadowPaint
+        )
+        var nonZeroPixels = 0
+        for (y in 0 until size) {
+            for (x in 0 until size) {
+                if (bmp.getPixel(x, y) != 0) nonZeroPixels++
+            }
+        }
+        assertTrue("Text with stroke and shadow must render visible pixels", nonZeroPixels > 0)
+    }
 }
 
 @RunWith(RobolectricTestRunner::class)

@@ -214,14 +214,11 @@ object LayerCompositor {
                     else -> buildVectorPath(shape.toVectorPath())
                 }
 
-                // 1. Draw Drop Shadow if enabled
+                // 1. Draw Drop Shadow if enabled (full visible silhouette: fill plus stroke)
                 if (shadow.isEnabled) {
                     val shadowPaint = Paint()
                     if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                        canvas.save()
-                        canvas.translate(shadow.offsetX, shadow.offsetY)
-                        canvas.drawPath(shapePath, shadowPaint)
-                        canvas.restore()
+                        FillRenderer.drawPathShadowWithStroke(canvas, shapePath, stroke, shadow, shadowPaint)
                     }
                 }
 
@@ -328,10 +325,7 @@ object LayerCompositor {
                     if (shadow.isEnabled) {
                         val shadowPaint = Paint()
                         if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                            canvas.save()
-                            canvas.translate(shadow.offsetX, shadow.offsetY)
-                            canvas.drawPath(path, shadowPaint)
-                            canvas.restore()
+                            FillRenderer.drawPathShadowWithStroke(canvas, path, stroke, shadow, shadowPaint)
                         }
                     }
 

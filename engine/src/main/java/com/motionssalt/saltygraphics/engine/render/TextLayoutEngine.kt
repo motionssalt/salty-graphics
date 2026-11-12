@@ -214,7 +214,18 @@ object TextLayoutEngine {
     ) {
         if (text.isEmpty()) return
         if (shadowPaint != null) {
+            // Draw fill shadow
             canvas.drawText(text, x, y, shadowPaint)
+            // If stroke/outline is present, also draw stroke silhouette into the shadow
+            if (strokePaint != null && strokePaint.strokeWidth > 0f) {
+                val strokeShadowPaint = Paint(shadowPaint).apply {
+                    style = Paint.Style.STROKE
+                    strokeWidth = strokePaint.strokeWidth
+                    strokeCap = strokePaint.strokeCap
+                    strokeJoin = strokePaint.strokeJoin
+                }
+                canvas.drawText(text, x, y, strokeShadowPaint)
+            }
         }
         canvas.drawText(text, x, y, textPaint)
         if (strokePaint != null) {

@@ -452,6 +452,51 @@ object FillRenderer {
     }
 
     /**
+     * Draws the drop shadow for a path taking into account the full silhouette (fill + stroke with inside/center/outside alignment).
+     */
+    fun drawPathShadowWithStroke(canvas: Canvas, path: Path, stroke: StrokeData, shadow: ShadowData, shadowPaint: Paint) {
+        if (!shadow.isEnabled || shadow.opacity <= 0f) return
+        canvas.save()
+        canvas.translate(shadow.offsetX, shadow.offsetY)
+
+        // Draw shadow of the base fill path
+        canvas.drawPath(path, shadowPaint)
+
+        // If stroke is enabled, also draw the stroke silhouette into the shadow
+        if (stroke.isEnabled && stroke.width > 0f) {
+            val strokeShadowPaint = Paint(shadowPaint).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = when (stroke.alignment) {
+                    StrokeAlignment.CENTER -> stroke.width
+                    StrokeAlignment.INSIDE -> stroke.width * 2f
+                    StrokeAlignment.OUTSIDE -> stroke.width * 2f
+                }
+                strokeCap = when (stroke.cap) {
+                    VectorCap.ROUND -> Paint.Cap.ROUND
+                    VectorCap.SQUARE -> Paint.Cap.SQUARE
+                    VectorCap.BUTT -> Paint.Cap.BUTT
+                }
+                strokeJoin = when (stroke.join) {
+                    VectorJoin.ROUND -> Paint.Join.ROUND
+                    VectorJoin.BEVEL -> Paint.Join.BEVEL
+                    VectorJoin.MITER -> Paint.Join.MITER
+                }
+            }
+            if (stroke.alignment == StrokeAlignment.INSIDE) {
+                canvas.save()
+                canvas.clipPath(path)
+                canvas.drawPath(path, strokeShadowPaint)
+                canvas.restore()
+            } else {
+                // For OUTSIDE and CENTER, draw stroke shadow directly so it extends beyond fill boundary
+                canvas.drawPath(path, strokeShadowPaint)
+            }
+        }
+
+        canvas.restore()
+    }
+
+    /**
      * Renders a path with the specified StrokeData respecting stroke alignment (Center, Inside, Outside).
      */
     fun drawPathWithStroke(canvas: Canvas, path: Path, stroke: StrokeData, strokePaint: Paint) {

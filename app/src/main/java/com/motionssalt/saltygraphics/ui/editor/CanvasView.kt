@@ -475,14 +475,11 @@ fun CanvasView(
                         val stroke = layer.effectiveStroke
                         val shadow = layer.effectiveShadow
 
-                        // 1. Drop Shadow
+                        // 1. Drop Shadow (full visible silhouette: fill plus stroke)
                         if (shadow.isEnabled) {
                             val shadowPaint = NativePaint()
                             if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                                nativeCanvas.save()
-                                nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
-                                nativeCanvas.drawPath(shapePath, shadowPaint)
-                                nativeCanvas.restore()
+                                FillRenderer.drawPathShadowWithStroke(nativeCanvas, shapePath, stroke, shadow, shadowPaint)
                             }
                         }
 
@@ -627,10 +624,7 @@ fun CanvasView(
                             if (shadow.isEnabled) {
                                 val shadowPaint = NativePaint()
                                 if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                                    nativeCanvas.save()
-                                    nativeCanvas.translate(shadow.offsetX, shadow.offsetY)
-                                    nativeCanvas.drawPath(path, shadowPaint)
-                                    nativeCanvas.restore()
+                                    FillRenderer.drawPathShadowWithStroke(nativeCanvas, path, stroke, shadow, shadowPaint)
                                 }
                             }
                             val fillPaint = NativePaint()

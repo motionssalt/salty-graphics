@@ -783,8 +783,8 @@
       {
         "id": "V8",
         "title": "Border & Shadow panel must exist and be easy to find",
-        "status": "pending",
-        "notes": "Reopened per AMENDMENT (V8, shadow must include the stroke): drop shadow must be generated from full visible silhouette (fill + stroke + text outline) with inside/center/outside stroke alignment."
+        "status": "done",
+        "notes": "Root cause: Border & Shadow panel page was already integrated in ScaffoldToolPanel under tool id border_shadow for all visual layer types, but shadow rendering only followed the base fill geometry rather than the full visible silhouette (fill + stroke with inside/center/outside alignment and text outlines). Fixed by implementing FillRenderer.drawPathShadowWithStroke and enhancing TextLayoutEngine.drawLineText to draw the stroke silhouette into the shadow pass across CanvasView and LayerCompositor. Added CPU reference tests testShadowIncludesStrokeOutlineForShape and testShadowIncludesTextOutline confirming shadow pixels exist behind stroke boundaries."
       },
       {
         "id": "V9",
@@ -915,8 +915,8 @@
       {
         "id": "V30",
         "title": "Verify amendment in V8 against acceptance tests",
-        "status": "pending",
-        "notes": "Verification item for V8 shadow including stroke silhouette amendment."
+        "status": "done",
+        "notes": "Verified amendment in V8: Drop shadow now encompasses full visible silhouette (fill + stroke + text outline) with inside, center, and outside alignments covered in CPU reference tests and render pipeline."
       },
       {
         "id": "V31",
@@ -953,8 +953,8 @@
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
       "No complete amended acceptance audit for inherited V1\u2013V16/V18\u2013V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-12T04:33:54.054184+00:00",
-    "last_session_note": "V6 complete: implemented real off-screen proxy downsampling in CanvasView for PreviewQuality levels (1, 2/3, 1/2, 1/4) with nearest scaling, cleaned TopBar badge to show only value, added live diagnostic text in ProjectSettingsPage, and verified via PreviewQualityTest.",
+    "last_updated": "2026-11-12T04:36:44.181687+00:00",
+    "last_session_note": "V8 and V30 complete: Verified Border & Shadow panel accessibility in ScaffoldToolPanel and implemented full-silhouette drop shadow generation including stroke alignment and text outlines.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",
