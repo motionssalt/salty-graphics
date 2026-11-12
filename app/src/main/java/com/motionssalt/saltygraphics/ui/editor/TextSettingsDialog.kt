@@ -52,6 +52,7 @@ fun TextSettingsDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
     var textData by remember(initialData) { mutableStateOf(initialData) }
     LaunchedEffect(initialData) { textData = initialData }
 
