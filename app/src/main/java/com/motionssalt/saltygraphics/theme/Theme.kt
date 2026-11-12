@@ -93,6 +93,8 @@ fun SaltyGraphicsTheme(
     }
 
     CompositionLocalProvider(
+        com.motionssalt.saltygraphics.uikit.tokens.LocalSaltyColorRoles provides
+            com.motionssalt.saltygraphics.uikit.tokens.SaltyThemeDefaults.materialRoles(colorScheme),
         LocalUiScale provides effectiveScale,
         LocalDensity provides scaledDensity
     ) {

@@ -154,6 +154,22 @@ data class SaltyColorRoles(
 )
 
 object SaltyThemeDefaults {
+    /** Bridge the chosen app/system theme without styling individual feature controls. */
+    fun materialRoles(c: ColorScheme): SaltyColorRoles = SaltyColorRoles(
+        primary = c.primary, onPrimary = c.onPrimary,
+        secondary = c.secondary, onSecondary = c.onSecondary,
+        accent = c.primary, onAccent = c.onPrimary,
+        background = c.background, onBackground = c.onBackground,
+        surface = c.surface, onSurface = c.onSurface,
+        surfaceVariant = c.surfaceVariant, onSurfaceVariant = c.onSurfaceVariant,
+        outline = c.outline, outlineVariant = c.outlineVariant,
+        error = c.error, onError = c.onError,
+        trackOn = c.primary, trackOff = c.surfaceVariant,
+        thumbOn = c.onPrimary, thumbOff = c.onSurfaceVariant,
+        textPrimary = c.onSurface, textSecondary = c.onSurfaceVariant,
+        textDisabled = c.onSurface.copy(alpha = .38f)
+    )
+
     fun darkRoles(): SaltyColorRoles = SaltyColorRoles(
         primary = Color(0xFFFF7A00),
         onPrimary = Color(0xFF000000),

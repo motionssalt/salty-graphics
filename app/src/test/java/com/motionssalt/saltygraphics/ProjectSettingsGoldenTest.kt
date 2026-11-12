@@ -39,11 +39,12 @@ class ProjectSettingsGoldenTest {
         var dark by mutableStateOf(true)
         val fixture = ProjectDocument(id = "scaffold-fixture", name = "Scaffold fixture", createdAt = 0, updatedAt = 0)
         host.get().setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            com.motionssalt.saltygraphics.theme.SaltyGraphicsTheme(darkTheme = dark, dynamicColor = false) {
                 Surface(Modifier.requiredSize(412.dp, 450.dp)) { ProjectSettingsPage(fixture, {}, {}) }
             }
         }
         val failures = mutableListOf<String>()
+        var previous: Bitmap? = null
         try {
             for (isDark in listOf(true, false)) {
                 compose.runOnIdle { dark = isDark }
@@ -58,6 +59,8 @@ class ProjectSettingsGoldenTest {
                 val pixels = IntArray(actual.width * actual.height)
                 actual.getPixels(pixels, 0, actual.width, 0, 0, actual.width, actual.height)
                 assertTrue("Golden must contain real rendered controls", pixels.distinct().size > 20)
+                previous?.let { assertFalse("Light and dark tokens must produce distinct pixels", it.sameAs(actual)) }
+                previous = actual
                 val name = "settings_${if (isDark) "dark" else "light"}.png"
                 File("build/outputs/scaffold-screenshots", name).apply { parentFile.mkdirs() }
                     .outputStream().use { actual.compress(Bitmap.CompressFormat.PNG, 100, it) }
