@@ -125,7 +125,7 @@ until they are removed and every component has actual rendered golden coverage.
 - [ ] **Transform**: Migrated to `TransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
 - [ ] **Blending & Masks**: Migrated to `BlendingPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
 - [ ] **Text & Text Options**: Migrated to `TextSettingsDialog` panel page, multiline text box, font family picker, alignment chips.
-- [ ] **Shape & Shape Settings**: Geometry page is now a typed `ShapeSettingsFeature` declaration rendered by `ScaffoldFeaturePage`; production UI/history/render acceptance added (awaiting CI). Shape creation picker remains a separate migration target, so this combined row is not checked off.
+- [x] **Shape & Shape Settings**: Geometry is a typed `ShapeSettingsFeature` declaration; creation choices are registered by `ShapePickerFeature` and drawn with shared `ScaffoldToolPicker`. Actions 43209833401 verifies production Edit/Undo/Redo, target switches, property-only history, pointer previews/commit/cancel, native compositor changes, .sg preservation, seven creation defaults, architecture guards and reviewed light/dark library chooser PNGs. This does not certify all other app screens.
 - [ ] **Vector Tool & Curve Editing**: Migrated to `VectorPage`, independent handles toggle, corner/smooth toggle, angle lock.
 - [ ] **Rasterize Layer**: Migrated to `RasterizeLayer` action, safe confirmation dialog offering duplicate option.
 - [ ] **Layers Panel**: Migrated to `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
@@ -202,3 +202,10 @@ Reviewed chooser golden baselines: `app/src/test/goldens/scaffold/picker_dark.pn
 and `picker_light.png` (native Actions 43208362220). Both have real controls, readable
 labels and distinct themes; comparisons are strict pixels. This covers the chooser
 library surface, not the remaining whole-library component/state/theme matrix.
+
+### Verified V0 partial checkpoint — Actions 43209833401
+Code `973c342` passes the full debug JVM suite across app/engine/ui-kit and
+`:app:assembleDebug`. The Shape row above is now checked with production evidence;
+vector creation also uses the shared chooser but vector editing remains unchecked.
+Continue remaining V0 migrations and registry/module-boundary/component-golden work
+before proceeding with other reopened fixes. No new release or UI refinement.

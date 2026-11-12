@@ -501,3 +501,21 @@ Accepted as checked-in library goldens. The test rejects missing/changed images 
 blank/equal-theme output; there is no automatic acceptance. That run's only failures
 were missing chooser goldens and the older unscoped Back selector (already corrected
 in 6be390c). Final batch verification is still pending; no whole-round acceptance.
+
+## V0 Shape and creation-chooser verified checkpoint — 2026-11-12
+Code `973c342` passed [Actions 43209833401](https://github.com/motionssalt/salty-graphics/actions/runs/43209833401):
+**251 debug JVM tests (engine: 50, ui-kit: 11, app: 190), zero failures/errors/skips**;
+`:app:assembleDebug` succeeds and all ten reviewed native library PNGs match.
+No tests were disabled. The final run includes the repaired panel-specific Back
+selector, both production creation entry paths, shape property/history/archive and
+real pointer/compositor coverage. All previous reviewed library images remain intact.
+
+Completed scope: Shape settings and creation migration, second chooser reuse for
+vector creation, property-only shape geometry dispatch without repainting fill alpha,
+and strict source guards for these migrated entry points. Whole V0 is still in
+progress: remaining screens/panels, complete custom-component/overlay registry,
+whole-module raw UI dependency prohibition and all-component state/theme goldens are
+not finished. Vector editing has not been migrated. Subsequent fixes, Deep Glow and
+final release acceptance remain open. No signed APK release was published; all earlier
+releases/reference-keyflaw, signing credentials and applicationId are untouched.
+No host web frontend/preview, device testing or UI refinement was performed.
