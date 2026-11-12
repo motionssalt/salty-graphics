@@ -97,7 +97,8 @@ fun CanvasView(
     onCommitTextData: ((String, TextLayerData) -> Unit)? = null,
     externalSmartGuides: List<SmartGuideLine> = emptyList(),
     externalSnappedGridX: Float? = null,
-    externalSnappedGridY: Float? = null
+    externalSnappedGridY: Float? = null,
+    isTextEditing: Boolean = false
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -115,6 +116,10 @@ fun CanvasView(
     var activeSmartGuides by remember { mutableStateOf<List<SmartGuideLine>>(emptyList()) }
     var activeSnappedGridX by remember { mutableStateOf<Float?>(null) }
     var activeSnappedGridY by remember { mutableStateOf<Float?>(null) }
+    var isGestureZooming by remember { mutableStateOf(false) }
+    var gestureCachedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var gestureBaseZoom by remember { mutableFloatStateOf(1f) }
+    var gestureBasePan by remember { mutableStateOf(Offset.Zero) }
 
     val displaySmartGuides = if (activeSmartGuides.isNotEmpty()) activeSmartGuides else externalSmartGuides
     val displaySnappedGridX = activeSnappedGridX ?: externalSnappedGridX
@@ -127,6 +132,7 @@ fun CanvasView(
     val currentSelectedIds by rememberUpdatedState(selectedLayerIds)
     val currentFit by rememberUpdatedState(fit)
     val canvasLocked by rememberUpdatedState(isCanvasLocked)
+    val textEditingActive by rememberUpdatedState(isTextEditing)
 
     val updateTransform by rememberUpdatedState(onUpdateLayerTransform)
     val commitTransform by rememberUpdatedState(onCommitLayerTransform)
@@ -163,6 +169,7 @@ fun CanvasView(
                     var handle = SelectionHandle.NONE
                     var isTextFrameDrag = false
                     var textStartBoxWidth = 0f
+                    var textStartBoxHeight = 0f
                     var ids = currentSelectedIds
                     val isSelectedTextLayer = target != null && target.type == LayerType.TEXT && target.textData != null
                     if(target != null && bounds != null && !target.isLocked) {
@@ -179,15 +186,17 @@ fun CanvasView(
                             h to hypot(point.x-downPoint.x,point.y-downPoint.y)*effZoom
                         }
                         val closest = candidates.filter { it.second<=touchRadius }.minByOrNull { it.second }?.first
-                        if (isSelectedTextLayer && (closest == SelectionHandle.EDGE_LEFT || closest == SelectionHandle.EDGE_RIGHT)) {
+                        if (isSelectedTextLayer && textEditingActive && closest != null && closest != SelectionHandle.ROTATE && closest != SelectionHandle.BODY) {
                             handle = closest
                             isTextFrameDrag = true
                             textStartBoxWidth = target.textData!!.boxWidth
+                            textStartBoxHeight = target.textData!!.boxHeight
                         } else {
                             handle = closest
                                 ?: if(local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
                         }
                     }
+                    var didHitLayer = false
                     if(handle==SelectionHandle.NONE) {
                         // Hit-test from topmost layer (index 0 = top of panel = topmost on canvas)
                         target=activeDoc.activeLayers.firstOrNull { layer ->
@@ -199,6 +208,7 @@ fun CanvasView(
                             }
                         }
                         if(target!=null) {
+                            didHitLayer = true
                             ids=setOf(target.id); selectLayer(target.id)
                             bounds=selectionBounds(context,activeDoc,target); handle=SelectionHandle.BODY
                         }
@@ -248,17 +258,35 @@ fun CanvasView(
                                     val batch=values(transform)
                                     if(commitTransforms!=null) commitTransforms!!.invoke(batch)
                                     else batch.forEach { (id,t) -> (commitTransform ?: updateTransform).invoke(id,t) }
-                                } else if(!cancelled && !multiTouch && handle==SelectionHandle.NONE && dragDistance<touchSlop) selectLayer(null)
+                                } else if(!cancelled && !multiTouch && !didHitLayer && (handle==SelectionHandle.NONE || target==null) && dragDistance<touchSlop) selectLayer(null)
                                 activeSmartGuides = emptyList()
                                 activeSnappedGridX = null
                                 activeSnappedGridY = null
                                 rotatingAnglePill = null
                                 rotatingPillPosition = null
+                                if (isGestureZooming) {
+                                    isGestureZooming = false
+                                    gestureCachedBitmap?.recycle()
+                                    gestureCachedBitmap = null
+                                }
                                 finished=true
                                 break
                             }
                             if(pressed.size>=2) {
                                 if(!multiTouch && transform!=start) { preview(start);transform=start }
+                                if(!multiTouch && !canvasLocked) {
+                                    isGestureZooming = true
+                                    gestureBaseZoom = currentZoom
+                                    gestureBasePan = currentPan
+                                    // Capture fast composite for lag-free hardware transformation
+                                    try {
+                                        val snapW = maxOf(1, (document.canvasSize.width * 0.75f).toInt())
+                                        val snapH = maxOf(1, (document.canvasSize.height * 0.75f).toInt())
+                                        gestureCachedBitmap = LayerCompositor.compositeDocument(document, snapW, snapH)
+                                    } catch (_: Throwable) {
+                                        gestureCachedBitmap = null
+                                    }
+                                }
                                 multiTouch=true
                                 val a=pressed[0].position; val b=pressed[1].position
                                 val distance=(a-b).getDistance();val centroid=(a+b)/2f
@@ -286,14 +314,35 @@ fun CanvasView(
                                 val localCurrent = VectorEditing.toLocal(currentPoint.x, currentPoint.y, t)
                                 val localDown = VectorEditing.toLocal(downPoint.x, downPoint.y, t)
                                 val dx = localCurrent.first - localDown.first
-                                val newBoxW = if (handle == SelectionHandle.EDGE_RIGHT) {
-                                    max(50f, textStartBoxWidth + (dx * 2f))
-                                } else {
-                                    max(50f, textStartBoxWidth - (dx * 2f))
+                                val dy = localCurrent.second - localDown.second
+                                var newBoxW = textStartBoxWidth
+                                var newBoxH = textStartBoxHeight
+                                when (handle) {
+                                    SelectionHandle.EDGE_RIGHT -> newBoxW = max(50f, textStartBoxWidth + (dx * 2f))
+                                    SelectionHandle.EDGE_LEFT -> newBoxW = max(50f, textStartBoxWidth - (dx * 2f))
+                                    SelectionHandle.EDGE_BOTTOM -> newBoxH = max(30f, textStartBoxHeight + (dy * 2f))
+                                    SelectionHandle.EDGE_TOP -> newBoxH = max(30f, textStartBoxHeight - (dy * 2f))
+                                    SelectionHandle.CORNER_BOTTOM_RIGHT -> {
+                                        newBoxW = max(50f, textStartBoxWidth + (dx * 2f))
+                                        newBoxH = max(30f, textStartBoxHeight + (dy * 2f))
+                                    }
+                                    SelectionHandle.CORNER_BOTTOM_LEFT -> {
+                                        newBoxW = max(50f, textStartBoxWidth - (dx * 2f))
+                                        newBoxH = max(30f, textStartBoxHeight + (dy * 2f))
+                                    }
+                                    SelectionHandle.CORNER_TOP_RIGHT -> {
+                                        newBoxW = max(50f, textStartBoxWidth + (dx * 2f))
+                                        newBoxH = max(30f, textStartBoxHeight - (dy * 2f))
+                                    }
+                                    SelectionHandle.CORNER_TOP_LEFT -> {
+                                        newBoxW = max(50f, textStartBoxWidth - (dx * 2f))
+                                        newBoxH = max(30f, textStartBoxHeight - (dy * 2f))
+                                    }
+                                    else -> Unit
                                 }
                                 val layerText = activeDoc.findLayerById(targetId)?.textData
                                 if (layerText != null) {
-                                    updateTextData?.invoke(targetId, layerText.copy(boxWidth = newBoxW, boxMode = TextBoxMode.PARAGRAPH))
+                                    updateTextData?.invoke(targetId, layerText.copy(boxWidth = newBoxW, boxHeight = newBoxH, boxMode = TextBoxMode.PARAGRAPH))
                                 }
                                 change.consume()
                             } else if(bounds!=null && dragDistance>=touchSlop) {
@@ -680,9 +729,9 @@ fun CanvasView(
 
                     val layerPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
                         alpha = (layer.opacity * 255 * alphaMult).roundToInt().coerceIn(0, 255)
-                        if (layer.maskMode == MaskMode.IN_MASK) {
+                        if (layer.blendMode == BlendMode.ALPHA_CUTOUT_INWARD || layer.maskMode == MaskMode.IN_MASK) {
                             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
-                        } else if (layer.maskMode == MaskMode.OUT_MASK) {
+                        } else if (layer.blendMode == BlendMode.ALPHA_CUTOUT_OUTWARD || layer.maskMode == MaskMode.OUT_MASK) {
                             xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
                         } else {
                             LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
@@ -878,17 +927,19 @@ fun CanvasView(
                             .forEach { handle(it,9.dp.toPx()) }
                         listOf(Offset(0f,-halfH),Offset(0f,halfH))
                             .forEach { handle(it,6.dp.toPx()) }
-                        if (selectedLayer.type == LayerType.TEXT) {
-                            // Text box frame width resize handles: rounded pill style with cyan accent
-                            fun textSideHandle(p: Offset) {
-                                val pillW = 6.dp.toPx()
-                                val pillH = 16.dp.toPx()
+                        if (selectedLayer.type == LayerType.TEXT && isTextEditing) {
+                            // Dedicated text-editing box with automatic wrapping: cyan accent frame handles
+                            fun textPillHandle(p: Offset, isVertical: Boolean) {
+                                val pillW = if (isVertical) 6.dp.toPx() else 16.dp.toPx()
+                                val pillH = if (isVertical) 16.dp.toPx() else 6.dp.toPx()
                                 val top = p - Offset(pillW / 2f, pillH / 2f)
                                 drawRoundRect(Color.Black, top, Size(pillW, pillH), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()))
                                 drawRoundRect(Color(0xFF00E5FF), top + Offset(1.dp.toPx(), 1.dp.toPx()), Size(pillW - 2.dp.toPx(), pillH - 2.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()))
                             }
-                            textSideHandle(Offset(-halfW, 0f))
-                            textSideHandle(Offset(halfW, 0f))
+                            textPillHandle(Offset(-halfW, 0f), isVertical = true)
+                            textPillHandle(Offset(halfW, 0f), isVertical = true)
+                            textPillHandle(Offset(0f, -halfH), isVertical = false)
+                            textPillHandle(Offset(0f, halfH), isVertical = false)
                         } else {
                             listOf(Offset(-halfW,0f),Offset(halfW,0f))
                                 .forEach { handle(it,6.dp.toPx()) }

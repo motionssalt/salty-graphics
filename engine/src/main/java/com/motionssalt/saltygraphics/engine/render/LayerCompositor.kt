@@ -50,6 +50,8 @@ object LayerCompositor {
             EngineBlendMode.SATURATION -> android.graphics.BlendMode.SATURATION
             EngineBlendMode.COLOR -> android.graphics.BlendMode.COLOR
             EngineBlendMode.LUMINOSITY -> android.graphics.BlendMode.LUMINOSITY
+            EngineBlendMode.ALPHA_CUTOUT_INWARD -> android.graphics.BlendMode.DST_OUT
+            EngineBlendMode.ALPHA_CUTOUT_OUTWARD -> android.graphics.BlendMode.DST_IN
         }
     }
 
@@ -65,6 +67,8 @@ object LayerCompositor {
             EngineBlendMode.SCREEN -> PorterDuff.Mode.SCREEN
             EngineBlendMode.OVERLAY -> PorterDuff.Mode.OVERLAY
             EngineBlendMode.LINEAR_DODGE -> PorterDuff.Mode.ADD
+            EngineBlendMode.ALPHA_CUTOUT_INWARD -> PorterDuff.Mode.DST_OUT
+            EngineBlendMode.ALPHA_CUTOUT_OUTWARD -> PorterDuff.Mode.DST_IN
             else -> PorterDuff.Mode.SRC_OVER
         }
     }
@@ -381,16 +385,10 @@ object LayerCompositor {
         val finalBitmap = Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(finalBitmap)
 
-        // 1. Draw canvas background
-        val bgColor = document.editorSettings.backgroundColor
-        if (bgColor != 0L) {
-            canvas.drawColor(bgColor.toInt())
-        }
-
+        // 1. Layers composite onto an isolated transparent backdrop (so cutout/blend modes only affect layers in stack, not the canvas background)
         val backdropPixels = IntArray(width * height)
         val layerPixels = IntArray(width * height)
         val tempOutputPixels = IntArray(width * height)
-        finalBitmap.getPixels(backdropPixels, 0, width, 0, 0, width, height)
 
         // Render layers bottom to top: activeLayers has index 0 as topmost (top of panel), so draw asReversed()
         val layersToComposite = document.activeLayers.asReversed()
@@ -459,8 +457,11 @@ object LayerCompositor {
                 }
             }
 
-            // Alpha Cutout modes: treat alpha-cutout layer as matte source for composite beneath
-            if (layer.maskMode == MaskMode.IN_MASK) {
+            // Alpha Cutout modes (both via BlendMode and legacy MaskMode):
+            val isCutoutInward = layer.blendMode == EngineBlendMode.ALPHA_CUTOUT_INWARD || layer.maskMode == MaskMode.IN_MASK
+            val isCutoutOutward = layer.blendMode == EngineBlendMode.ALPHA_CUTOUT_OUTWARD || layer.maskMode == MaskMode.OUT_MASK
+
+            if (isCutoutInward) {
                 // Inward mode: cuts out pixels inside source shape across affected composite
                 for (i in backdropPixels.indices) {
                     val maskA = ((layerPixels[i] ushr 24) and 0xFF) / 255f
@@ -471,7 +472,7 @@ object LayerCompositor {
                     backdropPixels[i] = (newAInt shl 24) or (bPx and 0x00FFFFFF)
                 }
                 continue
-            } else if (layer.maskMode == MaskMode.OUT_MASK) {
+            } else if (isCutoutOutward) {
                 // Outward mode: cuts out pixels outside source shape across affected composite
                 for (i in backdropPixels.indices) {
                     val maskA = ((layerPixels[i] ushr 24) and 0xFF) / 255f
@@ -489,7 +490,15 @@ object LayerCompositor {
             System.arraycopy(tempOutputPixels, 0, backdropPixels, 0, backdropPixels.size)
         }
 
-        finalBitmap.setPixels(backdropPixels, 0, width, 0, 0, width, height)
+        // Draw canvas background, then composite the layered artwork onto it
+        val bgColor = document.editorSettings.backgroundColor
+        if (bgColor != 0L) {
+            canvas.drawColor(bgColor.toInt())
+        }
+        val layerCompositeBmp = Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
+        layerCompositeBmp.setPixels(backdropPixels, 0, width, 0, 0, width, height)
+        canvas.drawBitmap(layerCompositeBmp, 0f, 0f, null)
+        layerCompositeBmp.recycle()
         return finalBitmap
     }
 

@@ -339,6 +339,7 @@ fun EditorScreen(
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
                 isCanvasLocked = isCanvasLocked,
+                isTextEditing = isTextSettingsOpen && currentSelectedLayer?.type == LayerType.TEXT,
                 onToggleCanvasLock = { isCanvasLocked = !isCanvasLocked },
                 onNavigateBack = {
                     if (activeGroupId != null) {
@@ -562,23 +563,27 @@ fun EditorScreen(
                         },
                         onClosePanel = { isLayersPanelOpen = false },
                         onDuplicateLayer = { id ->
-                            val target = doc.findLayerById(id)
-                            if (target != null) {
-                                val dup = target.copy(
-                                    id = java.util.UUID.randomUUID().toString(),
-                                    name = "${target.name} Copy"
-                                )
-                                val currentList = panelLayers
-                                val idx = currentList.indexOfFirst { it.id == id }
-                                val updatedList = currentList.toMutableList()
-                                if (idx >= 0) updatedList.add(idx, dup) else updatedList.add(0, dup)
-                                val updated = if (activeGroupId == null) {
-                                    doc.copy(layers = updatedList)
-                                } else {
-                                    doc.updateLayer(activeGroupId!!) { it.copy(children = updatedList) }
+                            val targets = if (selectedLayerIds.isNotEmpty()) panelLayers.filter { it.id in selectedLayerIds } else listOfNotNull(doc.findLayerById(id))
+                            if (targets.isNotEmpty()) {
+                                var currentList = panelLayers.toMutableList()
+                                val newSelectedIds = mutableSetOf<String>()
+                                targets.forEach { target ->
+                                    val dup = target.copy(
+                                        id = java.util.UUID.randomUUID().toString(),
+                                        name = "${target.name} Copy"
+                                    )
+                                    newSelectedIds.add(dup.id)
+                                    val idx = currentList.indexOfFirst { it.id == target.id }
+                                    if (idx >= 0) currentList.add(idx, dup) else currentList.add(0, dup)
                                 }
-                                selectedLayerIds = setOf(dup.id)
-                                recordAndAutoSave("Duplicate Layer", updated)
+                                val updated = if (activeGroupId == null) {
+                                    doc.copy(layers = currentList)
+                                } else {
+                                    doc.updateLayer(activeGroupId!!) { it.copy(children = currentList) }
+                                }
+                                selectedLayerIds = newSelectedIds
+                                val label = if (targets.size == 1) "Duplicate Layer" else "Duplicate ${targets.size} layers"
+                                recordAndAutoSave(label, updated)
                             }
                         },
                         onGroupSelected = {
@@ -885,23 +890,27 @@ fun EditorScreen(
                             }
                         },
                         onDuplicate = {
-                            val target = currentSelectedLayer
-                            if (target != null) {
-                                val dup = target.copy(
-                                    id = java.util.UUID.randomUUID().toString(),
-                                    name = "${target.name} Copy"
-                                )
-                                val currentList = panelLayers
-                                val idx = currentList.indexOfFirst { it.id == target.id }
-                                val updatedList = currentList.toMutableList()
-                                if (idx >= 0) updatedList.add(idx + 1, dup) else updatedList.add(dup)
-                                val updated = if (activeGroupId == null) {
-                                    doc.copy(layers = updatedList)
-                                } else {
-                                    doc.updateLayer(activeGroupId!!) { it.copy(children = updatedList) }
+                            val targets = if (selectedLayerIds.isNotEmpty()) panelLayers.filter { it.id in selectedLayerIds } else listOfNotNull(currentSelectedLayer)
+                            if (targets.isNotEmpty()) {
+                                var currentList = panelLayers.toMutableList()
+                                val newSelectedIds = mutableSetOf<String>()
+                                targets.forEach { target ->
+                                    val dup = target.copy(
+                                        id = java.util.UUID.randomUUID().toString(),
+                                        name = "${target.name} Copy"
+                                    )
+                                    newSelectedIds.add(dup.id)
+                                    val idx = currentList.indexOfFirst { it.id == target.id }
+                                    if (idx >= 0) currentList.add(idx, dup) else currentList.add(0, dup)
                                 }
-                                selectedLayerIds = setOf(dup.id)
-                                recordAndAutoSave("Duplicate Layer", updated)
+                                val updated = if (activeGroupId == null) {
+                                    doc.copy(layers = currentList)
+                                } else {
+                                    doc.updateLayer(activeGroupId!!) { it.copy(children = currentList) }
+                                }
+                                selectedLayerIds = newSelectedIds
+                                val label = if (targets.size == 1) "Duplicate Layer" else "Duplicate ${targets.size} layers"
+                                recordAndAutoSave(label, updated)
                             }
                         },
                         onDelete = {

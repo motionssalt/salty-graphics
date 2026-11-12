@@ -70,7 +70,7 @@ object BlendMath {
                 else min(1f, bClamped / sClamped)
             }
             // Component blend modes handled in blendColor
-            BlendMode.HUE, BlendMode.SATURATION, BlendMode.COLOR, BlendMode.LUMINOSITY -> sClamped
+            BlendMode.HUE, BlendMode.SATURATION, BlendMode.COLOR, BlendMode.LUMINOSITY, BlendMode.ALPHA_CUTOUT_INWARD, BlendMode.ALPHA_CUTOUT_OUTWARD -> sClamped
         }.coerceIn(0f, 1f)
     }
 
@@ -89,6 +89,16 @@ object BlendMath {
         val sG = ((sourceArgb shr 8 and 0xFF) / 255f)
         val sB = ((sourceArgb and 0xFF) / 255f)
 
+        if (mode == BlendMode.ALPHA_CUTOUT_INWARD) {
+            val newA = (bA * (1f - sA)).coerceIn(0f, 1f)
+            val outA = (newA * 255f).roundToInt()
+            return ((outA.toLong() and 0xFF) shl 24) or (backdropArgb and 0x00FFFFFF)
+        }
+        if (mode == BlendMode.ALPHA_CUTOUT_OUTWARD) {
+            val newA = (bA * sA).coerceIn(0f, 1f)
+            val outA = (newA * 255f).roundToInt()
+            return ((outA.toLong() and 0xFF) shl 24) or (backdropArgb and 0x00FFFFFF)
+        }
         if (sA <= 0f) return backdropArgb
         if (bA <= 0f) {
             val outA = (sA * 255f).roundToInt()

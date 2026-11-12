@@ -9,7 +9,8 @@ enum class BlendCategory(val displayName: String) {
     LIGHTEN("Lighten"),
     CONTRAST("Contrast"),
     INVERSION("Inversion"),
-    COMPONENT("Component")
+    COMPONENT("Component"),
+    CUTOUT("Cutout")
 }
 
 @Serializable
@@ -51,7 +52,10 @@ enum class BlendMode(
     HUE("Hue", BlendCategory.COMPONENT, "blendHue"),
     SATURATION("Saturation", BlendCategory.COMPONENT, "blendSaturation"),
     COLOR("Color", BlendCategory.COMPONENT, "blendColor"),
-    LUMINOSITY("Luminosity", BlendCategory.COMPONENT, "blendLuminosity");
+    LUMINOSITY("Luminosity", BlendCategory.COMPONENT, "blendLuminosity"),
+    // Cutout
+    ALPHA_CUTOUT_INWARD("Alpha Cutout Inward", BlendCategory.CUTOUT, "cutoutInward"),
+    ALPHA_CUTOUT_OUTWARD("Alpha Cutout Outward", BlendCategory.CUTOUT, "cutoutOutward");
 
     companion object {
         fun byCategory(category: BlendCategory): List<BlendMode> =

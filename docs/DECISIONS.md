@@ -349,3 +349,31 @@ missing-Fill-selection failure in run 43022262233 did not recur in the final deb
 suite; its cause is not established, so do not claim a separate proven fix.
 No release/tag, no old release/reference/signing changes, no credential committed,
 no host web/app preview, no physical-phone testing and no UI refinement.
+
+## Fix Round 4: Completed Items V17, V22, V23, V24, V25, V26, V27, V28, V29, V31
+
+- **V17 / V29 (Dedicated Text-Editing Box with Automatic Wrapping)**:
+  - Root Cause: Text selection bounds were calculated as a single line ignoring wrapped text height and boxWidth/boxHeight, causing handle hit-testing to miss.
+  - Solution: Replaced text bounds calculation with `TextLayoutEngine.computeLayout`. Added `isTextEditing` flag to `CanvasView` that activates dedicated cyan pill handles on text frame edges and corners. Dragging handles resizes `boxWidth` and `boxHeight` with `TextBoxMode.PARAGRAPH` live.
+
+- **V22 (Safe Rasterize Layer Action)**:
+  - Root Cause: `LayerRasterizer` previously rendered into `canvasSize` bitmap, truncating artwork that extended outside the canvas.
+  - Solution: Expanded render buffer to encompass full unclipped local geometry, stroke, and shadow. Tight crop computes accurate document translation while completely preserving off-canvas content.
+
+- **V23 / V31 (Layer Masks & Alpha Cutout Modes)**:
+  - Root Cause: Cutout operations punched holes directly in the main canvas background, making the canvas turn black.
+  - Solution: Composite artwork on an isolated transparent backdrop and apply cutout modes to the layer stack only, preserving the canvas background color. Added `ALPHA_CUTOUT_INWARD` and `ALPHA_CUTOUT_OUTWARD` as standard BlendModes with live pipeline thumbnails. Removed separate matte section from UI.
+
+- **V25 (Duplicate Multiple Selected Layers)**:
+  - Root Cause: Duplication commands only inspected the first selected ID or `currentSelectedLayer`.
+  - Solution: Duplication now iterates across all selected layers, creating unique duplicates inserted directly above their originals and updating the selection in a single history action.
+
+- **V26 (Hold-to-Select Layers & Tap-Empty-to-Deselect)**:
+  - Root Cause: Explicit checkboxes were present in layer rows and empty canvas taps had edge cases.
+  - Solution: Removed checkboxes completely. Press-and-hold enters multi-select mode; subsequent taps toggle selection. Tapping empty canvas area reliably deselects all layers.
+
+- **V27 (Lag-Free Canvas Zooming)**:
+  - Solution: Implemented hardware-accelerated gesture caching during active pinch/pan, avoiding heavy per-frame layer re-rasterization.
+
+- **V28 (Eyedropper Color Picker Component)**:
+  - Solution: Added `EyedropperLoupeOverlay` with magnified 9x9 pixel grid and center reticle sampling composite colors live from the canvas.

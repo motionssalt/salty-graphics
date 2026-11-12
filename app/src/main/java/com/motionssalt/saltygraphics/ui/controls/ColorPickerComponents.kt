@@ -490,3 +490,69 @@ fun ColorPickerDialog(
                 }
     }
 }
+
+/**
+ * Eyedropper Loupe Canvas Overlay component.
+ * Follows touch coordinates, displays a magnified 9x9 pixel grid of the composite around the touch point,
+ * with center reticle crosshair and a preview of the sampled color.
+ */
+@Composable
+fun EyedropperLoupeOverlay(
+    touchPosition: Offset,
+    sampledColor: Long,
+    magnificationBitmap: Bitmap?,
+    modifier: Modifier = Modifier
+) {
+    val loupeRadius = 50.dp
+    val strokeWidth = 3.dp
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = touchPosition - Offset(0f, 60.dp.toPx()) // Offset above finger so finger does not obscure loupe
+            val radiusPx = loupeRadius.toPx()
+
+            // 1. Draw magnified bitmap clipped to circle
+            if (magnificationBitmap != null) {
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    addOval(androidx.compose.ui.geometry.Rect(center, radiusPx))
+                }
+                clipPath(path) {
+                    val destRect = androidx.compose.ui.geometry.Rect(center.x - radiusPx, center.y - radiusPx, center.x + radiusPx, center.y + radiusPx)
+                    drawImage(
+                        image = magnificationBitmap.asImageBitmap(),
+                        dstOffset = androidx.compose.ui.unit.IntOffset((center.x - radiusPx).toInt(), (center.y - radiusPx).toInt()),
+                        dstSize = androidx.compose.ui.unit.IntSize((radiusPx * 2).toInt(), (radiusPx * 2).toInt()),
+                        filterQuality = androidx.compose.ui.graphics.FilterQuality.None
+                    )
+                }
+            }
+
+            // 2. Reticle ring and outer border
+            drawCircle(
+                color = Color.White,
+                radius = radiusPx,
+                center = center,
+                style = Stroke(strokeWidth.toPx())
+            )
+            drawCircle(
+                color = Color.Black,
+                radius = radiusPx + 1.dp.toPx(),
+                center = center,
+                style = Stroke(1.dp.toPx())
+            )
+
+            // 3. Center sample reticle
+            drawCircle(
+                color = safeColor(sampledColor),
+                radius = 8.dp.toPx(),
+                center = center
+            )
+            drawCircle(
+                color = Color.White,
+                radius = 8.dp.toPx(),
+                center = center,
+                style = Stroke(1.5f)
+            )
+        }
+    }
+}

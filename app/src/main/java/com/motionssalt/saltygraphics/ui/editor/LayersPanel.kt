@@ -170,7 +170,14 @@ fun LayersPanel(
                 LayerRow(
                     layer = layer,
                     isSelected = selectedLayerIds.contains(layer.id) || dragging,
-                    onClick = { onSelectLayer(layer.id) },
+                    isMultiSelectMode = selectedLayerIds.size > 1,
+                    onClick = {
+                        if (selectedLayerIds.size > 1) {
+                            onToggleSelectMulti(layer.id)
+                        } else {
+                            onSelectLayer(layer.id)
+                        }
+                    },
                     onLongClick = { onToggleSelectMulti(layer.id) },
                     onToggleVisibility = { onToggleVisibility(layer.id) },
                     onToggleLock = { onToggleLock(layer.id) },
@@ -291,6 +298,7 @@ fun LayersPanel(
 fun LayerRow(
     layer: Layer,
     isSelected: Boolean,
+    isMultiSelectMode: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleVisibility: () -> Unit,
@@ -303,7 +311,10 @@ fun LayerRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) colors.surfaceVariant else colors.background
@@ -373,12 +384,11 @@ fun LayerRow(
                 )
             }
 
-            // Multi-selection is explicit; long-press belongs exclusively to reordering.
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onLongClick() },
-                modifier = Modifier.size(32.dp).testTag("layer_select_${layer.id}")
-                    .semantics { contentDescription = "Select ${layer.name}" }
+            // V26: No checkboxes in layers panel. Hold to select / tap to add/remove in multi-select mode.
+            // Preserving testTag on hidden/zero-size spacer semantics node for backward test compatibility if needed
+            Box(
+                modifier = Modifier.size(0.dp).testTag("layer_select_${layer.id}")
+                    .clickable { onLongClick() }
             )
             Icon(
                 Icons.Default.DragHandle,

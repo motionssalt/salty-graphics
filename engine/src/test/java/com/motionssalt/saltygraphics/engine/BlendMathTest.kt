@@ -9,7 +9,7 @@ class BlendMathTest {
 
     @Test
     fun testAllBlendModesCovered() {
-        assertEquals("All 23 blend modes must be defined", 23, BlendMode.entries.size)
+        assertEquals("All 25 blend modes must be defined", 25, BlendMode.entries.size)
     }
 
     @Test

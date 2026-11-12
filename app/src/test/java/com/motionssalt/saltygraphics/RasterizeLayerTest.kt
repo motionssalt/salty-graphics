@@ -78,3 +78,33 @@ class RasterizeLayerTest {
         assertEquals("Title Text (Rasterized)", rasterized?.name)
     }
 }
+
+    @Test
+    fun rasterizePreservesContentOutsideCanvasBounds() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        // Place a shape that partially extends outside a 200x200 canvas (e.g. translationX = 120, width = 100 -> extends to +170, canvas border is +100)
+        val shape = Layer(
+            id = "shape_off_canvas",
+            name = "Off Canvas Shape",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(type = ShapeType.RECTANGLE, width = 100f, height = 80f, fillColor = 0xFF00FF00L, hasFill = true),
+            transform = Transform2D(translationX = 120f, translationY = 0f)
+        )
+        val doc = ProjectDocument(
+            id = "test_off_canvas_raster",
+            name = "Off Canvas Test",
+            canvasSize = CanvasSize(width = 200, height = 200),
+            layers = listOf(shape)
+        )
+        val updatedDoc = LayerRasterizer.rasterizeLayer(context, doc, "shape_off_canvas", duplicateOriginal = false)
+        val rasterized = updatedDoc.layers.first()
+        assertEquals(LayerType.MEDIA, rasterized.type)
+        val asset = File(File(context.filesDir, "projects/${doc.id}_assets"), rasterized.mediaAssetPath!!)
+        val pixels = android.graphics.BitmapFactory.decodeFile(asset.absolutePath)
+        assertNotNull(pixels)
+        // Full width of 100px must be preserved, not clipped to the 30px that fit inside canvas!
+        assertTrue("Width must be full 100px, but was: ${pixels.width}", pixels.width in 98..102)
+        assertTrue("Height must be full 80px, but was: ${pixels.height}", pixels.height in 78..82)
+        // Center position must match the unclipped center around 120f
+        assertEquals(120f, rasterized.transform.translationX, 2f)
+    }

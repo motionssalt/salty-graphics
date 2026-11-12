@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.motionssalt.saltygraphics.engine.model.BlendCategory
 import com.motionssalt.saltygraphics.engine.model.BlendMode
 import com.motionssalt.saltygraphics.engine.model.Layer
+import com.motionssalt.saltygraphics.engine.model.MaskMode
 import com.motionssalt.saltygraphics.engine.model.MaskType
 import com.motionssalt.saltygraphics.engine.render.BlendMath
 import com.motionssalt.saltygraphics.engine.render.LayerCompositor
@@ -42,7 +43,7 @@ import com.motionssalt.saltygraphics.theme.*
 import com.motionssalt.saltygraphics.ui.controls.SaltySwitch
 
 object BlendThumbnailCache {
-    private val cache = LruCache<BlendMode, Bitmap>(30)
+    private val cache = LruCache<BlendMode, Bitmap>(40)
 
     fun getThumbnail(mode: BlendMode): Bitmap {
         cache.get(mode)?.let { return it }
@@ -89,10 +90,10 @@ fun BlendingPage(
     currentMaskType: MaskType,
     currentMaskSourceLayerId: String?,
     isMaskInverted: Boolean,
-    currentMaskMode: com.motionssalt.saltygraphics.engine.model.MaskMode = com.motionssalt.saltygraphics.engine.model.MaskMode.NONE,
+    currentMaskMode: MaskMode = MaskMode.NONE,
     allAvailableLayers: List<Layer>,
     onBlendChange: (BlendMode, Float) -> Unit,
-    onMaskChange: (MaskType, String?, Boolean, com.motionssalt.saltygraphics.engine.model.MaskMode) -> Unit,
+    onMaskChange: (MaskType, String?, Boolean, MaskMode) -> Unit,
     onBack: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -159,7 +160,7 @@ fun BlendingPage(
 
             HorizontalDivider(color = colors.outline.copy(alpha = 0.3f))
 
-            // 2. Blend Mode Categories (Tabs)
+            // 2. Blend Mode Categories (Tabs) - includes Cutout group
             Text("Blend Mode Categories", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -177,7 +178,7 @@ fun BlendingPage(
                 }
             }
 
-            // 3. Grid of Blend Modes with Live Thumbnails
+            // 3. Main Grid of Blend Modes (including Alpha Cutout Inward & Outward with thumbnails)
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(85.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
@@ -229,10 +230,10 @@ fun BlendingPage(
 
             HorizontalDivider(color = colors.outline.copy(alpha = 0.3f))
 
-            // 4. Non-Destructive Masking Section (T10 & T11)
-            Text("Layer Masking", style = MaterialTheme.typography.titleSmall, color = colors.primary)
+            // 4. Layer Mask Source & Invert (inside same Blending page)
+            Text("Layer Mask Source", style = MaterialTheme.typography.titleSmall, color = colors.primary)
             Text(
-                "Non-destructive compositing mask applied while blend mode is active.",
+                "Select another layer to use as an alpha or luminance mask.",
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant
             )
@@ -252,37 +253,6 @@ fun BlendingPage(
                         },
                         label = { Text(type.displayName, style = MaterialTheme.typography.labelSmall) }
                     )
-                }
-            }
-
-            // Alpha Cutout Mode Chips (V23)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Alpha Cutout (Punch-Through)", style = MaterialTheme.typography.titleSmall, color = colors.primary)
-                Text(
-                    "Punches through layers beneath. 'Inward' cuts out the shape; 'Outward' keeps only inside the shape.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val modes = listOf(
-                        com.motionssalt.saltygraphics.engine.model.MaskMode.NONE to "Off",
-                        com.motionssalt.saltygraphics.engine.model.MaskMode.IN_MASK to "Inward (Punch Hole)",
-                        com.motionssalt.saltygraphics.engine.model.MaskMode.OUT_MASK to "Outward (Matte)"
-                    )
-                    modes.forEach { (mode, label) ->
-                        val isSelected = activeCutoutMode == mode
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = {
-                                activeCutoutMode = mode
-                                onMaskChange(activeMaskType, activeSourceId, activeInverted, mode)
-                            },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                        )
-                    }
                 }
             }
 
