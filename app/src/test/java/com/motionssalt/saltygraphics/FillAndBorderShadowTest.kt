@@ -382,8 +382,8 @@ class FillEditorMutationTest : FillEditorFixture() {
             color = 0xFF000000L,
             opacity = 1f,
             blurRadius = 0f,
-            offsetX = 10f,
-            offsetY = 10f
+            lightAngleDegrees = 45f,
+            distance = kotlin.math.sqrt(200f) // actual ShadowData API: yields a 10px offset on each axis
         )
         val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         FillRenderer.configureShadowPaint(shadowPaint, shadow)
