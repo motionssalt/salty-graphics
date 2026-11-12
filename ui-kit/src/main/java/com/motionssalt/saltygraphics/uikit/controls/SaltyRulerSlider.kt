@@ -121,11 +121,11 @@ fun SaltyRulerSlider(
                             val unitsPerSecond = -velocity.calculateVelocity().x * liveStep.coerceAtLeast(.01f) / tickSpacingPx
                             fling = coroutineScope.launch {
                                 try {
+                                    decayAnim.updateBounds(liveRange.start, liveRange.endInclusive)
                                     decayAnim.snapTo(internalValue)
                                     decayAnim.animateDecay(unitsPerSecond, exponentialDecay()) {
                                         internalValue = this.value.coerceIn(liveRange.start, liveRange.endInclusive)
                                         changeCallback(internalValue)
-                                        if (this.value !in liveRange) cancelAnimation()
                                     }
                                     dragging = false
                                     commitCallback(internalValue)
