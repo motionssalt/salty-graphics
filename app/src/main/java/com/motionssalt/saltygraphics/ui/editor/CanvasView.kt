@@ -753,10 +753,102 @@ fun CanvasView(
                 drawActiveLayers(nativeCanvas, alphaMult = 0.30f)
                 nativeCanvas.restore()
 
-                // V12: Inside canvas: objects rendered at normal 100% opacity, strictly clipped to canvas
+                // V6 & V12: Inside canvas: objects rendered at selected preview quality proxy resolution
                 nativeCanvas.save()
                 nativeCanvas.clipRect(topLeft.x, topLeft.y, topLeft.x + scaledW, topLeft.y + scaledH)
-                drawActiveLayers(nativeCanvas, alphaMult = 1.0f)
+
+                val qScale = previewQuality.scaleFactor
+                if (qScale >= 0.999f) {
+                    // Full resolution: direct render at native resolution
+                    drawActiveLayers(nativeCanvas, alphaMult = 1.0f)
+                } else {
+                    // Fractional proxy render (2/3, 1/2, 1/4):
+                    // Render layers into an off-screen proxy bitmap sized according to scaleFactor,
+                    // then draw proxy bitmap scaled back up to canvas bounds with nearest/low filtering
+                    // so pixel detail visibly drops at lower proxy resolutions.
+                    val proxyW = maxOf(1, (canvasW * qScale).roundToInt())
+                    val proxyH = maxOf(1, (canvasH * qScale).roundToInt())
+                    var proxyBmp: Bitmap? = null
+                    try {
+                        proxyBmp = Bitmap.createBitmap(proxyW, proxyH, Bitmap.Config.ARGB_8888)
+                        val proxyCanvas = android.graphics.Canvas(proxyBmp)
+
+                        // Center of proxy bitmap
+                        val proxyCenterX = proxyW / 2f
+                        val proxyCenterY = proxyH / 2f
+
+                        for (layer in document.activeLayers.asReversed()) {
+                            if (!layer.isVisible) continue
+                            if (layer.type == LayerType.ADJUSTMENT) continue
+
+                            val layerCenterX = proxyCenterX + (layer.transform.translationX * qScale)
+                            val layerCenterY = proxyCenterY + (layer.transform.translationY * qScale)
+
+                            val layerPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
+                                alpha = (layer.opacity * 255).roundToInt().coerceIn(0, 255)
+                                if (layer.maskMode == MaskMode.IN_MASK) {
+                                    xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+                                } else if (layer.maskMode == MaskMode.OUT_MASK) {
+                                    xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+                                } else {
+                                    LayerCompositor.applyLayerBlendMode(this, layer.blendMode)
+                                }
+                            }
+
+                            proxyCanvas.saveLayer(null, layerPaint)
+                            proxyCanvas.save()
+                            proxyCanvas.translate(layerCenterX, layerCenterY)
+                            proxyCanvas.rotate(layer.transform.rotationDegrees)
+                            proxyCanvas.scale(layer.transform.scaleX * qScale, layer.transform.scaleY * qScale)
+
+                            drawLayerElements(proxyCanvas, layer)
+
+                            proxyCanvas.restore()
+
+                            if (layer.effectiveMaskType != MaskType.NONE) {
+                                val maskSourceId = layer.effectiveMaskSourceLayerId
+                                val maskLayer = if (maskSourceId != null) document.findLayerById(maskSourceId) else null
+                                if (maskLayer != null) {
+                                    val maskPaint = NativePaint(NativePaint.ANTI_ALIAS_FLAG).apply {
+                                        xfermode = PorterDuffXfermode(
+                                            if (layer.effectiveMaskInverted) PorterDuff.Mode.DST_OUT else PorterDuff.Mode.DST_IN
+                                        )
+                                        if (layer.effectiveMaskType == MaskType.LUMINANCE) {
+                                            colorFilter = ColorMatrixColorFilter(ColorMatrix(floatArrayOf(
+                                                0f, 0f, 0f, 0f, 0f,
+                                                0f, 0f, 0f, 0f, 0f,
+                                                0f, 0f, 0f, 0f, 0f,
+                                                0.299f, 0.587f, 0.114f, 0f, 0f
+                                            )))
+                                        }
+                                    }
+                                    val maskCenterX = proxyCenterX + (maskLayer.transform.translationX * qScale)
+                                    val maskCenterY = proxyCenterY + (maskLayer.transform.translationY * qScale)
+                                    proxyCanvas.save()
+                                    proxyCanvas.translate(maskCenterX, maskCenterY)
+                                    proxyCanvas.rotate(maskLayer.transform.rotationDegrees)
+                                    proxyCanvas.scale(maskLayer.transform.scaleX * qScale, maskLayer.transform.scaleY * qScale)
+                                    drawLayerMask(proxyCanvas, maskLayer, maskPaint, context)
+                                    proxyCanvas.restore()
+                                }
+                            }
+
+                            proxyCanvas.restore()
+                        }
+
+                        // Draw proxy bitmap onto main canvas over [topLeft, topLeft + (scaledW, scaledH)]
+                        val destRect = RectF(topLeft.x, topLeft.y, topLeft.x + scaledW, topLeft.y + scaledH)
+                        val blitPaint = NativePaint().apply {
+                            isFilterBitmap = false // Preserves downsampled pixel resolution without blurry smoothing
+                        }
+                        nativeCanvas.drawBitmap(proxyBmp, null, destRect, blitPaint)
+                    } catch (oom: OutOfMemoryError) {
+                        // Fallback gracefully to direct active layers if proxy allocation fails
+                        drawActiveLayers(nativeCanvas, alphaMult = 1.0f)
+                    } finally {
+                        proxyBmp?.recycle()
+                    }
+                }
                 nativeCanvas.restore()
             }
 

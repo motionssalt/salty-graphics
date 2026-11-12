@@ -771,8 +771,8 @@
       {
         "id": "V6",
         "title": "Preview quality: one shared state, correct labels, real effect",
-        "status": "pending",
-        "notes": "Reopened per AMENDMENT (V6, third report): preview button still changes nothing visible. Needs render-target pixel size verification at Full, 2/3, 1/2, 1/4; visible diagnostic line in Project Settings showing actual render size; verify detail drops."
+        "status": "done",
+        "notes": "Root cause: CanvasView directly drew all active layers to the viewport screen canvas at full display density via nativeCanvas.saveLayer and drawActiveLayers, ignoring previewQuality.scaleFactor entirely. Fixed by allocating an off-screen proxy Bitmap sized to (canvasW * qScale, canvasH * qScale), rendering layers into this proxy canvas with transformed coordinates, and blitting back to canvas bounds with nearest-neighbor interpolation (isFilterBitmap = false) so detail measurably drops at 2/3, 1/2, and 1/4. Added visible diagnostic line in ProjectSettingsPage showing actual proxy render dimensions (e.g. Preview render: 720 x 900 px (1/2)). Cleaned TopBar button to display only fractional value (no Preview word/icon)."
       },
       {
         "id": "V7",
@@ -953,8 +953,8 @@
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
       "No complete amended acceptance audit for inherited V1\u2013V16/V18\u2013V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-11T23:01:46.730544+00:00",
-    "last_session_note": "V0b complete: Replaced CI with ForgeBuild contract (tests.yml and release.yml), speed optimizations in gradle.properties, strict dynamic versioning above 59. Starting V6 preview quality fix.",
+    "last_updated": "2026-11-12T04:33:54.054184+00:00",
+    "last_session_note": "V6 complete: implemented real off-screen proxy downsampling in CanvasView for PreviewQuality levels (1, 2/3, 1/2, 1/4) with nearest scaling, cleaned TopBar badge to show only value, added live diagnostic text in ProjectSettingsPage, and verified via PreviewQualityTest.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",

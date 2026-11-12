@@ -100,28 +100,21 @@ fun SaltyEditorTopBar(
                     )
                 }
 
-                // Preview Quality Badge / Button (T13: distinct from zoom with icon and fractional label)
+                // Preview Quality Button: shows only the selected value (e.g. "1/2") with no "Preview" word or extra icon
                 Surface(
                     onClick = onPreviewQualityClick,
                     shape = RoundedCornerShape(SaltyTokens.spacing.toolbar6),
                     color = colors.surfaceVariant,
                     modifier = Modifier.padding(start = SaltyTokens.spacing.toolbar4)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = SaltyTokens.spacing.toolbar6, vertical = SaltyTokens.spacing.toolbar4)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(horizontal = SaltyTokens.spacing.toolbar8, vertical = SaltyTokens.spacing.toolbar4)
                     ) {
-                        Icon(
-                            Icons.Default.HighQuality,
-                            contentDescription = "Preview Quality",
-                            tint = colors.primary,
-                            modifier = Modifier.size(SaltyTokens.spacing.toolbar14)
-                        )
-                        Spacer(modifier = Modifier.width(SaltyTokens.spacing.toolbar3))
                         Text(
                             text = previewQuality.displayName,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = SaltyTokens.typography.labelSmall.fontSize, fontWeight = FontWeight.Bold),
-                            color = colors.onSurface
+                            color = colors.primary
                         )
                     }
                 }

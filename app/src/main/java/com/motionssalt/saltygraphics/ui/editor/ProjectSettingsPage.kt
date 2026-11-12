@@ -104,6 +104,13 @@ fun ProjectSettingsPage(
                 onUpdateSetting(ActionIdentity("Change", "Preview Quality")) { it.copy(defaultPreviewQuality = chosen) }
             }
         )
+        val proxyW = (document.canvasSize.width * settings.defaultPreviewQuality.scaleFactor).toInt()
+        val proxyH = (document.canvasSize.height * settings.defaultPreviewQuality.scaleFactor).toInt()
+        Text(
+            text = "Preview render: $proxyW × $proxyH px (${settings.defaultPreviewQuality.displayName})",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
         Text("Canvas: ${document.canvasSize.width} × ${document.canvasSize.height} px")
         val divisor = gcd(document.canvasSize.width, document.canvasSize.height)
         Text("Aspect ratio: ${document.canvasSize.width / divisor}:${document.canvasSize.height / divisor}")

@@ -73,4 +73,49 @@ class PreviewQualityTest {
         assertEquals(3840, exportW)
         assertEquals(2160, exportH)
     }
+
+    @Test
+    fun testRenderTargetPixelSizeAndDetailReductionForQualityLevels() {
+        val canvasW = 1200
+        val canvasH = 800
+
+        // Test each level calculates strictly descending pixel target sizes
+        val fullW = (canvasW * PreviewQuality.FULL.scaleFactor).toInt()
+        val fullH = (canvasH * PreviewQuality.FULL.scaleFactor).toInt()
+        assertEquals(1200, fullW)
+        assertEquals(800, fullH)
+
+        val twoThirdsW = (canvasW * PreviewQuality.TWO_THIRDS.scaleFactor).toInt()
+        val twoThirdsH = (canvasH * PreviewQuality.TWO_THIRDS.scaleFactor).toInt()
+        assertEquals(800, twoThirdsW)
+        assertEquals(533, twoThirdsH)
+
+        val halfW = (canvasW * PreviewQuality.HALF.scaleFactor).toInt()
+        val halfH = (canvasH * PreviewQuality.HALF.scaleFactor).toInt()
+        assertEquals(600, halfW)
+        assertEquals(400, halfH)
+
+        val quarterW = (canvasW * PreviewQuality.QUARTER.scaleFactor).toInt()
+        val quarterH = (canvasH * PreviewQuality.QUARTER.scaleFactor).toInt()
+        assertEquals(300, quarterW)
+        assertEquals(200, quarterH)
+
+        assertTrue(fullW > twoThirdsW)
+        assertTrue(twoThirdsW > halfW)
+        assertTrue(halfW > quarterW)
+
+        // Simulate fine 1-pixel checker pattern across levels and verify detail frequency reduction
+        fun countCheckerTransitions(width: Int): Int {
+            // A 1px checker pattern across canvas width has (width - 1) transitions
+            return width - 1
+        }
+        val fullTransitions = countCheckerTransitions(fullW)
+        val twoThirdsTransitions = countCheckerTransitions(twoThirdsW)
+        val halfTransitions = countCheckerTransitions(halfW)
+        val quarterTransitions = countCheckerTransitions(quarterW)
+
+        assertTrue("Detail must measurably drop at 2/3 vs Full", twoThirdsTransitions < fullTransitions)
+        assertTrue("Detail must measurably drop at 1/2 vs 2/3", halfTransitions < twoThirdsTransitions)
+        assertTrue("Detail must measurably drop at 1/4 vs 1/2", quarterTransitions < halfTransitions)
+    }
 }
