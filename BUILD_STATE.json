@@ -303,7 +303,7 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -332,7 +332,7 @@
     ],
     "decisions": [
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
-      "R6: usable portrait workspace gets 40% height clamped 260–340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280–360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
+      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
       "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
@@ -729,14 +729,14 @@
       {
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
-        "status": "done",
-        "notes": "Verified V0 scaffold implementation: standalone :ui-kit module, SaltyTokens (spacing, shapes, typography, semantic theme-bridge colors), shared controls without haptics (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltyColorPicker, SaltySegmentedChips, SaltyTextField, SaltyTrackpad, SaltyValueEntryStrip), FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (reviewed dark and light goldens match), and Project Settings fully migrated to typed declaration-only scaffold page. Remaining screens tracked on docs/SCAFFOLD.md."
+        "status": "in_progress",
+        "notes": "Verified V0 scaffold implementation: standalone :ui-kit module, SaltyTokens (spacing, shapes, typography, semantic theme-bridge colors), shared controls without haptics (SaltySwitch, SaltyRulerSlider, SaltyProgressSlider, SaltyInlineDropdown, SaltyColorPicker, SaltySegmentedChips, SaltyTextField, SaltyTrackpad, SaltyValueEntryStrip), FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (reviewed dark and light goldens match), and Project Settings fully migrated to typed declaration-only scaffold page. Remaining screens tracked on docs/SCAFFOLD.md.\n2026-11-12 acceptance reconciliation: Reopened: docs/SCAFFOLD.md and the verified 43163047303 checkpoint explicitly leave most screens, strict module boundaries, custom-component/overlay registration and full component goldens incomplete. Resume migration before other fixes; earlier done status certified a partial checkpoint as whole-item completion."
       },
       {
         "id": "V0b",
         "title": "Beta releases keep landing as 1.0.59 (release versioning bug, do right after V0)",
-        "status": "done",
-        "notes": "Root cause: Previous workflow relied on static tag assumptions and run_number without querying GitHub Releases API. Fixed in release.yml adhering to ForgeBuild contract: dynamically queries Releases API and git tags for max(highest existing v1.0.<n> + 1, 60), computes unique tag v1.0.<N>, versionName 1.0.<N>, and strictly increasing versionCode 1000+N (> 189). Includes workflow self-check step asserting version > highest, tag unused in git and API, and code/name agreement."
+        "status": "pending",
+        "notes": "Root cause: Previous workflow relied on static tag assumptions and run_number without querying GitHub Releases API. Fixed in release.yml adhering to ForgeBuild contract: dynamically queries Releases API and git tags for max(highest existing v1.0.<n> + 1, 60), computes unique tag v1.0.<N>, versionName 1.0.<N>, and strictly increasing versionCode 1000+N (> 189). Includes workflow self-check step asserting version > highest, tag unused in git and API, and code/name agreement.\n2026-11-12 acceptance reconciliation: Reopened acceptance: workflow implementation is inherited, but two consecutive unique increasing releases have not been verified in this session. Do not claim release acceptance from code inspection."
       },
       {
         "id": "V1",
@@ -783,8 +783,8 @@
       {
         "id": "V8",
         "title": "Border & Shadow panel must exist and be easy to find",
-        "status": "done",
-        "notes": "Root cause: Border & Shadow panel page was already integrated in ScaffoldToolPanel under tool id border_shadow for all visual layer types, but shadow rendering only followed the base fill geometry rather than the full visible silhouette (fill + stroke with inside/center/outside alignment and text outlines). Fixed by implementing FillRenderer.drawPathShadowWithStroke and enhancing TextLayoutEngine.drawLineText to draw the stroke silhouette into the shadow pass across CanvasView and LayerCompositor. Added CPU reference tests testShadowIncludesStrokeOutlineForShape and testShadowIncludesTextOutline confirming shadow pixels exist behind stroke boundaries."
+        "status": "pending",
+        "notes": "Root cause: Border & Shadow panel page was already integrated in ScaffoldToolPanel under tool id border_shadow for all visual layer types, but shadow rendering only followed the base fill geometry rather than the full visible silhouette (fill + stroke with inside/center/outside alignment and text outlines). Fixed by implementing FillRenderer.drawPathShadowWithStroke and enhancing TextLayoutEngine.drawLineText to draw the stroke silhouette into the shadow pass across CanvasView and LayerCompositor. Added CPU reference tests testShadowIncludesStrokeOutlineForShape and testShadowIncludesTextOutline confirming shadow pixels exist behind stroke boundaries.\n2026-11-12 acceptance reconciliation: Reopened for amended reachability: inherited notes route via border_shadow tool tile, which conflicts with V30 Effects-only requirement. Stroke/shadow coverage must be retained and effect migration verified."
       },
       {
         "id": "V9",
@@ -879,8 +879,8 @@
       {
         "id": "V24",
         "title": "Audit and migrate all editing flows to the bottom panel (no pop-ups)",
-        "status": "done",
-        "notes": "All editing flows operate strictly within the persistent bottom panel without dialogs, popovers, or floating sheets: Fill & Gradient, Media picker, Border & Shadow, Blending & Masks, Text options, Shape settings, Vector page, Transform panel, and Project Settings. Enforced permanently via BottomPanelArchitectureEnforcementTest.kt and verified with BottomPanelEditingFlowAuditTest.kt. Documented in docs/DECISIONS.md."
+        "status": "pending",
+        "notes": "All editing flows operate strictly within the persistent bottom panel without dialogs, popovers, or floating sheets: Fill & Gradient, Media picker, Border & Shadow, Blending & Masks, Text options, Shape settings, Vector page, Transform panel, and Project Settings. Enforced permanently via BottomPanelArchitectureEnforcementTest.kt and verified with BottomPanelEditingFlowAuditTest.kt. Documented in docs/DECISIONS.md.\n2026-11-12 acceptance reconciliation: Reopened: V0 migration checklist and decisions explicitly identify remaining UI/scaffold work; whole-app walk-through and boundary acceptance are not complete."
       },
       {
         "id": "V25",
@@ -955,6 +955,48 @@
         "notes": "Verify amendments to V6 (proxy render diagnostic and actual scale), V8 (shadow includes stroke), V9 (hold-to-select without checkboxes), V10 (real content thumbnails), V11 (toggle icon), V17 (drag frame handles live rewrap), V23 (cutout blend modes with canvas background isolated)."
       },
       {
+        "id": "V36-V6",
+        "title": "Amendment verification: preview render target sizes and measurable detail loss",
+        "status": "pending",
+        "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
+      },
+      {
+        "id": "V36-V8",
+        "title": "Amendment verification: shadow silhouette includes stroke",
+        "status": "pending",
+        "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
+      },
+      {
+        "id": "V36-V9",
+        "title": "Amendment verification: row hold selects; handle hold drags",
+        "status": "pending",
+        "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
+      },
+      {
+        "id": "V36-V10",
+        "title": "Amendment verification: tight rendered group/content thumbnails update",
+        "status": "pending",
+        "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
+      },
+      {
+        "id": "V36-V11",
+        "title": "Amendment verification: icon toggle integrates with checkbox-free selection",
+        "status": "pending",
+        "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
+      },
+      {
+        "id": "V36-V17",
+        "title": "Amendment verification: all text frame handles, rotated and zoomed pointer gestures",
+        "status": "pending",
+        "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
+      },
+      {
+        "id": "V36-V23",
+        "title": "Amendment verification: gray background survives inward/outward cutouts and legacy migration",
+        "status": "pending",
+        "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
+      },
+      {
         "id": "E1",
         "title": "Engine capabilities for real effects",
         "status": "pending",
@@ -1000,7 +1042,7 @@
         "id": "V37",
         "title": "Verify, release, and hand off (covers every V and E item)",
         "status": "pending",
-        "notes": "Run all tests, verify backwards compatibility with earlier .sg projects, publish new release with unique tag and version > 60 via GitHub Actions release workflow."
+        "notes": "Run all tests, verify backwards compatibility with earlier .sg projects, publish new release with unique tag and version > 60 via GitHub Actions release workflow.\n2026-11-12 acceptance reconciliation: Reopened for all amended V29-V36 and E1-E7 work. No final release until acceptance passes."
       }
     ],
     "decisions": [
@@ -1015,11 +1057,12 @@
       "V19: Contextual toasts added for image optimization, layer deletion, and undo/redo naming specific action; silent on normal drags.",
       "V7: color page stores alpha only in ARGB and resets the separate opacity multiplier to 1 on a color edit; prevent half-alpha becoming quarter-alpha. Fill imports replace only original target fill; no extra layer is created. Numeric gestures preview live and commit on finish.",
       "V0: Built standalone :ui-kit module containing tokens (SaltyTokens), shared controls without haptics, structural containers (SaltyPanelPage, SaltySection, SaltyRow), on-canvas overlays (SaltyGradientOverlay, SaltySelectionOverlay), and declarative FeatureRegistry. Added docs/SCAFFOLD.md.",
-      "V0b: ForgeBuild contract implemented in release.yml. Automatically detects existing tags and releases, computes N = max(highest + 1, 60), tags v1.0.<N>, version name 1.0.<N>, version code 1000 + N > 189."
+      "V0b: ForgeBuild contract implemented in release.yml. Automatically detects existing tags and releases, computes N = max(highest + 1, 60), tags v1.0.<N>, version name 1.0.<N>, version code 1000 + N > 189.",
+      "2026-11-12: Follow V0-first order. Preserve inherited implementation notes, reopen unsupported whole-item acceptance, track amended checks explicitly under V36. Use existing test workflow and no emulator/build-screenshot iteration."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-12T10:11:15.748Z",
-    "last_session_note": "Starting Fix Round 4 updated scope: V5 moderated haptics, V29-V36 tracker items, E1-E7 Deep Glow and Thumbnail Library, V37 release.",
+    "last_updated": "2026-11-12T11:05:38.971696+00:00",
+    "last_session_note": "V0 resumed from verified partial scaffold checkpoint. Reconciled overstated done statuses with docs/SCAFFOLD.md; next migrate Shape settings as typed declarative controls, test production UI/history and enforce its boundary. No release or UI refinement.",
     "verification_pending": false,
     "verification": {
       "scope": "Full Fix Round 4 acceptance test suite and release build",
@@ -1065,7 +1108,7 @@
         }
       },
       "total_test_executions": 426,
-      "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light × empty/selected/group",
+      "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light \u00d7 empty/selected/group",
       "apks": "universal + arm64-v8a + armeabi-v7a + x86_64 built as CI artifacts; all four signatures match existing stable certificate",
       "release_published": false
     },
