@@ -730,7 +730,7 @@
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
         "status": "in_progress",
-        "notes": "Verified partial V0 checkpoint: :ui-kit standalone module, SaltyTokens, shared controls without haptics, FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (6 reviewed goldens match), 426 JVM tests passing in run 43023493374. Remaining unmigrated screens tracked on docs/SCAFFOLD.md migration checklist and completed in V24 per time-box rule.\n2026-11-12 audit: Reopened: existing done flag contradicts docs/SCAFFOLD.md and known_issues. Only tool grid and top bar are migrated; production bound pages, remaining screens and component goldens are incomplete. Resume scaffold migration first."
+        "notes": "Verified partial V0 checkpoint: :ui-kit standalone module, SaltyTokens, shared controls without haptics, FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (6 reviewed goldens match), 426 JVM tests passing in run 43023493374. Remaining unmigrated screens tracked on docs/SCAFFOLD.md migration checklist and completed in V24 per time-box rule.\n2026-11-12 audit: Reopened: existing done flag contradicts docs/SCAFFOLD.md and known_issues. Only tool grid and top bar are migrated; production bound pages, remaining screens and component goldens are incomplete. Resume scaffold migration first.\nV0 baseline repair: inherited EditorScreen passed isTextEditing to TopPanel, whose API has no such parameter, rather than CanvasView. Moved binding to its actual consumer; CI compilation verification pending."
       },
       {
         "id": "V0b",
@@ -954,8 +954,8 @@
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
       "No complete amended acceptance audit for inherited V1–V16/V18–V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-12T05:16:56.944168+00:00",
-    "last_session_note": "Read uploaded amended round-4 brief and repository state. Reopened unsupported completion claims; resume V0 before other fixes. Working on safe live-document declarative property bindings and first production bound page. No new release or UI refinement.",
+    "last_updated": "2026-11-12T05:17:57.378270+00:00",
+    "last_session_note": "V0 baseline repair pushed: move misplaced isTextEditing binding from TopPanel to CanvasView; awaiting CI before scaffold migration.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",

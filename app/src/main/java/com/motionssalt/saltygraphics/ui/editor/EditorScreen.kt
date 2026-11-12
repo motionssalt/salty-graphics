@@ -339,7 +339,6 @@ fun EditorScreen(
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
                 isCanvasLocked = isCanvasLocked,
-                isTextEditing = isTextSettingsOpen && currentSelectedLayer?.type == LayerType.TEXT,
                 onToggleCanvasLock = { isCanvasLocked = !isCanvasLocked },
                 onNavigateBack = {
                     if (activeGroupId != null) {
@@ -414,6 +413,7 @@ fun EditorScreen(
                 panOffset = panOffset,
                 previewQuality = doc.editorSettings.defaultPreviewQuality,
                 isCanvasLocked = isCanvasLocked,
+                isTextEditing = isTextSettingsOpen && currentSelectedLayer?.type == LayerType.TEXT,
                 showGrid = doc.editorSettings.showGrid,
                 gridSize = doc.editorSettings.gridSize,
                 externalSmartGuides = externalSmartGuides,
