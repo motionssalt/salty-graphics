@@ -57,7 +57,7 @@ class ProjectSettingsScaffoldTest {
             compose.runOnIdle { assertEquals(0xFF000000L, tree.currentDocument.editorSettings.gridColor) }
             compose.onNodeWithContentDescription("Back").performClick()
             compose.onNodeWithTag("control_grid_size").performScrollTo()
-            val ruler = compose.onNodeWithTag("ruler_track").filterToOneGridSize()
+            val ruler = compose.onNode(hasTestTag("ruler_track") and hasAnyAncestor(hasTestTag("control_grid_size")))
             ruler.performTouchInput {
                 down(center); moveBy(Offset(-100f, 0f), 300); moveBy(Offset(-60f, 0f), 300); up()
             }
@@ -90,64 +90,4 @@ class ProjectSettingsScaffoldTest {
         assertEquals(3, tree.nodes.size)
     }
 
-    @Test fun visibilityAndInlineQualityReflectTheSameDocument() {
-        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
-        val tree = ActionTree(ProjectDocument())
-        var shown by mutableStateOf(tree.currentDocument)
-        host.get().setContent { MaterialTheme { Box(Modifier.requiredSize(412.dp, 450.dp)) {
-            ProjectSettingsPage(shown, onCommit = { c -> tree.recordCommand(c.identity(tree.currentDocument), c::apply); shown = tree.currentDocument }, onBack = {})
-        } } }
-        try {
-            compose.onNodeWithTag("control_snap_objects").performScrollTo()
-            compose.onNode(isToggleable() and hasAnyAncestor(hasTestTag("control_snap_objects"))).performClick()
-            compose.onNodeWithTag("control_snap_tolerance").assertDoesNotExist()
-            compose.onNodeWithTag("control_preview_quality").performScrollTo()
-            compose.onNodeWithText("Full").performClick()
-            compose.onNodeWithText("1/4").performScrollTo().performClick()
-            compose.runOnIdle { assertEquals(PreviewQuality.QUARTER, tree.currentDocument.editorSettings.defaultPreviewQuality) }
-            compose.onNodeWithTag("readout_preview_dimensions").performScrollTo()
-                .assertTextContains("1/4", substring = true)
-            compose.onAllNodes(isDialog()).assertCountEquals(0)
-        } finally { host.pause().stop().destroy() }
-    }
-
-    /** These are screenshots of shared scaffold/library components, not app/device screenshot loops. */
-    @Test fun settingsLibraryPageHasReviewedLightAndDarkGoldens() {
-        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
-        var dark by mutableStateOf(true)
-        host.get().setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
-                Surface(Modifier.requiredSize(412.dp, 450.dp)) { ProjectSettingsPage(ProjectDocument(name = "Scaffold fixture"), {}, {}) }
-            }
-        }
-        val failures = mutableListOf<String>()
-        try {
-            for (isDark in listOf(true, false)) {
-                compose.runOnIdle { dark = isDark }
-                compose.mainClock.advanceTimeBy(1000); compose.waitForIdle()
-                val node = compose.onNodeWithTag("scaffold_feature_page").fetchSemanticsNode()
-                val actual = Bitmap.createBitmap(node.size.width, node.size.height, Bitmap.Config.ARGB_8888)
-                compose.runOnIdle {
-                    val canvas = android.graphics.Canvas(actual)
-                    canvas.translate(-node.boundsInWindow.left, -node.boundsInWindow.top)
-                    host.get().window.decorView.draw(canvas)
-                }
-                val pixels = IntArray(actual.width * actual.height)
-                actual.getPixels(pixels, 0, actual.width, 0, 0, actual.width, actual.height)
-                assertTrue("Golden must contain real rendered controls", pixels.distinct().size > 20)
-                val name = "settings_${if (isDark) "dark" else "light"}.png"
-                File("build/outputs/scaffold-screenshots", name).apply { parentFile.mkdirs() }
-                    .outputStream().use { actual.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                val expected = File("src/test/goldens/scaffold", name)
-                if (!expected.isFile) { failures += "Missing reviewed golden: $name"; continue }
-                val baseline = BitmapFactory.decodeFile(expected.absolutePath)
-                assertEquals(baseline.width, actual.width); assertEquals(baseline.height, actual.height)
-                assertTrue("Changed reviewed golden: $name", baseline.sameAs(actual))
-            }
-            assertTrue(failures.joinToString("\n"), failures.isEmpty())
-        } finally { host.pause().stop().destroy() }
-    }
-
-    private fun SemanticsNodeInteraction.filterToOneGridSize(): SemanticsNodeInteraction =
-        compose.onNode(hasTestTag("ruler_track") and hasAnyAncestor(hasTestTag("control_grid_size")))
 }

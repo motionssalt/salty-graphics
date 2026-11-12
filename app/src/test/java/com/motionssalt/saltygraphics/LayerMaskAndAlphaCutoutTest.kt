@@ -83,7 +83,6 @@ class LayerMaskAndAlphaCutoutTest {
         val cornerAlpha = (cornerPixel ushr 24) and 0xFF
         assertEquals("Outward matte eliminates backdrop outside mask shape", 0L, cornerAlpha.toLong())
     }
-}
 
     @Test
     fun alphaCutoutLeavesCanvasBackgroundUntouched() {
@@ -126,3 +125,5 @@ class LayerMaskAndAlphaCutoutTest {
         val cornerPixel = composite.getPixel(10, 10)
         assertEquals("Corner pixel outside all layers must retain canvas background gray", grayBackground.toInt(), cornerPixel)
     }
+
+}

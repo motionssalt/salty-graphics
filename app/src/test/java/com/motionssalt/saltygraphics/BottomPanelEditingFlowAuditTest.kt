@@ -60,8 +60,8 @@ class BottomPanelEditingFlowAuditTest {
             compose.onNodeWithText("Opacity").assertIsDisplayed()
 
             // Main blend mode items must be visible in grid
-            compose.onNodeWithText("Normal").assertIsDisplayed()
-            compose.onNodeWithText("Multiply").assertIsDisplayed()
+            compose.onNodeWithContentDescription("Normal").assertIsDisplayed()
+            compose.onNodeWithContentDescription("Multiply").assertIsDisplayed()
 
             // No modal dialogs/popovers shown
             compose.onAllNodes(isDialog()).assertCountEquals(0)

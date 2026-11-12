@@ -67,7 +67,9 @@ internal fun selectionProxy(context: Context, document: ProjectDocument, ids: Se
         shapeData=ShapeData(width=bounds.width,height=bounds.height))
 }
 
-internal fun selectionBounds(context: Context, document: ProjectDocument, layer: Layer): SelectionBounds =
-    if(layer.id=="__selection__") {
+internal fun selectionBounds(context: Context, document: ProjectDocument, layer: Layer, textEditing: Boolean = false): SelectionBounds =
+    if (textEditing && layer.type == LayerType.TEXT && layer.textData != null) {
+        com.motionssalt.saltygraphics.uikit.overlays.TextEditingFrame.bounds(requireNotNull(layer.textData))
+    } else if(layer.id=="__selection__") {
         val s=layer.shapeData!!; SelectionBounds(-s.width/2,-s.height/2,s.width/2,s.height/2)
     } else layerSelectionBounds(context,document,layer)

@@ -384,12 +384,6 @@ fun LayerRow(
                 )
             }
 
-            // V26: No checkboxes in layers panel. Hold to select / tap to add/remove in multi-select mode.
-            // Preserving testTag on hidden/zero-size spacer semantics node for backward test compatibility if needed
-            Box(
-                modifier = Modifier.size(0.dp).testTag("layer_select_${layer.id}")
-                    .clickable { onLongClick() }
-            )
             Icon(
                 Icons.Default.DragHandle,
                 contentDescription = "Hold to reorder ${layer.name}",

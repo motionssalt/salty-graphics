@@ -77,7 +77,6 @@ class RasterizeLayerTest {
         assertEquals(LayerType.MEDIA, rasterized?.type)
         assertEquals("Title Text (Rasterized)", rasterized?.name)
     }
-}
 
     @Test
     fun rasterizePreservesContentOutsideCanvasBounds() {
@@ -108,3 +107,5 @@ class RasterizeLayerTest {
         // Center position must match the unclipped center around 120f
         assertEquals(120f, rasterized.transform.translationX, 2f)
     }
+
+}

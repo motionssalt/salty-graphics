@@ -145,7 +145,7 @@ fun CanvasView(
     val selectLayer by rememberUpdatedState(onSelectLayer)
     val changeZoomPan by rememberUpdatedState(onZoomPanChange)
     val selectedLayer = remember(document, selectedLayerIds) { selectionProxy(context, document, selectedLayerIds) }
-    val selectedBounds = remember(document, selectedLayer) { selectedLayer?.let { selectionBounds(context,document,it) } }
+    val selectedBounds = remember(document, selectedLayer, isTextEditing) { selectedLayer?.let { selectionBounds(context,document,it,isTextEditing) } }
 
     Box(
         modifier = modifier
@@ -167,7 +167,7 @@ fun CanvasView(
                     fun documentPoint(p: Offset) = SelectionPoint((p.x-screenCenter.x)/effZoom,(p.y-screenCenter.y)/effZoom)
                     val downPoint = documentPoint(down.position)
                     var target = selectionProxy(context,activeDoc,currentSelectedIds)
-                    var bounds = target?.let { selectionBounds(context,activeDoc,it) }
+                    var bounds = target?.let { selectionBounds(context,activeDoc,it,textEditingActive) }
                     var handle = SelectionHandle.NONE
                     var isTextFrameDrag = false
                     var textStartBoxWidth = 0f

@@ -112,8 +112,8 @@ class LayerAutoScrollGestureTest : LayerReorderFixture() {
 
 class LayerGroupingHistoryTest : LayerReorderFixture() {
     @Test fun multiSelectGroupUngroupAndUndoUseRealButtonsAndPreserveTopFirstChildren() = withLayers(4) {repo,id ->
-        compose.onNodeWithTag("layer_select_l1",useUnmergedTree=true).performClick()
-        compose.onNodeWithTag("layer_select_l2",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("Layer 1").performTouchInput { longClick() }
+        compose.onNodeWithText("Layer 2").performTouchInput { longClick() }
         compose.onNodeWithContentDescription("Group Layers").performScrollTo().performClick()
         compose.waitUntil(10000) {saved(repo,id).document.layers.any{it.type==LayerType.GROUP}}
         val grouped=saved(repo,id)
