@@ -427,3 +427,23 @@ heading. Text editing now shares library frame bounds for drawing and hit testin
 not one-line glyph bounds; non-editing transforms retain their prior geometry. Full
 V17/V23 acceptance and whole editing-flow migration remain open, regardless of these
 narrow baseline repairs. Full batch suite verification is pending the next run.
+
+
+## V0 Project Settings verified checkpoint — 2026-11-12
+Code `dea5288` passed [Actions 43163047303](https://github.com/motionssalt/salty-graphics/actions/runs/43163047303):
+**234 debug JVM tests across app, engine and ui-kit, zero failures/errors/skips**,
+all eight reviewed scaffold native PNGs match, and `:app:assembleDebug` succeeds.
+This workflow is path-filtered and uses debug tests rather than repeating the same
+suite for release; it is not a signed release verification. No tests were disabled.
+The previous baseline measure/layout exception did not recur; its specific cause
+is not independently established and no separate production fix is claimed for it.
+
+Completed scope: the Project Settings migration, typed live-property dispatch,
+separate preview/commit with tested cancellation/final values, panel-native color and
+inline quality controls, real theme-token bridge, scoped raw-layout enforcement,
+and narrowly repaired baseline test discovery/selection/frame hit geometry.
+The remaining migration checklist, custom component/overlay registry, whole-module
+boundary and complete component golden matrices remain V0 work. V0 and V24 are NOT
+done; reopened amendment items and V0b release acceptance still wait. V32 remains
+pending and no new tag or release was published. All old releases, reference-keyflaw,
+stable signing credentials and applicationId are untouched. No UI refinement.

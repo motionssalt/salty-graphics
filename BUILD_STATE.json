@@ -730,7 +730,7 @@
         "id": "V0",
         "title": "Internal UI scaffold and component library, and rewire the whole app to it",
         "status": "in_progress",
-        "notes": "Verified partial V0 checkpoint: :ui-kit standalone module, SaltyTokens, shared controls without haptics, FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (6 reviewed goldens match), 426 JVM tests passing in run 43023493374. Remaining unmigrated screens tracked on docs/SCAFFOLD.md migration checklist and completed in V24 per time-box rule.\n2026-11-12 audit: Reopened: existing done flag contradicts docs/SCAFFOLD.md and known_issues. Only tool grid and top bar are migrated; production bound pages, remaining screens and component goldens are incomplete. Resume scaffold migration first.\nV0 baseline repair: inherited EditorScreen passed isTextEditing to TopPanel, whose API has no such parameter, rather than CanvasView. Moved binding to its actual consumer; CI compilation verification pending.\nProduction Project Settings migrated to declaration-only scaffold page with typed property lenses and live FeatureChange events. Shared numeric/color preview vs commit, stable callbacks, switch semantics, alpha hex input; targeted JVM/Compose/native-golden verification pending. Full V0 remains in_progress.\n43162217737: typed command/unit tests and real settings/gesture/visibility tests passed; only unaccepted screenshot baselines fail. Fixed multi-activity Compose harness contamination by isolating hosts. Visual review rejected identical dark/light screenshots and found missing production token-theme provider; semantic theme bridge added. Await full-suite and golden review.\n43162713529: all scoped settings/gesture/command tests pass; reviewed distinct production-theme native PNG baselines accepted. Full batch suite and debug assembly pending. This is only the Project Settings migration, not complete V0."
+        "notes": "Verified partial V0 checkpoint: :ui-kit standalone module, SaltyTokens, shared controls without haptics, FeatureCatalog & declarative registry, ScaffoldToolPanel 3-column grid & nested group breadcrumbs, SaltyEditorTopBar layout/overflow with pinned settings, native Compose screenshot tests (6 reviewed goldens match), 426 JVM tests passing in run 43023493374. Remaining unmigrated screens tracked on docs/SCAFFOLD.md migration checklist and completed in V24 per time-box rule.\n2026-11-12 audit: Reopened: existing done flag contradicts docs/SCAFFOLD.md and known_issues. Only tool grid and top bar are migrated; production bound pages, remaining screens and component goldens are incomplete. Resume scaffold migration first.\nV0 baseline repair: inherited EditorScreen passed isTextEditing to TopPanel, whose API has no such parameter, rather than CanvasView. Moved binding to its actual consumer; CI compilation verification pending.\nProduction Project Settings migrated to declaration-only scaffold page with typed property lenses and live FeatureChange events. Shared numeric/color preview vs commit, stable callbacks, switch semantics, alpha hex input; targeted JVM/Compose/native-golden verification pending. Full V0 remains in_progress.\n43162217737: typed command/unit tests and real settings/gesture/visibility tests passed; only unaccepted screenshot baselines fail. Fixed multi-activity Compose harness contamination by isolating hosts. Visual review rejected identical dark/light screenshots and found missing production token-theme provider; semantic theme bridge added. Await full-suite and golden review.\n43162713529: all scoped settings/gesture/command tests pass; reviewed distinct production-theme native PNG baselines accepted. Full batch suite and debug assembly pending. This is only the Project Settings migration, not complete V0.\nVerified partial checkpoint dea5288 in Actions 43163047303: 234 debug JVM tests, zero failures/errors/skips; eight reviewed library goldens match; debug APK assembles. Project Settings migration verified; all remaining V0 migration/enforcement/custom-registry/golden requirements stay open."
       },
       {
         "id": "V0b",
@@ -838,7 +838,7 @@
         "id": "V17",
         "title": "Dedicated text-editing box with automatic wrapping",
         "status": "pending",
-        "notes": "Text-editing frame handles now actively hit-test, resize box width & height, and trigger live TextLayoutEngine re-wrapping into multiple lines. Verified in TextFrameWrappingBoxTest.\n2026-11-12 audit: Reopened for amended acceptance audit: existing known_issues reports text handles intercept outside editing mode; prior done notes lack required rotated/zoom gesture evidence. Paused: waiting for V0."
+        "notes": "Text-editing frame handles now actively hit-test, resize box width & height, and trigger live TextLayoutEngine re-wrapping into multiple lines. Verified in TextFrameWrappingBoxTest.\n2026-11-12 audit: Reopened for amended acceptance audit: existing known_issues reports text handles intercept outside editing mode; prior done notes lack required rotated/zoom gesture evidence. Paused: waiting for V0.\nNarrow baseline repair during V0: editing frame drawing and hit testing now use shared TextEditingFrame box dimensions. Existing real handle-drag regression passes in 43163047303. Full multi-handle/zoom/rotation amendment acceptance remains pending after V0."
       },
       {
         "id": "V18",
@@ -946,17 +946,17 @@
       "2026-11-12: inherited done flags are not acceptance evidence when migration checklist or known_issues contradict them. Keep V0 open and release gated. Preserve all releases/tags and stable signing credentials."
     ],
     "known_issues": [
-      "V0 incomplete: production UI not migrated to registry; screenshot goldens absent; raw feature layouts/dependencies remain.",
-      "V1–V24 done statuses inherited, not independently reverified this session; do not infer full acceptance from them.",
-      "V17: text-frame resize intercepts text handles outside editing mode.",
-      "V22: rasterizer clips to project canvas before finding bounds, losing off-canvas pixels.",
-      "V23: cutout excludes its own visible content from affected composite.",
-      "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
-      "No complete amended acceptance audit for inherited V1–V16/V18–V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established.",
-      "2026-11-12 baseline run 43160697868 had six failures: obsolete blend selector, zero-size selection-test hook, top-level amendment tests not JUnit classes, text-frame hit bounds using glyph metrics, and one reentrant Compose measure/layout failure. Minimal repairs applied; full-suite verification remains pending. No tests disabled."
+      "V0 incomplete: only tool grid, top bar and Project Settings are migrated; remaining screens/panels, strict whole-module boundaries, custom component/overlay registration and complete component golden matrices are open.",
+      "Inherited done flags outside the verified scope are not a complete amended acceptance audit; do not infer phone behavior from passing helper/JVM tests.",
+      "V17 shared frame hit geometry regression passes, but full handle/zoom/rotation and editing-mode amendment acceptance remains pending.",
+      "V22 off-canvas shape regression now executes inside its Robolectric class and passes; all-type appearance/duplicate/history acceptance remains to be independently verified.",
+      "V23 cutout/background amendment regression now executes and passes, but full own-visible-content, masks, multiple mattes and migration acceptance remains pending.",
+      "V24 whole editing-flow migration and device IME/walkthrough acceptance remain incomplete; legacy raw layouts and editing overlays still exist.",
+      "V0b release implementation exists but two increasing successful releases above 59 have not been demonstrated; latest actual release remains v1.0.58. Do not publish until acceptance gates allow it.",
+      "Baseline 43160697868 had a reentrant Compose measure/layout failure; it did not recur in final full debug suite 43163047303. Specific root cause is not proven. No tests disabled."
     ],
-    "last_updated": "2026-11-12T05:41:22.003820+00:00",
-    "last_session_note": "V0 Project Settings interaction/history/gesture/architecture tests passed in 43162713529; reviewed native dark/light library page PNGs accepted and committed. Running final full debug batch suite and debug assembly next. Resume remaining V0 screen/control/custom registry migration only after this checkpoint verifies. V0/V24/final release remain open; no release or UI refinement.",
+    "last_updated": "2026-11-12T05:49:40.910215+00:00",
+    "last_session_note": "Verified partial V0 checkpoint, code dea5288: Actions 43163047303 succeeded; 234 debug JVM tests across app/engine/ui-kit, no failures/errors/skips, eight reviewed native library goldens match, assembleDebug passes. Project Settings is migrated to typed live property pages. Resume V0 at remaining Home/Settings/New Project/Export and editor-panel migrations; finish custom component/overlay registration, whole-module enforcement, library golden matrices. V0/V24 and reopened amendment acceptance remain open; do not release or claim round completion. No UI refinement, no new tags/releases.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",
@@ -1004,6 +1004,34 @@
       "total_test_executions": 426,
       "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light × empty/selected/group",
       "apks": "universal + arm64-v8a + armeabi-v7a + x86_64 built as CI artifacts; all four signatures match existing stable certificate",
+      "release_published": false
+    },
+    "verification_checkpoint": {
+      "code_commit": "dea5288",
+      "actions_run": "https://github.com/motionssalt/salty-graphics/actions/runs/43163047303",
+      "variant": "debug",
+      "tests": {
+        "engine": {
+          "tests": 50,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "ui-kit": {
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app": {
+          "tests": 173,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "reviewed_library_goldens": 8,
+      "assembleDebug": "passed",
       "release_published": false
     }
   }
