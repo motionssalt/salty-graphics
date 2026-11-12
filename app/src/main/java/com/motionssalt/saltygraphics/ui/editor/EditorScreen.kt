@@ -804,6 +804,7 @@ fun EditorScreen(
                     )
                 } else if (isShapePickerOpen) {
                     ShapePickerDialog(
+                        document = doc,
                         onSelectShape = { chosenShape ->
                             val newLayer = Layer(
                                 name = "${chosenShape.type.displayName} Layer ${doc.layers.size + 1}",

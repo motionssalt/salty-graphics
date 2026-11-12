@@ -14,6 +14,26 @@ import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.uikit.registry.FeatureCatalog
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 
+/**
+ * Reusable panel-native chooser. Features supply registered choices and callbacks only;
+ * the same shared header, fixed three-column tool grid and token system own all layout.
+ */
+@Composable
+fun ScaffoldToolPicker(
+    title: String,
+    catalog: FeatureCatalog,
+    document: ProjectDocument,
+    availableActions: Set<String>,
+    onChoose: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    selectedLayerIds: Set<String> = emptySet()
+) {
+    SaltyPanelPage(title, onBack, modifier.testTag("scaffold_tool_picker"), scrollable = false) {
+        ScaffoldToolPanel(catalog, document, selectedLayerIds, availableActions, onChoose)
+    }
+}
+
 /** Fixed three-column tool surface. All navigation and eligibility come from registrations. */
 @Composable
 fun ScaffoldToolPanel(

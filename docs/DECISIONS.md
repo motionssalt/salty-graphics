@@ -471,3 +471,12 @@ own all layout, numeric entry and gesture lifecycle. Shape creation picker, rema
 screens, custom-component/overlay registration, whole-module dependencies and full
 component goldens are still V0 work. No release or UI refinement at this checkpoint.
 Verification is pending the batch Actions run; no acceptance is claimed before it passes.
+
+### V0 shared registered tool chooser
+Shape creation previously duplicated a raw LazyVerticalGrid, Material widgets and
+feature-local sizes/colors. `ScaffoldToolPicker` now composes existing library panel
+and three-column tool-grid components, driven by registered metadata. Shape choice
+defaults and callback order are preserved. The chooser stays in the fixed bottom panel.
+Tests include a runtime throwaway choice and enabled/available filtering, production
+shape dispatch and native dark/light golden captures of this library surface. Golden
+review and this checkpoint's full-suite result are still pending; V0 is not complete.
