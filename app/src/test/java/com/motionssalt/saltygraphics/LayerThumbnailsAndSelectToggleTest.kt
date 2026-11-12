@@ -170,6 +170,33 @@ class LayerThumbnailsAndSelectToggleTest {
     }
 
     @Test
+    fun testGroupThumbnailUpdatesWhenChildChanges() {
+        val child = Layer(
+            id = "c1",
+            name = "Child Rect",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(width = 60f, height = 60f, fillColor = 0xFFFF0000L)
+        )
+        val group = Layer(
+            id = "g1",
+            name = "Group",
+            type = LayerType.GROUP,
+            children = listOf(child)
+        )
+
+        val thumb1 = LayerThumbnailRenderer.renderThumbnail(group, 72)
+        assertNotNull("Group thumbnail must generate", thumb1)
+
+        // Modify child fill and verify group thumbnail reflects new pixels
+        val modifiedChild = child.copy(shapeData = child.shapeData!!.copy(fillColor = 0xFF0000FFL))
+        val modifiedGroup = group.copy(children = listOf(modifiedChild))
+
+        val thumb2 = LayerThumbnailRenderer.renderThumbnail(modifiedGroup, 72)
+        assertNotNull("Modified group thumbnail must generate", thumb2)
+        assertNotSame("Group thumbnail must change when child layer changes", thumb1, thumb2)
+    }
+
+    @Test
     fun testSelectAllAndSelectNoneToggleUI() {
         val layers = listOf(
             Layer(id = "l1", name = "Layer 1", type = LayerType.SHAPE, shapeData = ShapeData(width = 50f, height = 50f)),

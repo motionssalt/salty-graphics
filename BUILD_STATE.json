@@ -795,8 +795,8 @@
       {
         "id": "V10",
         "title": "Layer-content thumbnails in the layer panel",
-        "status": "pending",
-        "notes": "Reopened per AMENDMENT (V10): thumbnails must be small render of layer as it looks now (fill, stroke, shadow, effects), cropped to tight bounds on checkerboard; group thumbnail must be composite of children, updating when child changes."
+        "status": "done",
+        "notes": "Root cause: LayerThumbnailRenderer used simplified single-line canvas.drawText instead of TextLayoutEngine for text layers, ignoring text outline, box alignment, justification, and stroke silhouette. In addition, shape and vector drop shadows did not use drawPathShadowWithStroke to include stroke boundaries in the thumbnail silhouette. Fixed by wiring TextLayoutEngine.drawTextLayout and FillRenderer.drawPathShadowWithStroke into LayerThumbnailRenderer, preserving checkerboard transparency and tight bounds. Group thumbnail composites all children recursively and updates when any child changes. Added testGroupThumbnailUpdatesWhenChildChanges."
       },
       {
         "id": "V11",
@@ -953,8 +953,8 @@
       "V24: layer panel is still over the preview; full editing-flow migration/walkthrough remains.",
       "No complete amended acceptance audit for inherited V1\u2013V16/V18\u2013V21. Passing JVM suite is not proof that all required phone behaviours work. One transient FillEditorMutationTest missing-selection failure in run 43022262233 was not reproduced in final full debug/release run; cause not established."
     ],
-    "last_updated": "2026-11-12T04:36:44.181687+00:00",
-    "last_session_note": "V8 and V30 complete: Verified Border & Shadow panel accessibility in ScaffoldToolPanel and implemented full-silhouette drop shadow generation including stroke alignment and text outlines.",
+    "last_updated": "2026-11-12T04:38:29.804219+00:00",
+    "last_session_note": "V10 complete: Layer-content thumbnails updated to render from real pipeline using TextLayoutEngine, full stroke+shadow silhouette, tight bounds on checkerboard, and live group composites.",
     "verification_pending": false,
     "verification": {
       "scope": "Partial V0 checkpoint; not full-round acceptance or release",

@@ -207,10 +207,7 @@ object LayerThumbnailRenderer {
                 if (shadow.isEnabled) {
                     val shadowPaint = Paint()
                     if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                        canvas.save()
-                        canvas.translate(shadow.offsetX, shadow.offsetY)
-                        canvas.drawPath(shapePath, shadowPaint)
-                        canvas.restore()
+                        FillRenderer.drawPathShadowWithStroke(canvas, shapePath, stroke, shadow, shadowPaint)
                     }
                 }
 
@@ -246,29 +243,36 @@ object LayerThumbnailRenderer {
                     textAlign = Paint.Align.CENTER
                     isFakeBoldText = textData.isBold
                     if (textData.isItalic) textSkewX = -0.25f
+                    color = fill.effectiveSolidArgb.toInt()
                 }
-                val fm = textPaint.fontMetrics
-                val textY = -(fm.descent + fm.ascent) / 2f
                 val bounds = RectF(-textData.boxWidth / 2f, -textData.boxHeight / 2f, textData.boxWidth / 2f, textData.boxHeight / 2f)
+                FillRenderer.configureFillPaint(textPaint, fill, bounds)
 
-                if (shadow.isEnabled) {
-                    val shadowPaint = Paint(textPaint)
-                    if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                        canvas.drawText(textData.text, shadow.offsetX, textY + shadow.offsetY, shadowPaint)
+                var strokePaint: Paint? = null
+                if (stroke.isEnabled && stroke.width > 0f) {
+                    strokePaint = Paint(textPaint)
+                    FillRenderer.configureStrokePaint(strokePaint, stroke)
+                } else if (textData.hasOutline) {
+                    strokePaint = Paint(textPaint).apply {
+                        style = Paint.Style.STROKE
+                        strokeWidth = textData.outlineWidth
+                        color = textData.outlineColor.toInt()
                     }
                 }
 
-                if (FillRenderer.configureFillPaint(textPaint, fill, bounds)) {
-                    canvas.drawText(textData.text, 0f, textY, textPaint)
-                } else {
-                    textPaint.color = textData.color.toInt()
-                    canvas.drawText(textData.text, 0f, textY, textPaint)
+                var shadowPaint: Paint? = null
+                if (shadow.isEnabled) {
+                    shadowPaint = Paint(textPaint)
+                    FillRenderer.configureShadowPaint(shadowPaint, shadow)
                 }
 
-                val strokePaint = Paint(textPaint)
-                if (FillRenderer.configureStrokePaint(strokePaint, stroke)) {
-                    canvas.drawText(textData.text, 0f, textY, strokePaint)
-                }
+                com.motionssalt.saltygraphics.engine.render.TextLayoutEngine.drawTextLayout(
+                    canvas = canvas,
+                    textData = textData,
+                    textPaint = textPaint,
+                    strokePaint = strokePaint,
+                    shadowPaint = shadowPaint
+                )
             }
 
             LayerType.VECTOR -> {
@@ -280,10 +284,7 @@ object LayerThumbnailRenderer {
                     if (shadow.isEnabled) {
                         val shadowPaint = Paint()
                         if (FillRenderer.configureShadowPaint(shadowPaint, shadow)) {
-                            canvas.save()
-                            canvas.translate(shadow.offsetX, shadow.offsetY)
-                            canvas.drawPath(path, shadowPaint)
-                            canvas.restore()
+                            FillRenderer.drawPathShadowWithStroke(canvas, path, stroke, shadow, shadowPaint)
                         }
                     }
 
