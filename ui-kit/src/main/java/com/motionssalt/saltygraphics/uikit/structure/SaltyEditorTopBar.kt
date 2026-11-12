@@ -109,7 +109,7 @@ fun SaltyEditorTopBar(
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.padding(horizontal = SaltyTokens.spacing.toolbar8, vertical = SaltyTokens.spacing.toolbar4)
+                        modifier = Modifier.padding(horizontal = SaltyTokens.spacing.sm, vertical = SaltyTokens.spacing.toolbar4)
                     ) {
                         Text(
                             text = previewQuality.displayName,
