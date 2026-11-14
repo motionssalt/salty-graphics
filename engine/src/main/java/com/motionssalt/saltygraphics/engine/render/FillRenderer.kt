@@ -97,16 +97,27 @@ object FillRenderer {
 
         return when (gradient.type) {
             GradientType.LINEAR -> {
-                val rad = Math.toRadians(gradient.angleDegrees.toDouble())
-                val cosA = cos(rad).toFloat()
-                val sinA = sin(rad).toFloat()
-                val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
-                val cy = bounds.top + gradient.centerY.coerceIn(0f, 1f) * h
-                val halfDiag = sqrt(w * w + h * h) / 2f * (gradient.radius.coerceAtLeast(0.01f) / 0.5f)
-                val x0 = cx - cosA * halfDiag
-                val y0 = cy - sinA * halfDiag
-                val x1 = cx + cosA * halfDiag
-                val y1 = cy + sinA * halfDiag
+                val (x0, y0, x1, y1) = if (gradient.hasExplicitEndpoints()) {
+                    floatArrayOf(
+                        bounds.left + gradient.startX!! * w,
+                        bounds.top + gradient.startY!! * h,
+                        bounds.left + gradient.endX!! * w,
+                        bounds.top + gradient.endY!! * h
+                    )
+                } else {
+                    val rad = Math.toRadians(gradient.angleDegrees.toDouble())
+                    val cosA = cos(rad).toFloat()
+                    val sinA = sin(rad).toFloat()
+                    val cx = bounds.left + gradient.centerX.coerceIn(0f, 1f) * w
+                    val cy = bounds.top + gradient.centerY.coerceIn(0f, 1f) * h
+                    val halfDiag = sqrt(w * w + h * h) / 2f * (gradient.radius.coerceAtLeast(0.01f) / 0.5f)
+                    floatArrayOf(
+                        cx - cosA * halfDiag,
+                        cy - sinA * halfDiag,
+                        cx + cosA * halfDiag,
+                        cy + sinA * halfDiag
+                    )
+                }
 
                 LinearGradient(x0, y0, x1, y1, colors, positions, tileMode)
             }

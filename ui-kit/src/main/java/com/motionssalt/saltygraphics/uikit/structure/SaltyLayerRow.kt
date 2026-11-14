@@ -1,17 +1,17 @@
 package com.motionssalt.saltygraphics.uikit.structure
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,12 +28,13 @@ import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 
 /**
  * Standard Layer Panel Row component.
- * Features:
- * - One dedicated grab handle for long-press & drag reorder (V9).
+ * Zero checkboxes (per V26 hold-to-select architecture):
+ * - Tap selects a layer (or toggles in multi-select mode); long-press enters multi-select.
+ * - One dedicated grab handle for long-press & drag reorder (V9), tagged layer_handle_<id>.
  * - Layer content thumbnail with fallback type icon (V10).
- * - Multi-select checkbox.
- * - Visibility & lock toggles.
+ * - Visibility, Lock, and optional Group enter action.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SaltyLayerRow(
     id: String,
@@ -40,13 +42,17 @@ fun SaltyLayerRow(
     isSelected: Boolean,
     isVisible: Boolean,
     isLocked: Boolean,
-    onSelectToggle: (Boolean) -> Unit,
     onVisibilityToggle: () -> Unit,
     onLockToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
     thumbnail: (@Composable () -> Unit)? = null,
     fallbackIcon: ImageVector? = null,
-    onRowClick: (() -> Unit)? = null
+    showGroupButton: Boolean = false,
+    onEnterGroup: (() -> Unit)? = null,
+    onRowClick: (() -> Unit)? = null,
+    onRowLongClick: (() -> Unit)? = null,
+    @Suppress("UNUSED_PARAMETER") onSelectToggle: (Boolean) -> Unit = {}
 ) {
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
@@ -57,40 +63,28 @@ fun SaltyLayerRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .defaultMinSize(minHeight = 52.dp)
             .clip(shapes.sm)
             .background(bg)
             .border(1.dp, borderColor, shapes.sm)
-            .then(if (onRowClick != null) Modifier.clickable(onClick = onRowClick) else Modifier)
-            .padding(horizontal = SaltyTokens.spacing.sm),
+            .then(
+                if (onRowClick != null || onRowLongClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = { onRowClick?.invoke() },
+                        onLongClick = onRowLongClick
+                    )
+                } else Modifier
+            )
+            .padding(horizontal = SaltyTokens.spacing.sm, vertical = SaltyTokens.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Left side: Drag handle (reorder V9), Checkbox, Thumbnail, Layer Name
+        // Left side: Thumbnail, Name (+ optional subtitle)
         Row(
-            modifier = Modifier.weight(1f, fill = false),
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.xs)
+            horizontalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.sm)
         ) {
-            // Dedicated grab handle for long-press reorder (V9)
-            Icon(
-                imageVector = Icons.Default.DragHandle,
-                contentDescription = "Reorder handle",
-                tint = colors.textSecondary,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = onSelectToggle,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = colors.primary,
-                    uncheckedColor = colors.outline
-                ),
-                modifier = Modifier.size(24.dp)
-            )
-
-            // Layer thumbnail with fallback type icon (V10)
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -105,31 +99,53 @@ fun SaltyLayerRow(
                     Icon(
                         imageVector = fallbackIcon,
                         contentDescription = null,
-                        tint = colors.textSecondary,
+                        tint = if (isSelected) colors.primary else colors.textSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Text(
-                text = name,
-                style = SaltyTokens.typography.bodyMedium,
-                color = colors.textPrimary,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = SaltyTokens.typography.bodyMedium,
+                    color = if (isVisible) colors.textPrimary else colors.textSecondary,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = SaltyTokens.typography.labelSmall,
+                        color = colors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
 
-        // Right side: Visibility & Lock icons
+        // Right side: optional Group enter, Visibility, Lock, Drag Handle
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.xxs)
         ) {
+            if (showGroupButton && onEnterGroup != null) {
+                IconButton(onClick = onEnterGroup, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Enter Group",
+                        tint = colors.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
             IconButton(onClick = onVisibilityToggle, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = if (isVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                    contentDescription = if (isVisible) "Hide layer" else "Show layer",
+                    contentDescription = "Toggle Visibility",
                     tint = if (isVisible) colors.textPrimary else colors.textDisabled,
                     modifier = Modifier.size(18.dp)
                 )
@@ -138,11 +154,21 @@ fun SaltyLayerRow(
             IconButton(onClick = onLockToggle, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                    contentDescription = if (isLocked) "Unlock layer" else "Lock layer",
+                    contentDescription = "Toggle Lock",
                     tint = if (isLocked) colors.secondary else colors.textDisabled,
                     modifier = Modifier.size(18.dp)
                 )
             }
+
+            Icon(
+                imageVector = Icons.Default.DragHandle,
+                contentDescription = "Hold to reorder $name",
+                tint = colors.textSecondary,
+                modifier = Modifier
+                    .size(32.dp)
+                    .padding(SaltyTokens.spacing.xs)
+                    .testTag("layer_handle_$id")
+            )
         }
     }
 }

@@ -73,8 +73,31 @@ data class GradientData(
         FreeformPoint(x = 0.2f, y = 0.2f, color = 0xFFFF5252L, opacity = 1f, radius = 0.6f),
         FreeformPoint(x = 0.8f, y = 0.2f, color = 0xFFFFB300L, opacity = 1f, radius = 0.6f),
         FreeformPoint(x = 0.5f, y = 0.8f, color = 0xFF00E5FFL, opacity = 1f, radius = 0.6f)
-    )
+    ),
+    val startX: Float? = null,
+    val startY: Float? = null,
+    val endX: Float? = null,
+    val endY: Float? = null
 ) {
+    fun hasExplicitEndpoints(): Boolean = startX != null && startY != null && endX != null && endY != null
+
+    /** Computes normalized (startX, startY, endX, endY) matching FillRenderer's linear gradient projection. */
+    fun resolvedEndpoints(aspectRatioWOverH: Float = 1f): FloatArray {
+        if (startX != null && startY != null && endX != null && endY != null) {
+            return floatArrayOf(startX, startY, endX, endY)
+        }
+        val rad = Math.toRadians(angleDegrees.toDouble())
+        val cosA = kotlin.math.cos(rad).toFloat()
+        val sinA = kotlin.math.sin(rad).toFloat()
+        val w = aspectRatioWOverH.coerceAtLeast(0.01f)
+        val h = 1f
+        val halfDiag = kotlin.math.sqrt(w * w + h * h) / 2f * (radius.coerceAtLeast(0.01f) / 0.5f)
+        val cx = centerX.coerceIn(0f, 1f)
+        val cy = centerY.coerceIn(0f, 1f)
+        val dxN = cosA * halfDiag / w
+        val dyN = sinA * halfDiag / h
+        return floatArrayOf(cx - dxN, cy - dyN, cx + dxN, cy + dyN)
+    }
     fun sortedStops(): List<GradientStop> = stops.sortedBy { it.position }
 
     fun reversed(): GradientData {

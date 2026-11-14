@@ -84,7 +84,7 @@ object HistoryGraphCalculator {
             yOrder[nodeId] = depth
 
             val node = allNodes[nodeId] ?: return
-            var continuationLane = lane
+            val continuationLane = lane
             var firstChild = true
             for (childId in node.childrenIds) {
                 if (childId !in mainPathSet) {
@@ -135,7 +135,7 @@ object HistoryGraphCalculator {
         val edges = mutableListOf<GraphEdgeLayout>()
         for (node in allNodes.values) {
             val parentId = node.parentId ?: continue
-            val parentNode = allNodes[parentId] ?: continue
+            allNodes[parentId] ?: continue
             val fromLane = laneAssignment[parentId] ?: 0
             val fromY = yOrder[parentId] ?: 0
             val toLane = laneAssignment[node.id] ?: 0

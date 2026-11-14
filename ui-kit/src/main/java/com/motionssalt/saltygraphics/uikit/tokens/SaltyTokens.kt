@@ -68,6 +68,20 @@ object SaltyShapes {
     val panelHeader: Shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
 }
 
+object SaltyElevation {
+    val none: Dp = 0.dp
+    val xs: Dp = 1.dp
+    val sm: Dp = 2.dp
+    val md: Dp = 6.dp
+    val lg: Dp = 8.dp
+}
+
+object SaltyMotion {
+    const val fastMs: Int = 120
+    const val mediumMs: Int = 220
+    const val slowMs: Int = 340
+}
+
 object SaltyTypography {
     val titleLarge: TextStyle = TextStyle(
         fontSize = 20.sp,
@@ -228,6 +242,8 @@ val LocalSaltyColorRoles = staticCompositionLocalOf { SaltyThemeDefaults.darkRol
 object SaltyTokens {
     val spacing: SaltySpacing = SaltySpacing
     val shapes: SaltyShapes = SaltyShapes
+    val elevation: SaltyElevation = SaltyElevation
+    val motion: SaltyMotion = SaltyMotion
     val typography: SaltyTypography = SaltyTypography
 
     val colors: SaltyColorRoles

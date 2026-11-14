@@ -14,15 +14,28 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
+
+/**
+ * Shared validation logic for keyboard numeric entry (supports bounds and negative numbers).
+ */
+object ValueValidation {
+    fun isValidNumericInput(raw: String, range: ClosedFloatingPointRange<Float>): Boolean {
+        val parsed = raw.trim().toFloatOrNull() ?: return false
+        return parsed.isFinite() && parsed in range
+    }
+
+    fun parseNumericInput(raw: String, range: ClosedFloatingPointRange<Float>): Float? {
+        val parsed = raw.trim().toFloatOrNull() ?: return null
+        return if (parsed.isFinite() && parsed in range) parsed else null
+    }
+}
 
 /**
  * Compact numeric value entry strip docked directly above the keyboard.
@@ -39,16 +52,21 @@ fun SaltyValueEntryStrip(
     modifier: Modifier = Modifier
 ) {
     val colors = SaltyTokens.colors
-    val shapes = SaltyTokens.shapes
 
-    var text by remember { mutableStateOf(currentValue.toString()) }
+    var text by remember(label, currentValue) {
+        val cleanStr = if (currentValue % 1f == 0f) currentValue.toInt().toString() else currentValue.toString()
+        mutableStateOf(cleanStr)
+    }
     val focusRequester = remember { FocusRequester() }
 
-    val parsed = text.toFloatOrNull()
-    val isValid = parsed != null && parsed in range
+    val parsed = ValueValidation.parseNumericInput(text, range)
+    val isValid = parsed != null
 
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        try {
+            focusRequester.requestFocus()
+        } catch (_: Throwable) {
+        }
     }
 
     Box(
@@ -76,7 +94,7 @@ fun SaltyValueEntryStrip(
                 )
 
                 Text(
-                    text = "Range: ${range.start}..${range.endInclusive} $unit",
+                    text = if (unit.isNotBlank()) "Range: ${range.start}..${range.endInclusive} $unit" else "Range: ${range.start}..${range.endInclusive}",
                     style = SaltyTokens.typography.labelSmall,
                     color = if (isValid) colors.textSecondary else colors.error
                 )
@@ -92,12 +110,12 @@ fun SaltyValueEntryStrip(
                     onValueChange = { text = it },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
+                        keyboardType = if (range.start < 0f) KeyboardType.Text else KeyboardType.Decimal,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            if (isValid && parsed != null) onConfirm(parsed)
+                            if (parsed != null) onConfirm(parsed)
                         }
                     ),
                     isError = !isValid,
@@ -119,7 +137,7 @@ fun SaltyValueEntryStrip(
 
                 Button(
                     onClick = {
-                        if (isValid && parsed != null) onConfirm(parsed)
+                        if (parsed != null) onConfirm(parsed)
                     },
                     enabled = isValid,
                     colors = ButtonDefaults.buttonColors(

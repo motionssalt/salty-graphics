@@ -19,6 +19,7 @@ enum class BoundControlType {
     COLOR_PICKER,
     SEGMENTED_CHIPS,
     TEXT_FIELD,
+    LIBRARY_COMPONENT,
     CUSTOM
 }
 
@@ -50,7 +51,8 @@ data class FeatureControlDef<T>(
     val defaultValue: T,
     val isVisible: ((ProjectDocument, String?) -> Boolean)? = null,
     val customRenderer: (@Composable (current: T, onUpdate: (T) -> Unit) -> Unit)? = null,
-    val isEnabled: (ProjectDocument, String?) -> Boolean = { _, _ -> true }
+    val isEnabled: (ProjectDocument, String?) -> Boolean = { _, _ -> true },
+    val componentId: String? = null
 )
 
 data class FeatureSectionDef(

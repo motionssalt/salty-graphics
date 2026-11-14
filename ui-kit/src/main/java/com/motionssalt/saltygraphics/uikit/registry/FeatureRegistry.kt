@@ -62,7 +62,9 @@ open class FeatureCatalog(private val requireTypedBindings: Boolean = false) {
                     BoundControlType.TEXT_FIELD -> control.defaultValue is String
                     BoundControlType.INLINE_DROPDOWN -> !control.options.isNullOrEmpty()
                     BoundControlType.SEGMENTED_CHIPS -> !control.segmentOptions.isNullOrEmpty()
-                    BoundControlType.CUSTOM -> control.customRenderer != null
+                    BoundControlType.LIBRARY_COMPONENT -> !control.componentId.isNullOrBlank() &&
+                        (!requireTypedBindings || LibraryComponentRegistry.contains(control.componentId))
+                    BoundControlType.CUSTOM -> !requireTypedBindings && control.customRenderer != null
                 }
                 require(validType) { "Default/options do not match control type: ${control.id}" }
                 if (control.defaultValue is Float) require(control.defaultValue.isFinite() &&
@@ -195,7 +197,7 @@ fun ScaffoldFeaturePage(
 
 @Suppress("UNCHECKED_CAST")
 @Composable
-private fun <T> RenderBoundControl(
+internal fun <T> RenderBoundControl(
     control: FeatureControlDef<T>,
     document: ProjectDocument,
     layerId: String?,
@@ -238,6 +240,10 @@ private fun <T> RenderBoundControl(
             }
         }
         BoundControlType.TEXT_FIELD -> SaltyTextField(current as String, { commit(it as T) }, label = control.label)
+        BoundControlType.LIBRARY_COMPONENT -> {
+            val entry = control.componentId?.let { LibraryComponentRegistry.get(it) }
+            entry?.renderer?.invoke(control.label, current, { preview(it as T) }, { commit(it as T) })
+        }
         BoundControlType.CUSTOM -> control.customRenderer?.invoke(current, ::commit)
     }
 }
