@@ -997,6 +997,42 @@
         "notes": "Verify real UI/render path against uploaded amended brief after V0; inherited done status is not fresh acceptance evidence."
       },
       {
+        "id": "V38",
+        "title": "Canvas center snapping must hold (tracker #9, amends V15)",
+        "status": "pending",
+        "notes": "Canvas center horizontal/vertical axes get highest priority over other layers' edges/centers, equal/wider screen-space tolerance, and hysteresis break-away across canvas drag, handles, and Transform controls."
+      },
+      {
+        "id": "V39",
+        "title": "Align and quick composition transforms (tracker #10)",
+        "status": "pending",
+        "notes": "Align and fit section on Transform page via scaffold: Align Left/HCenter/Right/Top/VCenter/Bottom, Fit, Fill, Stretch, Reset to Actual Size. Exact transforms, multi-selection and groups, locked layer guard, single labelled history action."
+      },
+      {
+        "id": "V40",
+        "title": "Rasterize multiple layers and groups from the Layers panel (tracker #11, extends V22)",
+        "status": "pending",
+        "notes": "In layers panel selection mode, Rasterize / Merge flattens multiple selected layers or a group into one pixel layer at top-most selected stack position, with confirmation offering Duplicate and rasterize, Rasterize, Cancel."
+      },
+      {
+        "id": "V41",
+        "title": "Vector Bezier handles: hit-testing and on-demand visibility (tracker #12, reopened again, builds on V18)",
+        "status": "pending",
+        "notes": "Hide curve handles on unselected anchors; show only for selected anchor; hit priority handle -> anchor -> segment -> empty space; dragging handle never creates new anchor."
+      },
+      {
+        "id": "V42",
+        "title": "Text-editing box with left and right width handles (tracker #13, amends V17)",
+        "status": "pending",
+        "notes": "Dedicated box during text editing with left and right width handles only (no corner scale handles), reflowing words down to single-character column without scaling glyphs."
+      },
+      {
+        "id": "V43",
+        "title": "Precision nudge mode and pixel step slider (tracker #14)",
+        "status": "pending",
+        "notes": "Third mode in Transform Move controls: universal library 4-way directional nudge pad with press-and-hold repeat + ruler pixel step slider (>= 1 px). Exact nudges, single history action per hold, multi-selection and locked guard."
+      },
+      {
         "id": "E1",
         "title": "Engine capabilities for real effects",
         "status": "pending",
@@ -1062,8 +1098,8 @@
       "Verified 973c342 with Actions 43209833401 before handoff; check off only Shape & Shape Settings migration. Keep V0 in_progress and publish no premature release for a partial scaffold checkpoint."
     ],
     "known_issues": [],
-    "last_updated": "2026-11-12T11:38:47.936901+00:00",
-    "last_session_note": "VERIFIED partial V0 checkpoint: 973c342 / Actions 43209833401, 251 debug JVM tests zero failures/errors/skips; assembleDebug and all ten reviewed library goldens pass. Shape settings and creation complete on scaffold; vector creation also migrated. Root cause fixed: geometry edits rebuilt solid FillData and reset independent fill opacity; now per-property live-target commands preserve paint and concurrent edits. Resume V0 at first unchecked docs/SCAFFOLD.md row (Home/Settings/New Project/Export/etc.), then registry/overlay/module-boundary/full-golden gaps. Do not call V0 or round complete. V24/amendment verification, V30/V31, E1-E7 and V37 remain outstanding. No release, no UI refinement, all existing signing/releases untouched.",
+    "last_updated": "2026-11-14T16:00:57Z",
+    "last_session_note": "Reconciled fix_round_4 queue with V38-V43 before E1-E7 and V37. Resuming V0 scaffold & component library migration first.",
     "verification_pending": false,
     "verification": {
       "scope": "Full Fix Round 4 acceptance test suite and release build",
