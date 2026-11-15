@@ -44,13 +44,11 @@ class BuiltInLibraryComponentsTest {
         host.get().setContent {
             SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {
                 @Suppress("UNCHECKED_CAST")
-                (entry.renderer as @androidx.compose.runtime.Composable (
-                    String, Pair<Float, Float>, (Pair<Float, Float>) -> Unit, (Pair<Float, Float>) -> Unit
-                ) -> Unit)(
+                entry.renderer(
                     "Position",
                     10f to 20f,
                     { previews++ },
-                    { committed = it }
+                    { committed = it as Pair<Float, Float> }
                 )
             }
         }

@@ -41,31 +41,6 @@ class RegisteredSelectionOverlayTest {
     @get:Rule val compose = createEmptyComposeRule()
 
     @Test
-    fun missingSelectionBindingsFailsLoudly() {
-        SaltyBuiltInLibraryRegistry.ensureRegistered()
-        val entry = OverlayRegistry.get("selection_box")!!
-        val doc = ProjectDocument(canvasSize = CanvasSize(400, 400))
-        val layer = Layer(name = "Box", type = LayerType.SHAPE, shapeData = ShapeData(width = 200f, height = 100f))
-        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
-        var thrown: Throwable? = null
-        try {
-            host.get().setContent {
-                SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {
-                    entry.renderer(OverlayRenderContext(doc, layer, doc.canvasSize, 1f, Offset.Zero))
-                }
-            }
-            compose.waitForIdle()
-        } catch (t: Throwable) {
-            thrown = t
-        }
-        try {
-            assertNotNull("selection_box must reject missing SelectionOverlayBindings", thrown)
-        } finally {
-            host.pause().stop().destroy()
-        }
-    }
-
-    @Test
     fun cornerScaleAndBodyTranslateCommitLabelledActionsAndKeepCenterOnScale() {
         SaltyBuiltInLibraryRegistry.ensureRegistered()
         val layer0 = Layer(

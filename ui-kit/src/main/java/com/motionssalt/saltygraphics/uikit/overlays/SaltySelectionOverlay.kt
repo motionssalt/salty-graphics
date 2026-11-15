@@ -66,12 +66,11 @@ fun SaltySelectionBoxOverlay(
 
     val latestContext by rememberUpdatedState(context)
     val latestBindings by rememberUpdatedState(bindings)
-    var gestureActive by remember { mutableStateOf(false) }
-    var gestureCommitted by remember { mutableStateOf(false) }
+    val gestureFlags = remember { BooleanArray(2) } // [0]=active, [1]=committed
 
     DisposableEffect(context.document.id, layer.id) {
         onDispose {
-            if (gestureActive && !gestureCommitted) {
+            if (gestureFlags[0] && !gestureFlags[1]) {
                 latestBindings.onCancelTransform()
             }
         }
@@ -123,8 +122,8 @@ fun SaltySelectionBoxOverlay(
                 if (handle == SelectionHandle.NONE) return@awaitEachGesture
                 down.consume()
 
-                gestureActive = true
-                gestureCommitted = false
+                gestureFlags[0] = true
+                gestureFlags[1] = false
                 var currentTransform = startTransform
                 try {
                     while (true) {
@@ -140,7 +139,7 @@ fun SaltySelectionBoxOverlay(
                                     SelectionHandle.BODY -> ActionIdentity("Move", "Layer")
                                     else -> ActionIdentity("Scale", "Layer")
                                 }
-                                gestureCommitted = true
+                                gestureFlags[1] = true
                                 bnd.onCommitTransform(actionIdentity, currentTransform)
                             }
                             break
@@ -158,10 +157,10 @@ fun SaltySelectionBoxOverlay(
                         change.consume()
                     }
                 } finally {
-                    if (!gestureCommitted) {
+                    if (!gestureFlags[1]) {
                         bnd.onCancelTransform()
                     }
-                    gestureActive = false
+                    gestureFlags[0] = false
                 }
             }
         }
