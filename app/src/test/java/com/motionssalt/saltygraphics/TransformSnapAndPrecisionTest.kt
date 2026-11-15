@@ -312,4 +312,54 @@ class TransformSnapAndPrecisionTest {
             host.pause().stop().destroy()
         }
     }
+
+    @Test
+    fun quickTransformsAndNudgeStepWorkAcrossGroupsAndMultiSelection() {
+        val childA = Layer(
+            id = "ca", name = "Child A", type = LayerType.SHAPE,
+            shapeData = ShapeData(width = 100f, height = 100f),
+            transform = Transform2D(translationX = 40f, translationY = 20f)
+        )
+        val childB = Layer(
+            id = "cb", name = "Child B", type = LayerType.SHAPE,
+            shapeData = ShapeData(width = 100f, height = 100f),
+            transform = Transform2D(translationX = 140f, translationY = 20f)
+        )
+        val group = Layer(
+            id = "grp", name = "Group", type = LayerType.GROUP,
+            children = listOf(childA, childB),
+            transform = Transform2D(translationX = 30f, translationY = -40f)
+        )
+        val sibling = Layer(
+            id = "sib", name = "Sibling", type = LayerType.SHAPE,
+            shapeData = ShapeData(width = 80f, height = 80f),
+            transform = Transform2D(translationX = -200f, translationY = 100f)
+        )
+        val doc = ProjectDocument(
+            canvasSize = CanvasSize(1000, 800),
+            layers = listOf(group, sibling)
+        )
+        // Align both group and sibling to canvas center
+        val aligned = CompositionTransforms.applyToDocument(
+            document = doc,
+            targetIds = setOf("grp", "sib"),
+            boundsProvider = { layer ->
+                when (layer.id) {
+                    "grp" -> SelectionBounds(-50f, -50f, 150f, 50f)
+                    else -> SelectionBounds(-40f, -40f, 40f, 40f)
+                }
+            },
+            action = QuickTransformAction.ALIGN_H_CENTER
+        )
+        assertEquals(0f, aligned.findLayerById("sib")!!.transform.translationX, 0.01f)
+        assertEquals(-50f, aligned.findLayerById("grp")!!.transform.translationX, 0.01f)
+
+        // Multi-selection nudge moves both together by exact pixel step (e.g. 12px)
+        val nudged = CompositionTransforms.nudgeDocument(aligned, setOf("grp", "sib"), dx = 12f, dy = -7f)
+        assertEquals(12f, nudged.findLayerById("sib")!!.transform.translationX, 0.001f)
+        assertEquals(93f, nudged.findLayerById("sib")!!.transform.translationY, 0.001f)
+        assertEquals(-38f, nudged.findLayerById("grp")!!.transform.translationX, 0.001f)
+        assertEquals(-47f, nudged.findLayerById("grp")!!.transform.translationY, 0.001f)
+    }
+
 }

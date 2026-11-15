@@ -64,6 +64,7 @@ class LayerReorderGestureTest : LayerReorderFixture() {
         val list=compose.onNodeWithTag("layer_list")
         list.performTouchInput { down(start) }
         compose.mainClock.advanceTimeBy(750)
+        compose.waitUntil(3000) { compose.onAllNodesWithTag("layer_drag_feedback").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("layer_drag_feedback").assertExists()
         compose.onNodeWithTag("layer_drop_indicator").assertExists()
         list.performTouchInput { moveTo(end,300);up() }
@@ -88,6 +89,7 @@ class LayerAutoScrollGestureTest : LayerReorderFixture() {
         val edge=Offset(start.x,size.height-3f)
         list.performTouchInput {down(start)}
         compose.mainClock.advanceTimeBy(750)
+        compose.waitUntil(3000) { compose.onAllNodesWithTag("layer_drag_feedback").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("layer_drag_feedback").assertExists()
         list.performTouchInput {moveTo(edge,300)}
         compose.mainClock.advanceTimeBy(2400)

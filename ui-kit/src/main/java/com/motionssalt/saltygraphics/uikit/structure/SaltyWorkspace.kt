@@ -319,9 +319,12 @@ fun SaltyReorderableLayerList(
                     val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                     val handleZonePx = 48.dp.toPx()
                     if (down.position.x < size.width - handleZonePx) return@awaitEachGesture
+                    val contentTopPx = SaltyTokens.spacing.xs.toPx()
+                    val listY = down.position.y - contentTopPx
                     val item = state.layoutInfo.visibleItemsInfo.find {
-                        down.position.y >= it.offset && down.position.y < it.offset + it.size
+                        listY >= it.offset && listY < it.offset + it.size
                     } ?: return@awaitEachGesture
+                    down.consume()
                     val earlyEnd = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Initial)
