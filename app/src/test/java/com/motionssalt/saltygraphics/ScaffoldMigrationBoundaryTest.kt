@@ -146,12 +146,26 @@ class ScaffoldMigrationBoundaryTest {
             assertEquals("template_main", feature.defaultPageId)
             assertEquals(4, feature.pages.single().sections.flatMap { it.controls }.size)
             assertTrue(feature.pages.single().sections.flatMap { it.controls }.all { it.binding.path != null })
-            val editor = File(root(), "ui/editor/EditorScreen.kt").readText()
+            val editor = File(appRoot(), "ui/editor/EditorScreen.kt").readText()
             assertTrue(editor.contains("EditorToolFeatures.catalog.getFeature(\"template_example\")"))
             assertFalse("Host must resolve the registered page, not rebuild it", editor.contains("ExampleTemplateFeature.createDefinition("))
         } finally {
             EditorToolFeatures.setDeveloperModeEnabled(prev)
         }
+    }
+
+    @Test fun productionOverlayFacadesMustResolveRegisteredBindings() {
+        val gradient = File(appRoot(), "ui/editor/GradientCanvasOverlay.kt").readText()
+        assertTrue(gradient.contains("ScaffoldCanvasOverlay("))
+        assertTrue(gradient.contains("GradientOverlayBindings(onPreview, onCommit, onCancel)"))
+        assertFalse("Feature must not bypass gradient registration", gradient.contains("SaltyGradientLayerOverlay"))
+        val vector = File(appRoot(), "ui/editor/VectorCanvasOverlay.kt").readText()
+        assertTrue(vector.contains("ScaffoldCanvasOverlay("))
+        assertTrue(vector.contains("vectorEditing = VectorOverlayBindings("))
+        assertFalse("Feature must not bypass vector registration", vector.contains("SaltyVectorCanvasOverlay("))
+        val editor = File(appRoot(), "ui/editor/EditorScreen.kt").readText()
+        assertTrue(editor.contains("onCommit = { identity, fill ->"))
+        assertTrue(editor.contains("onCancel = { projectDocument = actionTree?.currentDocument }"))
     }
 
     @Test fun guardRejectsRawLayoutsWidgetsColorsAndPopupRegressions() {
