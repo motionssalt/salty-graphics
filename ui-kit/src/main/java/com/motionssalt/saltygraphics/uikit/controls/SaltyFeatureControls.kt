@@ -96,7 +96,7 @@ fun SaltyGradientStopEditor(
                         detectDragGestures(
                             onDragStart = { p ->
                                 dragged = liveGradient.stops.indices.minByOrNull {
-                                    abs(liveGradient.stops[it].position - p.x / size.width.coerceAtLeast(1f))
+                                    abs(liveGradient.stops[it].position - p.x / size.width.toFloat().coerceAtLeast(1f))
                                 } ?: -1
                                 if (dragged >= 0) onSelectStop(dragged)
                             },
@@ -110,7 +110,7 @@ fun SaltyGradientStopEditor(
                             if (dragged >= 0) {
                                 val updated = liveGradient.copy(
                                     stops = liveGradient.stops.mapIndexed { i, s ->
-                                        if (i == dragged) s.copy(position = (change.position.x / size.width.coerceAtLeast(1f)).coerceIn(0f, 1f))
+                                        if (i == dragged) s.copy(position = (change.position.x / size.width.toFloat().coerceAtLeast(1f)).coerceIn(0f, 1f))
                                         else s
                                     }
                                 )
@@ -430,14 +430,15 @@ fun SaltyBlendAndMaskPanel(
                 }
             }
 
-            SaltySwitch(
-                checked = activeInverted,
-                onCheckedChange = { checked ->
-                    activeInverted = checked
-                    onMaskChange(activeMaskType, activeSourceId, checked, currentMaskMode)
-                },
-                label = "Invert Mask"
-            )
+            SaltyRow(label = "Invert Mask") {
+                SaltySwitch(
+                    checked = activeInverted,
+                    onCheckedChange = { checked ->
+                        activeInverted = checked
+                        onMaskChange(activeMaskType, activeSourceId, checked, currentMaskMode)
+                    }
+                )
+            }
 
             if (maskPreviewBitmap != null) {
                 Row(
