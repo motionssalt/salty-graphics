@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import com.motionssalt.saltygraphics.uikit.controls.SaltyHaptics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
@@ -104,6 +106,7 @@ fun CanvasView(
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
+    val hostView = LocalView.current
     val density = LocalDensity.current
     val mediaGeneration by MediaCache.revision.collectAsState()
     var viewport by remember { mutableStateOf(IntSize.Zero) }
@@ -221,6 +224,10 @@ fun CanvasView(
                     val originals=ids.mapNotNull { id -> activeDoc.findLayerById(id)?.let { id to it.transform } }.toMap()
                     var transform=start
                     var dragDistance=0f
+                    var prevSnappedX=false
+                    var prevSnappedY=false
+                    var prevSnappedCenterX=false
+                    var prevSnappedCenterY=false
                     var last=down.position
                     var multiTouch=false
                     var pinchDistance=0f
@@ -357,7 +364,13 @@ fun CanvasView(
                             } else if(bounds!=null && dragDistance>=touchSlop) {
                                 var rawTransform = SelectionGeometry.drag(start,bounds,handle,downPoint,documentPoint(change.position))
                                 
-                                // T21: Smart Guides & Snapping
+                                val prevGuides = activeSmartGuides.map { it.orientation to it.position }.toSet()
+                                val prevGridX = activeSnappedGridX
+                                val prevGridY = activeSnappedGridY
+                                var newRotSnap = false
+                                var centerLockedX = false
+                                var centerLockedY = false
+                                // T21 + V38: Smart Guides & Canvas-Center-Priority Snapping
                                 if (activeDoc.editorSettings.snapEnabled) {
                                     if (handle == SelectionHandle.BODY) {
                                         val otherLayersList = activeDoc.activeLayers
@@ -370,25 +383,56 @@ fun CanvasView(
                                             canvasWidth = activeDoc.canvasSize.width.toFloat(),
                                             canvasHeight = activeDoc.canvasSize.height.toFloat(),
                                             effectiveZoom = effZoom,
-                                            tolerancePx = activeDoc.editorSettings.snapTolerancePx
+                                            tolerancePx = activeDoc.editorSettings.snapTolerancePx,
+                                            previouslySnappedX = prevSnappedX,
+                                            previouslySnappedY = prevSnappedY,
+                                            previouslySnappedCenterX = prevSnappedCenterX,
+                                            previouslySnappedCenterY = prevSnappedCenterY
                                         )
                                         rawTransform = snapRes.snappedTransform
                                         activeSmartGuides = snapRes.activeGuides
+                                        prevSnappedX = snapRes.didSnapX
+                                        prevSnappedY = snapRes.didSnapY
+                                        prevSnappedCenterX = snapRes.didSnapCenterX
+                                        prevSnappedCenterY = snapRes.didSnapCenterY
+                                        centerLockedX = snapRes.didSnapCenterX
+                                        centerLockedY = snapRes.didSnapCenterY
                                     } else if (handle == SelectionHandle.ROTATE) {
                                         val otherAngles = activeDoc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
                                         val (snappedDeg, didSnap) = SmartSnapEngine.snapRotation(rawTransform.rotationDegrees, otherAngles)
                                         if (didSnap) {
                                             rawTransform = rawTransform.copy(rotationDegrees = snappedDeg)
+                                            newRotSnap = true
                                         }
+                                        prevSnappedX = false; prevSnappedY = false
+                                        prevSnappedCenterX = false; prevSnappedCenterY = false
                                         activeSmartGuides = emptyList()
                                     } else {
-                                        activeSmartGuides = emptyList()
+                                        val scaleSnap = SmartSnapEngine.snapScaleHandleToCanvasCenter(
+                                            targetBounds = bounds,
+                                            startTransform = start,
+                                            rawTransform = rawTransform,
+                                            handle = handle,
+                                            canvasWidth = activeDoc.canvasSize.width.toFloat(),
+                                            canvasHeight = activeDoc.canvasSize.height.toFloat(),
+                                            effectiveZoom = effZoom,
+                                            tolerancePx = activeDoc.editorSettings.snapTolerancePx,
+                                            previouslySnappedCenterX = prevSnappedCenterX,
+                                            previouslySnappedCenterY = prevSnappedCenterY
+                                        )
+                                        rawTransform = scaleSnap.snappedTransform
+                                        activeSmartGuides = scaleSnap.activeGuides
+                                        prevSnappedCenterX = scaleSnap.didSnapCenterX
+                                        prevSnappedCenterY = scaleSnap.didSnapCenterY
+                                        prevSnappedX = false; prevSnappedY = false
                                     }
                                 } else {
+                                    prevSnappedX = false; prevSnappedY = false
+                                    prevSnappedCenterX = false; prevSnappedCenterY = false
                                     activeSmartGuides = emptyList()
                                 }
 
-                                // V15: Optional grid-line snapping with transient feedback (engages only when grid is visible)
+                                // V15 + V38: Optional grid-line snapping without overriding canvas center lock
                                 if (activeDoc.editorSettings.snapToGrid && activeDoc.editorSettings.showGrid && handle == SelectionHandle.BODY) {
                                     val gridSnap = SmartSnapEngine.snapToGridLines(
                                         targetBounds = bounds,
@@ -398,16 +442,29 @@ fun CanvasView(
                                         gridSize = activeDoc.editorSettings.gridSize,
                                         isSquareGrid = activeDoc.editorSettings.isSquareGrid,
                                         effectiveZoom = effZoom,
-                                        tolerancePx = activeDoc.editorSettings.snapTolerancePx
+                                        tolerancePx = activeDoc.editorSettings.snapTolerancePx,
+                                        previouslySnappedX = prevGridX != null,
+                                        previouslySnappedY = prevGridY != null
                                     )
-                                    rawTransform = gridSnap.snappedTransform
-                                    activeSnappedGridX = gridSnap.snappedGridX
-                                    activeSnappedGridY = gridSnap.snappedGridY
+                                    val resolvedX = if (centerLockedX) rawTransform.translationX else gridSnap.snappedTransform.translationX
+                                    val resolvedY = if (centerLockedY) rawTransform.translationY else gridSnap.snappedTransform.translationY
+                                    rawTransform = rawTransform.copy(translationX = resolvedX, translationY = resolvedY)
+                                    activeSnappedGridX = if (centerLockedX) null else gridSnap.snappedGridX
+                                    activeSnappedGridY = if (centerLockedY) null else gridSnap.snappedGridY
                                 } else if (!activeDoc.editorSettings.snapToGrid) {
                                     activeSnappedGridX = null
                                     activeSnappedGridY = null
                                 }
 
+                                val nextGuides = activeSmartGuides.map { it.orientation to it.position }.toSet()
+                                val guideLocked = nextGuides.any { it !in prevGuides }
+                                val gridSnappedNew = (activeSnappedGridX != null && activeSnappedGridX != prevGridX) ||
+                                    (activeSnappedGridY != null && activeSnappedGridY != prevGridY)
+                                if (guideLocked) {
+                                    SaltyHaptics.onGuideLocked(hostView)
+                                } else if (gridSnappedNew || newRotSnap) {
+                                    SaltyHaptics.onSnapEngaged(hostView)
+                                }
                                 transform = rawTransform
                                 preview(transform);change.consume()
                                 if(handle==SelectionHandle.ROTATE) {

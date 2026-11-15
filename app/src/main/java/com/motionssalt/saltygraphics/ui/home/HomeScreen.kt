@@ -1,8 +1,8 @@
 package com.motionssalt.saltygraphics.ui.home
 
+import com.motionssalt.saltygraphics.uikit.structure.SaltyToastManager
 import android.graphics.Bitmap
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
@@ -49,13 +49,13 @@ fun HomeScreen(
                     }
                 }
                 if (errorMsg != null) {
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                    SaltyToastManager.show(errorMsg)
                 }
                 val targetId = lastImportedId
                 if (successCount == 1 && targetId != null) {
                     onNavigateToEditor(targetId)
                 } else if (successCount > 1) {
-                    Toast.makeText(context, "Imported $successCount projects successfully", Toast.LENGTH_SHORT).show()
+                    SaltyToastManager.show("Imported $successCount projects successfully")
                 }
             }
         }
@@ -87,9 +87,9 @@ fun HomeScreen(
                             zipOut.finish()
                         }
                     }
-                    Toast.makeText(context, "Exported project(s) successfully", Toast.LENGTH_SHORT).show()
+                    SaltyToastManager.show("Exported project(s) successfully")
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    SaltyToastManager.show("Export failed: ${e.message}")
                 }
                 exportingProjectIds = emptySet()
                 selectedProjectIds = emptySet()

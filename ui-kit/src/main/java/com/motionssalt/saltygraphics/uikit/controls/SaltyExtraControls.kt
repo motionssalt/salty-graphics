@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.uikit.registry.LibraryComponentRegistry
 import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
@@ -381,6 +382,12 @@ private fun SaltyGradientNumber(
     )
 }
 
+private enum class MoveControlMode(val label: String) {
+    TRACKPAD("Trackpad"),
+    SLIDERS("Sliders"),
+    NUDGE("Nudge")
+}
+
 @Composable
 fun SaltyTransformPanel(
     transform: Transform2D,
@@ -391,11 +398,21 @@ fun SaltyTransformPanel(
     onTransformChange: (Transform2D) -> Unit,
     onTransformCommit: (Transform2D) -> Unit,
     onClose: () -> Unit,
-    wrapInPanelPage: Boolean = false
+    wrapInPanelPage: Boolean = false,
+    nudgeStepPx: Float = 1f,
+    onNudgeStepChange: (Float) -> Unit = {},
+    onNudgeDelta: (dx: Float, dy: Float) -> Unit = { _, _ -> },
+    onNudgeCommit: (totalDx: Float, totalDy: Float) -> Unit = { _, _ -> },
+    onNudgeCancel: () -> Unit = {},
+    onQuickTransform: ((QuickTransformAction) -> Unit)? = null
 ) {
     SaltyBuiltInLibraryRegistry.ensureRegistered()
     var currentTransform by remember(transform) { mutableStateOf(transform) }
-    var isTrackpadMode by remember { mutableStateOf(transform.isTrackpadMode) }
+    var moveMode by remember {
+        mutableStateOf(
+            if (transform.isTrackpadMode) MoveControlMode.TRACKPAD else MoveControlMode.SLIDERS
+        )
+    }
 
     val content: @Composable () -> Unit = {
         SaltySectionCard {
@@ -466,6 +483,15 @@ fun SaltyTransformPanel(
                             onCommit = {
                                 clearGuides()
                                 onTransformCommit(currentTransform)
+                            },
+                            onExactCommit = { exactPct ->
+                                clearGuides()
+                                val targetScale = (exactPct / 100f).coerceAtLeast(SelectionGeometry.MIN_SCALE)
+                                val ratio = if (currentTransform.scaleX != 0f) currentTransform.scaleY / currentTransform.scaleX else 1f
+                                val updated = currentTransform.copy(scaleX = targetScale, scaleY = targetScale * ratio)
+                                currentTransform = updated
+                                onTransformChange(updated)
+                                onTransformCommit(updated)
                             }
                         )
                     } else {
@@ -487,6 +513,14 @@ fun SaltyTransformPanel(
                             onCommit = {
                                 clearGuides()
                                 onTransformCommit(currentTransform)
+                            },
+                            onExactCommit = { exactPct ->
+                                clearGuides()
+                                val targetScale = (exactPct / 100f).coerceAtLeast(SelectionGeometry.MIN_SCALE)
+                                val updated = currentTransform.copy(scaleX = targetScale)
+                                currentTransform = updated
+                                onTransformChange(updated)
+                                onTransformCommit(updated)
                             }
                         )
                         SaltyNumberControl(
@@ -507,118 +541,159 @@ fun SaltyTransformPanel(
                             onCommit = {
                                 clearGuides()
                                 onTransformCommit(currentTransform)
+                            },
+                            onExactCommit = { exactPct ->
+                                clearGuides()
+                                val targetScale = (exactPct / 100f).coerceAtLeast(SelectionGeometry.MIN_SCALE)
+                                val updated = currentTransform.copy(scaleY = targetScale)
+                                currentTransform = updated
+                                onTransformChange(updated)
+                                onTransformCommit(updated)
                             }
                         )
                     }
                 }
 
-                // Move Section: Trackpad + Sensitivity OR Sliders
+                // Move Section: Trackpad | Sliders | Nudge (V43)
                 SaltyColumn(spacing = SaltySpace.SM) {
-                    SaltyRow(
-                        modifier = Modifier.saltyFillMaxWidth(),
-                        justify = SaltyJustify.SPACE_BETWEEN,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SaltyText(text = "Move", style = SaltyTextStyle.BODY_LARGE)
-                        SaltyTextButton(
-                            text = if (isTrackpadMode) "Switch to Sliders" else "Switch to Trackpad",
-                            onClick = {
-                                val newMode = !isTrackpadMode
-                                isTrackpadMode = newMode
-                                val updated = currentTransform.copy(isTrackpadMode = newMode)
-                                currentTransform = updated
-                                onTransformChange(updated)
-                                onTransformCommit(updated)
+                    SaltyText(text = "Move", style = SaltyTextStyle.BODY_LARGE)
+                    SaltySegmentedChips(
+                        options = MoveControlMode.entries.map { it.label },
+                        selectedOption = moveMode.label,
+                        onOptionSelected = { selectedLabel ->
+                            val chosen = MoveControlMode.entries.firstOrNull { it.label == selectedLabel }
+                                ?: MoveControlMode.TRACKPAD
+                            moveMode = chosen
+                            if (chosen == MoveControlMode.TRACKPAD || chosen == MoveControlMode.SLIDERS) {
+                                val trackpadFlag = chosen == MoveControlMode.TRACKPAD
+                                if (currentTransform.isTrackpadMode != trackpadFlag) {
+                                    val updated = currentTransform.copy(isTrackpadMode = trackpadFlag)
+                                    currentTransform = updated
+                                    onTransformChange(updated)
+                                    onTransformCommit(updated)
+                                }
                             }
-                        )
-                    }
+                        }
+                    )
 
-                    if (isTrackpadMode) {
-                        SaltyPositionTrackpad(
-                            x = currentTransform.translationX,
-                            y = currentTransform.translationY,
-                            sensitivity = currentTransform.moveSensitivity,
-                            onDelta = { dx, dy ->
-                                val raw = currentTransform.copy(
-                                    translationX = currentTransform.translationX + dx,
-                                    translationY = currentTransform.translationY + dy
-                                )
-                                val snapped = applyTranslationSnapping(raw)
-                                currentTransform = snapped
-                                onTransformChange(snapped)
-                            },
-                            onDragEnd = {
-                                clearGuides()
-                                onTransformCommit(currentTransform)
-                            },
-                            onCommitX = {
-                                val updated = currentTransform.copy(translationX = it)
-                                currentTransform = updated
-                                onTransformChange(updated)
-                                onTransformCommit(updated)
-                            },
-                            onCommitY = {
-                                val updated = currentTransform.copy(translationY = it)
-                                currentTransform = updated
-                                onTransformChange(updated)
-                                onTransformCommit(updated)
-                            },
-                            range = -100000f..100000f
-                        )
-                        SaltyNumberControl(
-                            label = "Sensitivity",
-                            value = currentTransform.moveSensitivity * 100f,
-                            min = 10f,
-                            max = 500f,
-                            defaultValue = 100f,
-                            step = 5f,
-                            unit = "%",
-                            onPreview = {
-                                val updated = currentTransform.copy(moveSensitivity = it / 100f)
-                                currentTransform = updated
-                                onTransformChange(updated)
-                            },
-                            onCommit = { onTransformCommit(currentTransform) }
-                        )
-                    } else {
-                        SaltyNumberControl(
-                            label = "Move X",
-                            value = currentTransform.translationX,
-                            min = -100000f,
-                            max = 100000f,
-                            defaultValue = 0f,
-                            step = 1f,
-                            unit = "px",
-                            onPreview = {
-                                val raw = currentTransform.copy(translationX = it)
-                                val snapped = applyTranslationSnapping(raw)
-                                currentTransform = snapped
-                                onTransformChange(snapped)
-                            },
-                            onCommit = {
-                                clearGuides()
-                                onTransformCommit(currentTransform)
-                            }
-                        )
-                        SaltyNumberControl(
-                            label = "Move Y",
-                            value = currentTransform.translationY,
-                            min = -100000f,
-                            max = 100000f,
-                            defaultValue = 0f,
-                            step = 1f,
-                            unit = "px",
-                            onPreview = {
-                                val raw = currentTransform.copy(translationY = it)
-                                val snapped = applyTranslationSnapping(raw)
-                                currentTransform = snapped
-                                onTransformChange(snapped)
-                            },
-                            onCommit = {
-                                clearGuides()
-                                onTransformCommit(currentTransform)
-                            }
-                        )
+                    when (moveMode) {
+                        MoveControlMode.TRACKPAD -> {
+                            SaltyPositionTrackpad(
+                                x = currentTransform.translationX,
+                                y = currentTransform.translationY,
+                                sensitivity = currentTransform.moveSensitivity,
+                                onDelta = { dx, dy ->
+                                    val raw = currentTransform.copy(
+                                        translationX = currentTransform.translationX + dx,
+                                        translationY = currentTransform.translationY + dy
+                                    )
+                                    val snapped = applyTranslationSnapping(raw)
+                                    currentTransform = snapped
+                                    onTransformChange(snapped)
+                                },
+                                onDragEnd = {
+                                    clearGuides()
+                                    onTransformCommit(currentTransform)
+                                },
+                                onCommitX = {
+                                    val updated = currentTransform.copy(translationX = it)
+                                    currentTransform = updated
+                                    onTransformChange(updated)
+                                    onTransformCommit(updated)
+                                },
+                                onCommitY = {
+                                    val updated = currentTransform.copy(translationY = it)
+                                    currentTransform = updated
+                                    onTransformChange(updated)
+                                    onTransformCommit(updated)
+                                },
+                                range = -100000f..100000f
+                            )
+                            SaltyNumberControl(
+                                label = "Sensitivity",
+                                value = currentTransform.moveSensitivity * 100f,
+                                min = 10f,
+                                max = 500f,
+                                defaultValue = 100f,
+                                step = 5f,
+                                unit = "%",
+                                onPreview = {
+                                    val updated = currentTransform.copy(moveSensitivity = it / 100f)
+                                    currentTransform = updated
+                                    onTransformChange(updated)
+                                },
+                                onCommit = { onTransformCommit(currentTransform) },
+                                onExactCommit = { exactPct ->
+                                    val updated = currentTransform.copy(moveSensitivity = exactPct / 100f)
+                                    currentTransform = updated
+                                    onTransformChange(updated)
+                                    onTransformCommit(updated)
+                                }
+                            )
+                        }
+                        MoveControlMode.SLIDERS -> {
+                            SaltyNumberControl(
+                                label = "Move X",
+                                value = currentTransform.translationX,
+                                min = -100000f,
+                                max = 100000f,
+                                defaultValue = 0f,
+                                step = 1f,
+                                unit = "px",
+                                onPreview = {
+                                    val raw = currentTransform.copy(translationX = it)
+                                    val snapped = applyTranslationSnapping(raw)
+                                    currentTransform = snapped
+                                    onTransformChange(snapped)
+                                },
+                                onCommit = {
+                                    clearGuides()
+                                    onTransformCommit(currentTransform)
+                                },
+                                onExactCommit = { exactPx ->
+                                    clearGuides()
+                                    val updated = currentTransform.copy(translationX = exactPx)
+                                    currentTransform = updated
+                                    onTransformChange(updated)
+                                    onTransformCommit(updated)
+                                }
+                            )
+                            SaltyNumberControl(
+                                label = "Move Y",
+                                value = currentTransform.translationY,
+                                min = -100000f,
+                                max = 100000f,
+                                defaultValue = 0f,
+                                step = 1f,
+                                unit = "px",
+                                onPreview = {
+                                    val raw = currentTransform.copy(translationY = it)
+                                    val snapped = applyTranslationSnapping(raw)
+                                    currentTransform = snapped
+                                    onTransformChange(snapped)
+                                },
+                                onCommit = {
+                                    clearGuides()
+                                    onTransformCommit(currentTransform)
+                                },
+                                onExactCommit = { exactPx ->
+                                    clearGuides()
+                                    val updated = currentTransform.copy(translationY = exactPx)
+                                    currentTransform = updated
+                                    onTransformChange(updated)
+                                    onTransformCommit(updated)
+                                }
+                            )
+                        }
+                        MoveControlMode.NUDGE -> {
+                            SaltyNudgePad(
+                                stepPx = nudgeStepPx,
+                                onStepChange = onNudgeStepChange,
+                                onNudgeDelta = onNudgeDelta,
+                                onNudgeCommit = onNudgeCommit,
+                                onNudgeCancel = onNudgeCancel
+                            )
+                        }
                     }
                 }
 
@@ -641,8 +716,73 @@ fun SaltyTransformPanel(
                         onCommit = {
                             clearGuides()
                             onTransformCommit(currentTransform)
+                        },
+                        onExactCommit = { exactDeg ->
+                            clearGuides()
+                            val updated = currentTransform.copy(rotationDegrees = exactDeg)
+                            currentTransform = updated
+                            onTransformChange(updated)
+                            onTransformCommit(updated)
                         }
                     )
+                }
+
+                // V39: Align & Quick Composition Transforms
+                if (onQuickTransform != null) {
+                    SaltyColumn(spacing = SaltySpace.SM) {
+                        SaltyText(text = "Align & Fit", style = SaltyTextStyle.BODY_LARGE)
+                        SaltyRow(modifier = Modifier.saltyFillMaxWidth(), spacing = SaltySpace.XS) {
+                            listOf(
+                                QuickTransformAction.ALIGN_LEFT,
+                                QuickTransformAction.ALIGN_H_CENTER,
+                                QuickTransformAction.ALIGN_RIGHT
+                            ).forEach { action ->
+                                SaltyOutlinedButton(
+                                    text = action.shortLabel,
+                                    onClick = { onQuickTransform(action) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("quick_transform_${action.name.lowercase()}")
+                                )
+                            }
+                        }
+                        SaltyRow(modifier = Modifier.saltyFillMaxWidth(), spacing = SaltySpace.XS) {
+                            listOf(
+                                QuickTransformAction.ALIGN_TOP,
+                                QuickTransformAction.ALIGN_V_CENTER,
+                                QuickTransformAction.ALIGN_BOTTOM
+                            ).forEach { action ->
+                                SaltyOutlinedButton(
+                                    text = action.shortLabel,
+                                    onClick = { onQuickTransform(action) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("quick_transform_${action.name.lowercase()}")
+                                )
+                            }
+                        }
+                        SaltyRow(modifier = Modifier.saltyFillMaxWidth(), spacing = SaltySpace.XS) {
+                            listOf(
+                                QuickTransformAction.FIT_TO_COMPOSITION,
+                                QuickTransformAction.FILL_COMPOSITION,
+                                QuickTransformAction.STRETCH_TO_COMPOSITION
+                            ).forEach { action ->
+                                SaltyOutlinedButton(
+                                    text = action.shortLabel,
+                                    onClick = { onQuickTransform(action) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("quick_transform_${action.name.lowercase()}")
+                                )
+                            }
+                        }
+                        SaltyOutlinedButton(
+                            text = QuickTransformAction.RESET_ACTUAL_SIZE.label,
+                            onClick = { onQuickTransform(QuickTransformAction.RESET_ACTUAL_SIZE) },
+                            fillWidth = true,
+                            modifier = Modifier.testTag("quick_transform_reset_actual_size")
+                        )
+                    }
                 }
             }
         }

@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
+import androidx.compose.ui.platform.LocalView
+import com.motionssalt.saltygraphics.uikit.controls.SaltyHaptics
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 
 @Composable
@@ -48,6 +50,7 @@ fun SaltyEditorTopBar(
     onToggleCanvasLock: () -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
+    val view = LocalView.current
 
     Surface(
         color = colors.surface,
@@ -90,7 +93,7 @@ fun SaltyEditorTopBar(
 
                 // V13: Canvas Lock Toggle
                 IconButton(
-                    onClick = onToggleCanvasLock,
+                    onClick = { SaltyHaptics.onKeyToggle(view); onToggleCanvasLock() },
                     modifier = Modifier.size(SaltyTokens.spacing.toolbar38)
                 ) {
                     Icon(

@@ -310,7 +310,17 @@ fun SaltyLazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(resolveSpace(spacing)),
         contentPadding = PaddingValues(resolveSpace(contentPadding)),
-        content = content
+        content = { innerPadding ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                content(innerPadding)
+                SaltyToastHost(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(innerPadding)
+                        .padding(SaltyTokens.spacing.md)
+                )
+            }
+        }
     )
 }
 

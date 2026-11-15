@@ -6,6 +6,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +60,80 @@ fun SaltyToast(
                 color = colors.textPrimary,
                 fontWeight = FontWeight.Medium
             )
+        }
+    }
+}
+
+import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.atomic.AtomicLong
+
+data class SaltyToastMessage(
+    val id: Long,
+    val text: String,
+    val durationMs: Long = 2200L,
+    val icon: ImageVector? = null
+)
+
+/**
+ * In-app toast queue manager (V34): max 2 visible at once, auto-dismissing,
+ * never covering bottom-panel controls and never blocking canvas touches.
+ */
+object SaltyToastManager {
+    private val nextId = AtomicLong(1L)
+    private val _queue = MutableStateFlow<List<SaltyToastMessage>>(emptyList())
+    val queue: StateFlow<List<SaltyToastMessage>> = _queue.asStateFlow()
+
+    fun show(message: String, durationMs: Long = 2200L, icon: ImageVector? = null) {
+        if (message.isBlank()) return
+        val item = SaltyToastMessage(
+            id = nextId.getAndIncrement(),
+            text = message,
+            durationMs = durationMs.coerceAtLeast(300L),
+            icon = icon
+        )
+        _queue.value = _queue.value + item
+    }
+
+    fun dismiss(id: Long) {
+        _queue.value = _queue.value.filterNot { it.id == id }
+    }
+
+    fun clear() {
+        _queue.value = emptyList()
+    }
+}
+
+@Composable
+fun SaltyToastHost(
+    modifier: Modifier = Modifier,
+    manager: SaltyToastManager = SaltyToastManager
+) {
+    val queue by manager.queue.collectAsState()
+    val visible = queue.take(2)
+    visible.forEach { msg ->
+        LaunchedEffect(msg.id) {
+            delay(msg.durationMs)
+            manager.dismiss(msg.id)
+        }
+    }
+    Column(
+        modifier = modifier.testTag("salty_toast_host"),
+        verticalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.xs),
+        horizontalAlignment = Alignment.Start
+    ) {
+        visible.forEach { msg ->
+            key(msg.id) {
+                SaltyToast(
+                    message = msg.text,
+                    visible = true,
+                    icon = msg.icon,
+                    modifier = Modifier.testTag("salty_toast_item")
+                )
+            }
         }
     }
 }

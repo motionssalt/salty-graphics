@@ -3,6 +3,7 @@ package com.motionssalt.saltygraphics.data
 import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import com.motionssalt.saltygraphics.uikit.controls.ScrollHapticsMode
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class ThemeChoice(val displayName: String) {
@@ -46,5 +47,15 @@ class SettingsManager(context: Context) {
             .putBoolean("use_system_default", useDefault)
             .putFloat("ui_scale", 1.0f)
             .apply()
+    }
+
+    private val _scrollHapticsMode = MutableStateFlow(runCatching {
+        ScrollHapticsMode.valueOf(prefs.getString("scroll_haptics_mode", ScrollHapticsMode.LIGHT.name) ?: ScrollHapticsMode.LIGHT.name)
+    }.getOrDefault(ScrollHapticsMode.LIGHT))
+    val scrollHapticsMode: StateFlow<ScrollHapticsMode> = _scrollHapticsMode.asStateFlow()
+
+    fun setScrollHapticsMode(mode: ScrollHapticsMode) {
+        _scrollHapticsMode.value = mode
+        prefs.edit().putString("scroll_haptics_mode", mode.name).apply()
     }
 }

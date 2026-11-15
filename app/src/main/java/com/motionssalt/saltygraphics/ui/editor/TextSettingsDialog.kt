@@ -1,7 +1,7 @@
 package com.motionssalt.saltygraphics.ui.editor
 
+import com.motionssalt.saltygraphics.uikit.structure.SaltyToastManager
 import android.graphics.Typeface
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
@@ -73,7 +73,7 @@ fun FontSelectionPage(
             } else {
                 "Successfully imported ${summary.importedCount} font(s)."
             }
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            SaltyToastManager.show(msg)
         }
     }
 

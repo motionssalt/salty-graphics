@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.Job
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -30,7 +31,7 @@ import kotlin.math.roundToInt
 /**
  * Universal scroll-wheel (ruler) slider.
  * Renders continuous tick marks with a center needle indicator.
- * Per V5 requirements: strictly NO haptic feedback.
+ * Per V5 requirements: moderated major-tick/snap-point haptics while dragging (never during fling).
  */
 @Composable
 fun SaltyRulerSlider(
@@ -58,6 +59,10 @@ fun SaltyRulerSlider(
     val cancelCallback by rememberUpdatedState(onValueCancel)
     val liveRange by rememberUpdatedState(range)
     val liveStep by rememberUpdatedState(step)
+    val liveDefault by rememberUpdatedState(defaultValue)
+    val hapticsMode by rememberUpdatedState(LocalScrollHapticsMode.current)
+    val view = LocalView.current
+    val hapticThrottle = remember { RulerHapticThrottle() }
     var fling by remember { mutableStateOf<Job?>(null) }
     LaunchedEffect(value) { if (!dragging) internalValue = value }
     DisposableEffect(Unit) { onDispose { fling?.cancel() } }
@@ -116,7 +121,7 @@ fun SaltyRulerSlider(
                 .pointerInput(Unit) {
                     val velocity = VelocityTracker()
                     detectDragGestures(
-                        onDragStart = { fling?.cancel(); velocity.resetTracking(); internalValue = liveValue; dragging = true },
+                        onDragStart = { fling?.cancel(); velocity.resetTracking(); hapticThrottle.reset(); internalValue = liveValue; dragging = true },
                         onDragEnd = {
                             val unitsPerSecond = -velocity.calculateVelocity().x * liveStep.coerceAtLeast(.01f) / tickSpacingPx
                             fling = coroutineScope.launch {
@@ -136,8 +141,20 @@ fun SaltyRulerSlider(
                     ) { change, amount ->
                         velocity.addPosition(change.uptimeMillis, change.position)
                         change.consume()
+                        val prev = internalValue
                         internalValue = (internalValue - amount.x * liveStep.coerceAtLeast(.01f) / tickSpacingPx)
                             .coerceIn(liveRange.start, liveRange.endInclusive)
+                        hapticThrottle.onDragValueChanged(
+                            mode = hapticsMode,
+                            prevValue = prev,
+                            newValue = internalValue,
+                            step = liveStep,
+                            defaultValue = liveDefault,
+                            isFling = false,
+                            systemEnabled = SaltyHaptics.isSystemTouchFeedbackEnabled(view.context)
+                        ) {
+                            SaltyHaptics.onScrollTick(view)
+                        }
                         changeCallback(internalValue)
                     }
                 },
@@ -204,7 +221,8 @@ fun SaltyNumberControl(
     modifier: Modifier = Modifier,
     step: Float = 1f,
     unit: String = "",
-    defaultValue: Float = 0f.coerceIn(min, max)
+    defaultValue: Float = 0f.coerceIn(min, max),
+    onExactCommit: (Float) -> Unit = onCommit
 ) {
     var editing by remember { mutableStateOf(false) }
     var input by remember { mutableStateOf("") }
@@ -257,7 +275,7 @@ fun SaltyNumberControl(
                 androidx.compose.material3.TextButton(
                     enabled = parsed != null,
                     onClick = {
-                        parsed?.let { onCommit(it) }
+                        parsed?.let { onExactCommit(it) }
                         editing = false
                     }
                 ) {

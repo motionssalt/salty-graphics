@@ -3,7 +3,6 @@ package com.motionssalt.saltygraphics.ui.settings
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
@@ -22,6 +21,8 @@ import com.motionssalt.saltygraphics.data.SettingsManager
 import com.motionssalt.saltygraphics.data.StorageManager
 import com.motionssalt.saltygraphics.data.ThemeChoice
 import com.motionssalt.saltygraphics.uikit.controls.DropdownOption
+import com.motionssalt.saltygraphics.uikit.controls.ScrollHapticsMode
+import com.motionssalt.saltygraphics.uikit.structure.SaltyToastManager
 import com.motionssalt.saltygraphics.uikit.sublibs.settings.SaltySettingsDeviceInfoItem
 import com.motionssalt.saltygraphics.uikit.sublibs.settings.SaltySettingsScreen
 import com.motionssalt.saltygraphics.uikit.sublibs.settings.SaltySettingsSocialLink
@@ -36,6 +37,7 @@ fun SettingsScreen(
     val theme by settingsManager.theme.collectAsState()
     val useSystemDefault by settingsManager.useSystemDefault.collectAsState()
     val uiScale by settingsManager.uiScale.collectAsState()
+    val scrollHapticsMode by settingsManager.scrollHapticsMode.collectAsState()
 
     var issueText by remember { mutableStateOf("") }
     var versionTapCount by remember { mutableIntStateOf(0) }
@@ -59,7 +61,7 @@ fun SettingsScreen(
         if (treeUri != null) {
             StorageManager.setSavedFolder(context, treeUri)
             currentSavedFolderName = StorageManager.getSavedFolderName(context)
-            Toast.makeText(context, "Save folder updated", Toast.LENGTH_SHORT).show()
+            SaltyToastManager.show("Save folder updated")
         }
     }
 
@@ -113,7 +115,7 @@ fun SettingsScreen(
                     .edit()
                     .putBoolean("dev_options", true)
                     .apply()
-                Toast.makeText(context, "Developer options unlocked!", Toast.LENGTH_SHORT).show()
+                SaltyToastManager.show("Developer options unlocked!")
             }
         },
         savedFolderName = currentSavedFolderName,
@@ -140,6 +142,8 @@ fun SettingsScreen(
         },
         socialLinks = socialLinks,
         deviceInfoItems = deviceItems,
-        onNavigateBack = onNavigateBack
+        onNavigateBack = onNavigateBack,
+        scrollHapticsMode = scrollHapticsMode,
+        onScrollHapticsModeChange = { settingsManager.setScrollHapticsMode(it) }
     )
 }

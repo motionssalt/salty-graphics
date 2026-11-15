@@ -16,6 +16,7 @@ import com.motionssalt.saltygraphics.data.ProjectRepository
 import com.motionssalt.saltygraphics.data.SettingsManager
 import com.motionssalt.saltygraphics.navigation.Screen
 import com.motionssalt.saltygraphics.theme.*
+import com.motionssalt.saltygraphics.uikit.controls.LocalScrollHapticsMode
 import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
 import com.motionssalt.saltygraphics.uikit.structure.SaltyRootSurface
 import com.motionssalt.saltygraphics.uikit.structure.saltyIsSystemInDarkTheme
@@ -65,7 +66,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val theme by settingsManager.theme.collectAsState()
             val uiScale by settingsManager.uiScale.collectAsState()
+            val scrollHapticsMode by settingsManager.scrollHapticsMode.collectAsState()
 
+            CompositionLocalProvider(LocalScrollHapticsMode provides scrollHapticsMode) {
             SaltyGraphicsTheme(
                 darkTheme = theme.isDark(saltyIsSystemInDarkTheme()),
                 dynamicColor = true,
@@ -149,6 +152,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
             }
         }
     }

@@ -7,6 +7,9 @@ import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.uikit.registry.FeatureCatalog
 import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
 import com.motionssalt.saltygraphics.uikit.structure.SaltyBox
+import com.motionssalt.saltygraphics.uikit.structure.SaltySpace
+import com.motionssalt.saltygraphics.uikit.structure.SaltyToastHost
+import com.motionssalt.saltygraphics.uikit.structure.saltyPadding
 import com.motionssalt.saltygraphics.uikit.structure.SaltyWorkspace
 import com.motionssalt.saltygraphics.uikit.structure.ScaffoldToolPanel
 import com.motionssalt.saltygraphics.uikit.structure.ScaffoldToolPicker
@@ -76,6 +79,11 @@ fun SaltyEditorWorkspaceContainer(
             SaltyBox(modifier = Modifier.saltyFillMaxSize()) {
                 canvasContent()
                 overlayContent()
+                SaltyToastHost(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .saltyPadding(SaltySpace.MD)
+                )
                 if (isLayersPanelOpen) {
                     SaltyBox(
                         modifier = Modifier

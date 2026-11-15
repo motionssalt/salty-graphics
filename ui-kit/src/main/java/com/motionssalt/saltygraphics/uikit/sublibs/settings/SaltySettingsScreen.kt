@@ -7,6 +7,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.motionssalt.saltygraphics.uikit.controls.DropdownOption
+import com.motionssalt.saltygraphics.uikit.controls.SaltySegmentedChips
+import com.motionssalt.saltygraphics.uikit.controls.ScrollHapticsMode
 import com.motionssalt.saltygraphics.uikit.controls.SaltyInlineDropdown
 import com.motionssalt.saltygraphics.uikit.controls.SaltyProgressSlider
 import com.motionssalt.saltygraphics.uikit.controls.SaltySwitch
@@ -66,6 +68,8 @@ fun <T> SaltySettingsScreen(
     socialLinks: List<SaltySettingsSocialLink>,
     deviceInfoItems: List<SaltySettingsDeviceInfoItem>,
     onNavigateBack: () -> Unit,
+    scrollHapticsMode: ScrollHapticsMode = ScrollHapticsMode.LIGHT,
+    onScrollHapticsModeChange: (ScrollHapticsMode) -> Unit = {},
     extraSections: @Composable () -> Unit = {}
 ) {
     SaltyScreenScaffold(
@@ -178,6 +182,16 @@ fun <T> SaltySettingsScreen(
                 }
             }
 
+            SaltySectionCard(title = "Feedback & Haptics") {
+                SaltySegmentedChips(
+                    label = "Scroll haptics",
+                    options = ScrollHapticsMode.entries.map { it.label },
+                    selectedOption = scrollHapticsMode.label,
+                    onOptionSelected = { label ->
+                        ScrollHapticsMode.entries.firstOrNull { it.label == label }?.let(onScrollHapticsModeChange)
+                    }
+                )
+            }
             extraSections()
 
             SaltySectionCard(title = "Report a Problem") {

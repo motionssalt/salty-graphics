@@ -1,7 +1,7 @@
 package com.motionssalt.saltygraphics.ui.editor
 
+import com.motionssalt.saltygraphics.uikit.structure.SaltyToastManager
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -86,6 +86,8 @@ fun EditorScreen(
     // Panel visibility states
     var isLayersPanelOpen by remember { mutableStateOf(false) }
     var isTransformPanelOpen by remember { mutableStateOf(false) }
+    var nudgeStepPx by remember { mutableFloatStateOf(1f) }
+    var lockedNudgeNotified by remember { mutableStateOf(false) }
     var isEffectsSheetOpen by remember { mutableStateOf(false) }
     var isShapeSettingsOpen by remember { mutableStateOf(false) }
     var isTextSettingsOpen by remember { mutableStateOf(false) }
@@ -203,7 +205,7 @@ fun EditorScreen(
                 recordAndAutoSave("Import SVG", current.addLayer(newLayer, activeGroupId))
                 selectedLayerIds = setOf(newLayer.id); vectorPathIndex = 0; vectorPointIndex = null
                 isVectorMenuOpen = false; isVectorSettingsOpen = true
-            }.onFailure { Toast.makeText(context, it.message ?: "Invalid SVG", Toast.LENGTH_LONG).show() }
+            }.onFailure { SaltyToastManager.show(it.message ?: "Invalid SVG") }
         }
     }
 
@@ -212,7 +214,7 @@ fun EditorScreen(
     ) { uris ->
         val currentDoc = projectDocument ?: return@rememberLauncherForActivityResult
         if (uris.isNotEmpty()) {
-            Toast.makeText(context, "Optimizing ${uris.size} image(s)...", Toast.LENGTH_SHORT).show()
+            SaltyToastManager.show("Optimizing ${uris.size} image(s)...")
             val result = MediaImporter.importMediaFromUris(
                 context = context,
                 projectId = currentDoc.id,
@@ -228,10 +230,10 @@ fun EditorScreen(
                 recordAndAutoSave("Import Media (${result.importedLayers.size})", updatedDoc)
                 selectedLayerIds = setOf(result.importedLayers.last().id)
                 val count = result.importedLayers.size
-                Toast.makeText(context, "Image${if (count > 1) "s" else ""} optimized and imported", Toast.LENGTH_SHORT).show()
+                SaltyToastManager.show("Image${if (count > 1) "s" else ""} optimized and imported")
             }
             if (result.failureReasons.isNotEmpty()) {
-                Toast.makeText(context, result.failureReasons.first(), Toast.LENGTH_SHORT).show()
+                SaltyToastManager.show(result.failureReasons.first())
             }
         }
     }
@@ -243,7 +245,7 @@ fun EditorScreen(
         fillImportTargetId = null
         if (uri != null && targetId != null) coroutineScope.launch {
             val current = projectDocument ?: return@launch
-            Toast.makeText(context, "Optimizing image…", Toast.LENGTH_SHORT).show()
+            SaltyToastManager.show("Optimizing image…")
             val result = withContext(Dispatchers.IO) {
                 MediaImporter.importMediaFromUris(context, current.id, listOf(uri), current.canvasSize.width, current.canvasSize.height)
             }
@@ -253,8 +255,8 @@ fun EditorScreen(
                     live.updateLayer(targetId) { layer -> layer.copy(fillData = layer.effectiveFill.copy(type = FillType.MEDIA, mediaAssetPath = asset)) }
                 }
                 fillMediaRevision++
-                Toast.makeText(context, "Image optimized and imported", Toast.LENGTH_SHORT).show()
-            } else Toast.makeText(context, result.failureReasons.firstOrNull() ?: "Could not import image", Toast.LENGTH_LONG).show()
+                SaltyToastManager.show("Image optimized and imported")
+            } else SaltyToastManager.show(result.failureReasons.firstOrNull() ?: "Could not import image")
         }
     }
     fun mediaReferences(layers: List<Layer>): Set<String> = layers.flatMap { layer ->
@@ -278,9 +280,9 @@ fun EditorScreen(
                     context.contentResolver.openOutputStream(uri)?.use { stream ->
                         repository.exportProjectToStream(projectId, stream)
                     }
-                    Toast.makeText(context, "Saved .sg project file successfully", Toast.LENGTH_SHORT).show()
+                    SaltyToastManager.show("Saved .sg project file successfully")
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Failed to save project: ${e.message}", Toast.LENGTH_LONG).show()
+                    SaltyToastManager.show("Failed to save project: ${e.message}")
                 }
             }
         }
@@ -352,14 +354,14 @@ fun EditorScreen(
                     val actionName = tree.undoActionName ?: "action"
                     if (tree.undo()) {
                         restoreHistoryDocument(tree.currentDocument)
-                        Toast.makeText(context, "Undid $actionName", Toast.LENGTH_SHORT).show()
+                        SaltyToastManager.show("Undid $actionName")
                     }
                 },
                 onRedoClick = {
                     val actionName = tree.redoActionName ?: "action"
                     if (tree.redo()) {
                         restoreHistoryDocument(tree.currentDocument)
-                        Toast.makeText(context, "Redid $actionName", Toast.LENGTH_SHORT).show()
+                        SaltyToastManager.show("Redid $actionName")
                     }
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
@@ -525,7 +527,7 @@ fun EditorScreen(
                                         selectedLayerIds = emptySet()
                                         recordAndAutoSave("Delete Layers", updated)
                                         val count = ids.size
-                                        Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
+                                        SaltyToastManager.show(if (count == 1) "Deleted 1 layer" else "Deleted $count layers")
                                     }
                                 },
                                 onRenameLayer = { id, newName ->
@@ -850,7 +852,7 @@ fun EditorScreen(
                             selectedLayerIds = emptySet()
                             recordAndAutoSave("Delete Layers", updated)
                             if (count > 0) {
-                                Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
+                                SaltyToastManager.show(if (count == 1) "Deleted 1 layer" else "Deleted $count layers")
                             }
                         }
                     )
@@ -882,15 +884,24 @@ fun EditorScreen(
                             externalSnappedGridY = gridY
                         }
                     )
+                    val targetIds = if (selectedLayerIds.isNotEmpty()) selectedLayerIds else setOf(targetId)
                     TransformPanel(
                         transform = currentSelectedLayer.transform,
                         snapContext = snapCtx,
                         onTransformChange = { previewT ->
-                            projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = previewT) }
+                            val base = projectDocument ?: doc
+                            projectDocument = base.updateLayer(targetId) { it.copy(transform = previewT) }
                         },
                         onTransformCommit = { finalT ->
-                            val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = finalT) }
-                            recordAndAutoSave("Transform Layer", updated)
+                            val live = tree.currentDocument
+                            val updated = SelectionGeometry.apply(live, targetId, finalT)
+                            if (updated != live) {
+                                recordCommandAndAutoSave(ActionIdentity("Transform", currentSelectedLayer.name)) { lDoc ->
+                                    SelectionGeometry.apply(lDoc, targetId, finalT)
+                                }
+                            } else {
+                                projectDocument = live
+                            }
                         },
                         onClose = {
                             externalSmartGuides = emptyList()
@@ -898,7 +909,70 @@ fun EditorScreen(
                             externalSnappedGridY = null
                             isTransformPanelOpen = false
                         },
-                        wrapInPanelPage = true
+                        wrapInPanelPage = true,
+                        nudgeStepPx = nudgeStepPx,
+                        onNudgeStepChange = { nudgeStepPx = it },
+                        onNudgeDelta = { dx, dy ->
+                            val live = tree.currentDocument
+                            val unlocked = targetIds.mapNotNull { id -> live.findLayerById(id) }
+                                .filter { !it.isLocked && it.type != LayerType.ADJUSTMENT }
+                            if (unlocked.isEmpty()) {
+                                if (!lockedNudgeNotified) {
+                                    lockedNudgeNotified = true
+                                    SaltyToastManager.show("Layer is locked")
+                                }
+                            } else {
+                                val base = projectDocument ?: live
+                                projectDocument = CompositionTransforms.nudgeDocument(base, targetIds, dx, dy)
+                            }
+                        },
+                        onNudgeCommit = { totalDx, totalDy ->
+                            lockedNudgeNotified = false
+                            val live = tree.currentDocument
+                            val unlocked = targetIds.mapNotNull { id -> live.findLayerById(id) }
+                                .filter { !it.isLocked && it.type != LayerType.ADJUSTMENT }
+                            if (unlocked.isNotEmpty() && (totalDx != 0f || totalDy != 0f)) {
+                                val targetLabel = if (unlocked.size > 1) "${unlocked.size} layers" else unlocked.first().name
+                                recordCommandAndAutoSave(ActionIdentity("Nudge", targetLabel)) { lDoc ->
+                                    CompositionTransforms.nudgeDocument(lDoc, targetIds, totalDx, totalDy)
+                                }
+                            } else {
+                                projectDocument = live
+                            }
+                        },
+                        onNudgeCancel = {
+                            lockedNudgeNotified = false
+                            projectDocument = tree.currentDocument
+                        },
+                        onQuickTransform = { action ->
+                            externalSmartGuides = emptyList()
+                            externalSnappedGridX = null
+                            externalSnappedGridY = null
+                            val live = tree.currentDocument
+                            val unlocked = targetIds.mapNotNull { id -> live.findLayerById(id) }
+                                .filter { !it.isLocked && it.type != LayerType.ADJUSTMENT }
+                            if (unlocked.isEmpty()) {
+                                SaltyToastManager.show("Layer is locked")
+                            } else {
+                                val targetLabel = if (unlocked.size > 1) "${unlocked.size} layers" else unlocked.first().name
+                                val updated = CompositionTransforms.applyToDocument(
+                                    live,
+                                    targetIds,
+                                    { l -> selectionBounds(context, live, l) },
+                                    action
+                                )
+                                if (updated != live) {
+                                    recordCommandAndAutoSave(ActionIdentity(action.label, targetLabel)) { lDoc ->
+                                        CompositionTransforms.applyToDocument(
+                                            lDoc,
+                                            targetIds,
+                                            { l -> selectionBounds(context, lDoc, l) },
+                                            action
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     )
                 }
 

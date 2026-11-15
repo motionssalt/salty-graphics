@@ -60,22 +60,20 @@ class ControlEngineArchitectureTest {
     }
 
     @Test
-    fun testScrollControlsHaveZeroHapticCalls() {
-        val srcDir = File("src/main/java/com/motionssalt/saltygraphics/ui/controls")
-        val candidateDir = if (srcDir.exists()) srcDir else File("app/src/main/java/com/motionssalt/saltygraphics/ui/controls")
-        assertTrue("Controls directory must exist", candidateDir.exists())
-
-        val rulerFile = File(candidateDir, "RulerSlider.kt")
-        assertTrue("RulerSlider.kt must exist", rulerFile.exists())
-
+    fun testScrollControlsUseModeratedHapticThrottleOnly() {
+        val uikitDir = File("../ui-kit/src/main/java/com/motionssalt/saltygraphics/uikit/controls")
+            .takeIf(File::exists) ?: File("ui-kit/src/main/java/com/motionssalt/saltygraphics/uikit/controls")
+        assertTrue("uikit controls directory must exist", uikitDir.exists())
+        val rulerFile = File(uikitDir, "SaltyRulerSlider.kt")
+        assertTrue("SaltyRulerSlider.kt must exist", rulerFile.exists())
         val rulerContent = rulerFile.readText()
-        assertFalse(
-            "RulerSlider must NOT contain any haptic feedback calls (V5)",
-            rulerContent.contains("performHapticFeedback")
+        assertTrue(
+            "SaltyRulerSlider must route scroll haptics through RulerHapticThrottle (V5)",
+            rulerContent.contains("RulerHapticThrottle") && rulerContent.contains("LocalScrollHapticsMode")
         )
         assertFalse(
-            "RulerSlider must NOT import HapticFeedbackConstants (V5)",
-            rulerContent.contains("HapticFeedbackConstants")
+            "SaltyRulerSlider must never bypass SaltyHaptics with direct vibrate calls",
+            rulerContent.contains("Vibrator") || rulerContent.contains("VibrationEffect")
         )
     }
 

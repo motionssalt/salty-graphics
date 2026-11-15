@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
@@ -32,6 +33,7 @@ fun SaltySwitch(
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
     val interactionSource = remember { MutableInteractionSource() }
+    val view = LocalView.current
 
     val trackColor = if (checked) colors.trackOn else colors.trackOff
     val trackBorderColor = if (checked) colors.trackOn else colors.outline
@@ -56,7 +58,7 @@ fun SaltySwitch(
                         interactionSource = interactionSource,
                         indication = null,
                         role = Role.Switch,
-                        onValueChange = onCheckedChange
+                        onValueChange = { next -> SaltyHaptics.onKeyToggle(view); onCheckedChange(next) }
                     )
                 } else Modifier
             ),
