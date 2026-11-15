@@ -20,24 +20,28 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class DeveloperTemplateEditorTest : FillEditorFixture() {
-    private val prefs get() = RuntimeEnvironment.getApplication()
+abstract class DeveloperTemplateFixture : FillEditorFixture() {
+    protected val prefs get() = RuntimeEnvironment.getApplication()
         .getSharedPreferences("salty_dev_prefs", Context.MODE_PRIVATE)
 
     @Before fun resetBefore() { prefs.edit().clear().commit(); EditorToolFeatures.setDeveloperModeEnabled(false) }
     @After fun resetAfter() { prefs.edit().clear().commit(); EditorToolFeatures.setDeveloperModeEnabled(false) }
 
-    private val target = Layer(id = "template_target", name = "Template target", type = LayerType.SHAPE,
+    protected val target = Layer(id = "template_target", name = "Template target", type = LayerType.SHAPE,
         shapeData = ShapeData(width = 100f, height = 100f),
         fillData = FillData(solidColor = 0xFF336699L),
         strokeData = StrokeData(isEnabled = true, color = 0xFFFF0000L, opacity = .4f, width = 7f))
 
-    private fun selectTarget() {
+    protected fun selectTarget() {
         compose.onNodeWithContentDescription("Layers").performClick()
         compose.onNodeWithText(target.name).performClick()
         compose.onNodeWithContentDescription("Close Layers").performClick()
     }
 
+}
+
+// Keep each real editor host in its own existing forkEvery=1 worker.
+class OrdinaryTemplateEditorTest : DeveloperTemplateFixture() {
     @Test fun ordinaryEditorNeverShowsTheDeveloperSample() {
         withEditorFixture(listOf(target)) { _, _ ->
             selectTarget()
@@ -47,6 +51,9 @@ class DeveloperTemplateEditorTest : FillEditorFixture() {
         }
     }
 
+}
+
+class DeveloperTemplateEditorTest : DeveloperTemplateFixture() {
     @Test fun realDeveloperTileResolvesRegisteredPageAndWritesSavedLabelledHistory() {
         prefs.edit().putBoolean("dev_options", true).commit()
         withEditorFixture(listOf(target)) { id, repo ->

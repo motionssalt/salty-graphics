@@ -651,3 +651,15 @@ session and all callbacks. The already-existing library gesture and rendering co
 is untouched. Existing multi-path/gesture/history/archive tests now take the registry
 route; a production Editor test verifies real pointer geometry changes are saved and
 undoable. V41 handle visibility/hit-test amendments remain separate pending work.
+
+
+### V0 combined verification follow-up
+Actions 43701896020 verifies the gradient checkpoint: 281 tests, zero failures/errors/
+skips, existing native goldens and debug assembly pass. Combined run 43702744057
+passes the new registered-vector production/render/history tests and library registry
+coverage, but finds two UI harness failures. Apply the existing one-editor-host-per-
+worker isolation (ordinary/developer tests split into classes), not a new screenshot
+framework or longer global idle timeout. The inherited incompatible-selection test
+now waits for the actual displayed grid after LaunchedEffect page invalidation and
+retains its original visibility assertions. No tests disabled or expected results
+weakened. Final full/debug verification remains required before handoff acceptance.

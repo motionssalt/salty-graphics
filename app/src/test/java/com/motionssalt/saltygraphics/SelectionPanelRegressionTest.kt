@@ -118,6 +118,15 @@ class IncompatibleSelectionPanelRegressionTest : SelectionPanelFixture() {
         compose.onNodeWithContentDescription("Layers").performClick()
         compose.onNodeWithText("Left shape").performClick()
         compose.onNodeWithContentDescription("Close Layers").performClick()
+        // Selection invalidates a page in LaunchedEffect; wait for the actual grid
+        // to be displayed, not just a semantics label during the transition frame.
+        compose.waitUntil(5000) {
+            runCatching {
+                compose.onNodeWithTag("scaffold_tool_panel").assertIsDisplayed()
+                compose.onNodeWithText("Transform",useUnmergedTree=true).assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
         compose.onNodeWithTag("tools").assertIsDisplayed()
         compose.onNodeWithText("Transform",useUnmergedTree=true).assertIsDisplayed()
     }
