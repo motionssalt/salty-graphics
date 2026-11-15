@@ -449,3 +449,14 @@ recomposition; cancellation and unmount rollback; source guards reject direct pr
 bypasses. Native CI acceptance remains required. This is not full V0, V7, V15, V24,
 V41/V42 or whole-round acceptance. Other full-component/state golden and complete
 registration/binding acceptance work remains; no release or UI refinement.
+
+
+#### Special-surface native verification follow-up
+Actions 43746996748 compiles the production session adapters and passes existing
+native goldens plus final-gradient-value/cancel/disposal and stale-trackpad-target
+assertions. The three failures were new fixture expectations: the trackpad uses the
+core `SaltyValueEntryStrip` (SetText semantics and OK), not the app compatibility
+wrapper's `entry_Move X` tag/Done button; the actual production history identity is
+exactly "Move Layer gradient stop". Tests now operate those real controls and assert
+that exact structured identity. No production behavior, assertion or test was disabled.
+Final complete native suite/debug assembly is still required before acceptance.

@@ -40,7 +40,7 @@ class RegisteredGradientBarEditorTest : FillEditorFixture() {
             val changed = saved()
             assertEquals(.40f, changed.effectiveFill.gradient.stops.first().position, .01f)
             assertEquals(2, history().nodes.size)
-            assertEquals("Move gradient stop", history().nodes.getValue(history().currentNodeId).description)
+            assertEquals("Move Layer gradient stop", history().nodes.getValue(history().currentNodeId).description)
             val before = LayerCompositor.renderLayerContent(layer, 500, 500)
             val after = LayerCompositor.renderLayerContent(changed, 500, 500)
             assertFalse("Registered stop edit must change real rendered pixels", before.sameAs(after))
@@ -88,8 +88,8 @@ class RegisteredTrackpadEditorTest : FillEditorFixture() {
             assertEquals(layer.transform.rotationDegrees, changed.rotationDegrees, 0f)
             assertEquals(2, history().nodes.size)
             compose.onNodeWithText("X: ${changed.translationX.toInt()} px").performScrollTo().performClick()
-            compose.onNodeWithTag("entry_Move X").performScrollTo().performTextReplacement("123.25")
-            compose.onNodeWithText("Done").performScrollTo().performClick()
+            compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("123.25")
+            compose.onNodeWithText("OK").performScrollTo().performClick()
             compose.waitUntil(10000) { saved().transform.translationX == 123.25f }
             val exact = saved().transform
             assertEquals(changed.translationY, exact.translationY, 0f)

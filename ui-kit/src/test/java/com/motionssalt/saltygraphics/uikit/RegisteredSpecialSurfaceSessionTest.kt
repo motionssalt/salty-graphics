@@ -142,11 +142,11 @@ class RegisteredTrackpadSessionTest {
                 assertEquals(1, secondCommits)
             }
             compose.onNodeWithText("X: 0 px").performClick()
-            compose.onNodeWithTag("entry_Move X").performTextReplacement("123.5")
-            compose.onNodeWithText("Done").performClick()
+            compose.onNode(hasSetTextAction()).performTextReplacement("123.5")
+            compose.onNodeWithText("OK").performClick()
             compose.onNodeWithText("Y: 0 px").performClick()
-            compose.onNodeWithTag("entry_Move Y").performTextReplacement("-17.25")
-            compose.onNodeWithText("Done").performClick()
+            compose.onNode(hasSetTextAction()).performTextReplacement("-17.25")
+            compose.onNodeWithText("OK").performClick()
             compose.runOnIdle {
                 assertEquals(123.5f, exactX!!, 0f)
                 assertEquals(-17.25f, exactY!!, 0f)
