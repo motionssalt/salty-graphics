@@ -188,3 +188,82 @@ fun SaltyRulerSlider(
         }
     }
 }
+
+
+/**
+ * Shared scroll-wheel ruler slider paired with inline panel-native exact value entry.
+ */
+@Composable
+fun SaltyNumberControl(
+    label: String,
+    value: Float,
+    min: Float,
+    max: Float,
+    onPreview: (Float) -> Unit,
+    onCommit: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    step: Float = 1f,
+    unit: String = "",
+    defaultValue: Float = 0f.coerceIn(min, max)
+) {
+    var editing by remember { mutableStateOf(false) }
+    var input by remember { mutableStateOf("") }
+    var pending by remember { mutableFloatStateOf(value) }
+    LaunchedEffect(value) { pending = value }
+    val colors = SaltyTokens.colors
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        SaltyRulerSlider(
+            value = value,
+            onValueChange = {
+                pending = it
+                onPreview(it)
+            },
+            onValueCommit = { onCommit(pending) },
+            range = min..max,
+            step = step,
+            unit = unit,
+            label = label,
+            defaultValue = defaultValue,
+            onValueClick = {
+                input = value.toString()
+                editing = true
+            }
+        )
+        if (editing) {
+            val parsed = input.trim().toFloatOrNull()?.takeIf { it.isFinite() && it in min..max }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = SaltyTokens.spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.xs)
+            ) {
+                SaltyTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    label = label,
+                    isError = parsed == null,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("entry_$label")
+                )
+                androidx.compose.material3.TextButton(onClick = { editing = false }) {
+                    Text("Cancel", color = colors.textSecondary)
+                }
+                androidx.compose.material3.TextButton(
+                    enabled = parsed != null,
+                    onClick = {
+                        parsed?.let { onCommit(it) }
+                        editing = false
+                    }
+                ) {
+                    Text("Done", color = if (parsed != null) colors.primary else colors.textDisabled)
+                }
+            }
+        }
+    }
+}

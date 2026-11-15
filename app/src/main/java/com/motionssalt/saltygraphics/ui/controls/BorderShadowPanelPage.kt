@@ -1,22 +1,26 @@
 package com.motionssalt.saltygraphics.ui.controls
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.motionssalt.saltygraphics.engine.model.*
-import com.motionssalt.saltygraphics.ui.editor.PanelPage
+import com.motionssalt.saltygraphics.uikit.controls.SaltyColorPickerPage
+import com.motionssalt.saltygraphics.uikit.controls.SaltyColorSwatchRow
+import com.motionssalt.saltygraphics.uikit.controls.SaltyNumberControl
+import com.motionssalt.saltygraphics.uikit.controls.SaltyRecentColorsRegistry
+import com.motionssalt.saltygraphics.uikit.controls.SaltySegmentedChips
+import com.motionssalt.saltygraphics.uikit.controls.SaltySwitch
+import com.motionssalt.saltygraphics.uikit.structure.SaltyJustify
+import com.motionssalt.saltygraphics.uikit.structure.SaltyPanelPage
+import com.motionssalt.saltygraphics.uikit.structure.SaltyRow
+import com.motionssalt.saltygraphics.uikit.structure.SaltySectionCard
+import com.motionssalt.saltygraphics.uikit.structure.SaltySpace
+import com.motionssalt.saltygraphics.uikit.structure.SaltyText
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextStyle
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextWeight
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxWidth
 
 /**
  * Universal Border & Shadow panel page (V8).
@@ -42,289 +46,244 @@ fun BorderShadowPanelPage(
     BackHandler(page != "main") { back() }
 
     when (page) {
-        "strokeColor" -> {
-            PanelColorPage(
-                title = "Stroke Color",
-                color = liveStroke.effectiveArgb,
-                onPreview = { c -> onStrokePreview(liveStroke.copy(color = c, opacity = 1f)) },
-                onCommit = { c -> onStrokeCommit("Change stroke color", liveStroke.copy(color = c, opacity = 1f)) },
-                onBack = { page = "main" }
-            )
-        }
-        "shadowColor" -> {
-            PanelColorPage(
-                title = "Shadow Color",
-                color = liveShadow.effectiveArgb,
-                onPreview = { c -> onShadowPreview(liveShadow.copy(color = c, opacity = 1f)) },
-                onCommit = { c -> onShadowCommit("Change shadow color", liveShadow.copy(color = c, opacity = 1f)) },
-                onBack = { page = "main" }
-            )
-        }
-        else -> {
-            PanelPage(title = "Border & Shadow", onBack = onBack) {
-                val colors = MaterialTheme.colorScheme
-
-                // --- SECTION 1: STROKE ---
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colors.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+        "strokeColor" -> SaltyColorPickerPage(
+            title = "Stroke Color",
+            colorArgb = liveStroke.effectiveArgb,
+            onPreview = { c -> onStrokePreview(liveStroke.copy(color = c, opacity = 1f)) },
+            onCommit = { c ->
+                SaltyRecentColorsRegistry.recordColor(c)
+                onStrokeCommit("Change stroke color", liveStroke.copy(color = c, opacity = 1f))
+            },
+            onBack = { page = "main" },
+            presets = SaltyRecentColorsRegistry.recentColors,
+            applyLabel = "Set hex"
+        )
+        "shadowColor" -> SaltyColorPickerPage(
+            title = "Shadow Color",
+            colorArgb = liveShadow.effectiveArgb,
+            onPreview = { c -> onShadowPreview(liveShadow.copy(color = c, opacity = 1f)) },
+            onCommit = { c ->
+                SaltyRecentColorsRegistry.recordColor(c)
+                onShadowCommit("Change shadow color", liveShadow.copy(color = c, opacity = 1f))
+            },
+            onBack = { page = "main" },
+            presets = SaltyRecentColorsRegistry.recentColors,
+            applyLabel = "Set hex"
+        )
+        else -> SaltyPanelPage(title = "Border & Shadow", onBack = onBack) {
+            // --- SECTION 1: STROKE ---
+            SaltySectionCard {
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    justify = SaltyJustify.SPACE_BETWEEN,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Stroke / Outline", style = MaterialTheme.typography.titleSmall)
-                        SaltySwitch(
-                            checked = liveStroke.isEnabled,
-                            modifier = Modifier.testTag("stroke_switch"),
-                            onCheckedChange = { en ->
-                                onStrokeCommit(if (en) "Enable stroke" else "Disable stroke", liveStroke.copy(isEnabled = en))
-                            }
-                        )
-                    }
-
-                    if (liveStroke.isEnabled) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Stroke Color", style = MaterialTheme.typography.bodySmall)
-                            Button(
-                                onClick = { page = "strokeColor" },
-                                modifier = Modifier.testTag("stroke_color_btn"),
-                                colors = ButtonDefaults.buttonColors(containerColor = colors.surface),
-                                border = ButtonDefaults.outlinedButtonBorder
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(liveStroke.effectiveArgb.toInt()))
-                                        .border(1.dp, colors.outline, CircleShape)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    String.format(java.util.Locale.US, "#%08X", liveStroke.effectiveArgb),
-                                    fontSize = 11.sp,
-                                    color = colors.onSurface
-                                )
-                            }
-                        }
-
-                        PanelNumberControl(
-                            label = "Stroke Width",
-                            value = liveStroke.width,
-                            min = 0.5f,
-                            max = 200f,
-                            step = 1f,
-                            unit = "px",
-                            onPreview = { onStrokePreview(liveStroke.copy(width = it)) },
-                            onCommit = { onStrokeCommit("Change stroke width", liveStroke.copy(width = it)) }
-                        )
-
-                        PanelNumberControl(
-                            label = "Stroke Opacity",
-                            value = liveStroke.opacity * 100f,
-                            min = 0f,
-                            max = 100f,
-                            step = 1f,
-                            unit = "%",
-                            onPreview = { onStrokePreview(liveStroke.copy(opacity = it / 100f)) },
-                            onCommit = { onStrokeCommit("Change stroke opacity", liveStroke.copy(opacity = it / 100f)) }
-                        )
-
-                        SegmentedChipsControl(
-                            label = "Alignment",
-                            options = StrokeAlignment.entries.map { it.displayName },
-                            selectedOption = liveStroke.alignment.displayName,
-                            onOptionSelected = { name ->
-                                val align = StrokeAlignment.entries.firstOrNull { it.displayName == name } ?: StrokeAlignment.CENTER
-                                onStrokeCommit("Change stroke alignment", liveStroke.copy(alignment = align))
-                            }
-                        )
-
-                        SegmentedChipsControl(
-                            label = "Line Style",
-                            options = listOf("Solid", "Dashed"),
-                            selectedOption = if (liveStroke.isDashed) "Dashed" else "Solid",
-                            onOptionSelected = { style ->
-                                onStrokeCommit("Change stroke style", liveStroke.copy(isDashed = style == "Dashed"))
-                            }
-                        )
-
-                        if (liveStroke.isDashed) {
-                            PanelNumberControl(
-                                label = "Dash Length",
-                                value = liveStroke.dashLength,
-                                min = 1f,
-                                max = 100f,
-                                step = 1f,
-                                unit = "px",
-                                onPreview = { onStrokePreview(liveStroke.copy(dashLength = it)) },
-                                onCommit = { onStrokeCommit("Change dash length", liveStroke.copy(dashLength = it)) }
-                            )
-                            PanelNumberControl(
-                                label = "Dash Gap",
-                                value = liveStroke.dashGap,
-                                min = 1f,
-                                max = 100f,
-                                step = 1f,
-                                unit = "px",
-                                onPreview = { onStrokePreview(liveStroke.copy(dashGap = it)) },
-                                onCommit = { onStrokeCommit("Change dash gap", liveStroke.copy(dashGap = it)) }
+                    SaltyText(
+                        text = "Stroke / Outline",
+                        style = SaltyTextStyle.TITLE_SMALL,
+                        weight = SaltyTextWeight.SEMI_BOLD
+                    )
+                    SaltySwitch(
+                        checked = liveStroke.isEnabled,
+                        modifier = Modifier.testTag("stroke_switch"),
+                        onCheckedChange = { en ->
+                            onStrokeCommit(
+                                if (en) "Enable stroke" else "Disable stroke",
+                                liveStroke.copy(isEnabled = en)
                             )
                         }
-
-                        SegmentedChipsControl(
-                            label = "Line Cap",
-                            options = VectorCap.entries.map { it.name },
-                            selectedOption = liveStroke.cap.name,
-                            onOptionSelected = { capName ->
-                                val cap = VectorCap.entries.firstOrNull { it.name == capName } ?: VectorCap.ROUND
-                                onStrokeCommit("Change stroke cap", liveStroke.copy(cap = cap))
-                            }
-                        )
-
-                        SegmentedChipsControl(
-                            label = "Line Join",
-                            options = VectorJoin.entries.map { it.name },
-                            selectedOption = liveStroke.join.name,
-                            onOptionSelected = { joinName ->
-                                val join = VectorJoin.entries.firstOrNull { it.name == joinName } ?: VectorJoin.ROUND
-                                onStrokeCommit("Change stroke join", liveStroke.copy(join = join))
-                            }
-                        )
-                    }
+                    )
                 }
 
-                // --- SECTION 2: DROP SHADOW ---
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colors.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                if (liveStroke.isEnabled) {
+                    SaltySegmentedChips(
+                        options = StrokeAlignment.entries.map { it.displayName },
+                        selectedOption = liveStroke.alignment.displayName,
+                        onOptionSelected = { alignName ->
+                            val align = StrokeAlignment.entries.firstOrNull { it.displayName == alignName } ?: StrokeAlignment.CENTER
+                            onStrokeCommit("Change stroke alignment", liveStroke.copy(alignment = align))
+                        },
+                        label = "Alignment"
+                    )
+                    SaltyNumberControl(
+                        label = "Stroke Width",
+                        value = liveStroke.width,
+                        min = 0f,
+                        max = 100f,
+                        step = 0.5f,
+                        unit = "px",
+                        onPreview = { onStrokePreview(liveStroke.copy(width = it)) },
+                        onCommit = { onStrokeCommit("Change stroke width", liveStroke.copy(width = it)) }
+                    )
+                    SaltyNumberControl(
+                        label = "Stroke Opacity",
+                        value = liveStroke.opacity * 100f,
+                        min = 0f,
+                        max = 100f,
+                        step = 1f,
+                        unit = "%",
+                        onPreview = { onStrokePreview(liveStroke.copy(opacity = it / 100f)) },
+                        onCommit = { onStrokeCommit("Change stroke opacity", liveStroke.copy(opacity = it / 100f)) }
+                    )
+                    SaltyColorSwatchRow(
+                        label = "Stroke Color",
+                        colorArgb = liveStroke.effectiveArgb,
+                        onClick = { page = "strokeColor" },
+                        buttonTag = "stroke_color_btn"
+                    )
+                    SaltyRow(
+                        modifier = Modifier.saltyFillMaxWidth(),
+                        justify = SaltyJustify.SPACE_BETWEEN,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Drop Shadow", style = MaterialTheme.typography.titleSmall)
+                        SaltyText(text = "Dashed Stroke", style = SaltyTextStyle.BODY_SMALL)
                         SaltySwitch(
-                            checked = liveShadow.isEnabled,
-                            modifier = Modifier.testTag("shadow_switch"),
-                            onCheckedChange = { en ->
-                                onShadowCommit(if (en) "Enable shadow" else "Disable shadow", liveShadow.copy(isEnabled = en))
+                            checked = liveStroke.isDashed,
+                            onCheckedChange = { dashed ->
+                                onStrokeCommit(
+                                    if (dashed) "Enable dashed stroke" else "Disable dashed stroke",
+                                    liveStroke.copy(isDashed = dashed)
+                                )
                             }
                         )
                     }
+                    if (liveStroke.isDashed) {
+                        SaltyNumberControl(
+                            label = "Dash Length",
+                            value = liveStroke.dashLength,
+                            min = 1f,
+                            max = 100f,
+                            step = 1f,
+                            unit = "px",
+                            onPreview = { onStrokePreview(liveStroke.copy(dashLength = it)) },
+                            onCommit = { onStrokeCommit("Change dash length", liveStroke.copy(dashLength = it)) }
+                        )
+                        SaltyNumberControl(
+                            label = "Dash Gap",
+                            value = liveStroke.dashGap,
+                            min = 1f,
+                            max = 100f,
+                            step = 1f,
+                            unit = "px",
+                            onPreview = { onStrokePreview(liveStroke.copy(dashGap = it)) },
+                            onCommit = { onStrokeCommit("Change dash gap", liveStroke.copy(dashGap = it)) }
+                        )
+                    }
+                    SaltySegmentedChips(
+                        options = VectorCap.entries.map { it.name },
+                        selectedOption = liveStroke.cap.name,
+                        onOptionSelected = { capName ->
+                            val cap = VectorCap.entries.firstOrNull { it.name == capName } ?: VectorCap.ROUND
+                            onStrokeCommit("Change stroke cap", liveStroke.copy(cap = cap))
+                        },
+                        label = "Line Cap"
+                    )
+                    SaltySegmentedChips(
+                        options = VectorJoin.entries.map { it.name },
+                        selectedOption = liveStroke.join.name,
+                        onOptionSelected = { joinName ->
+                            val join = VectorJoin.entries.firstOrNull { it.name == joinName } ?: VectorJoin.ROUND
+                            onStrokeCommit("Change stroke join", liveStroke.copy(join = join))
+                        },
+                        label = "Line Join"
+                    )
+                }
+            }
 
-                    if (liveShadow.isEnabled) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Shadow Color", style = MaterialTheme.typography.bodySmall)
-                            Button(
-                                onClick = { page = "shadowColor" },
-                                modifier = Modifier.testTag("shadow_color_btn"),
-                                colors = ButtonDefaults.buttonColors(containerColor = colors.surface),
-                                border = ButtonDefaults.outlinedButtonBorder
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(liveShadow.effectiveArgb.toInt()))
-                                        .border(1.dp, colors.outline, CircleShape)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    String.format(java.util.Locale.US, "#%08X", liveShadow.effectiveArgb),
-                                    fontSize = 11.sp,
-                                    color = colors.onSurface
-                                )
-                            }
+            // --- SECTION 2: DROP SHADOW ---
+            SaltySectionCard {
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    justify = SaltyJustify.SPACE_BETWEEN,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SaltyText(
+                        text = "Drop Shadow",
+                        style = SaltyTextStyle.TITLE_SMALL,
+                        weight = SaltyTextWeight.SEMI_BOLD
+                    )
+                    SaltySwitch(
+                        checked = liveShadow.isEnabled,
+                        modifier = Modifier.testTag("shadow_switch"),
+                        onCheckedChange = { en ->
+                            onShadowCommit(
+                                if (en) "Enable shadow" else "Disable shadow",
+                                liveShadow.copy(isEnabled = en)
+                            )
                         }
+                    )
+                }
 
-                        val shadowModes = listOf(
-                            BlendMode.NORMAL, BlendMode.MULTIPLY, BlendMode.DARKEN,
-                            BlendMode.LIGHTEN, BlendMode.SCREEN, BlendMode.OVERLAY
-                        )
-                        SegmentedChipsControl(
-                            label = "Shadow Blend",
-                            options = shadowModes.map { it.displayName },
-                            selectedOption = liveShadow.blendMode.displayName,
-                            onOptionSelected = { modeName ->
-                                val mode = shadowModes.firstOrNull { it.displayName == modeName } ?: BlendMode.NORMAL
-                                onShadowCommit("Change shadow blend", liveShadow.copy(blendMode = mode))
-                            }
-                        )
-
-                        PanelNumberControl(
-                            label = "Shadow Opacity",
-                            value = liveShadow.opacity * 100f,
-                            min = 0f,
-                            max = 100f,
-                            step = 1f,
-                            unit = "%",
-                            onPreview = { onShadowPreview(liveShadow.copy(opacity = it / 100f)) },
-                            onCommit = { onShadowCommit("Change shadow opacity", liveShadow.copy(opacity = it / 100f)) }
-                        )
-
-                        PanelNumberControl(
-                            label = "Light Angle",
-                            value = liveShadow.lightAngleDegrees,
-                            min = 0f,
-                            max = 360f,
-                            step = 1f,
-                            unit = "°",
-                            onPreview = { onShadowPreview(liveShadow.copy(lightAngleDegrees = it)) },
-                            onCommit = { onShadowCommit("Change shadow angle", liveShadow.copy(lightAngleDegrees = it)) }
-                        )
-
-                        PanelNumberControl(
-                            label = "Distance",
-                            value = liveShadow.distance,
-                            min = 0f,
-                            max = 100f,
-                            step = 1f,
-                            unit = "px",
-                            onPreview = { onShadowPreview(liveShadow.copy(distance = it)) },
-                            onCommit = { onShadowCommit("Change shadow distance", liveShadow.copy(distance = it)) }
-                        )
-
-                        PanelNumberControl(
-                            label = "Blur / Softness",
-                            value = liveShadow.blurRadius,
-                            min = 0f,
-                            max = 100f,
-                            step = 1f,
-                            unit = "px",
-                            onPreview = { onShadowPreview(liveShadow.copy(blurRadius = it)) },
-                            onCommit = { onShadowCommit("Change shadow blur", liveShadow.copy(blurRadius = it)) }
-                        )
-
-                        PanelNumberControl(
-                            label = "Spread",
-                            value = liveShadow.spread,
-                            min = 0f,
-                            max = 50f,
-                            step = 1f,
-                            unit = "px",
-                            onPreview = { onShadowPreview(liveShadow.copy(spread = it)) },
-                            onCommit = { onShadowCommit("Change shadow spread", liveShadow.copy(spread = it)) }
-                        )
-                    }
+                if (liveShadow.isEnabled) {
+                    SaltyColorSwatchRow(
+                        label = "Shadow Color",
+                        colorArgb = liveShadow.effectiveArgb,
+                        onClick = { page = "shadowColor" },
+                        buttonTag = "shadow_color_btn"
+                    )
+                    val shadowModes = listOf(
+                        BlendMode.NORMAL, BlendMode.MULTIPLY, BlendMode.DARKEN,
+                        BlendMode.LIGHTEN, BlendMode.SCREEN, BlendMode.OVERLAY
+                    )
+                    SaltySegmentedChips(
+                        options = shadowModes.map { it.displayName },
+                        selectedOption = liveShadow.blendMode.displayName,
+                        onOptionSelected = { modeName ->
+                            val mode = shadowModes.firstOrNull { it.displayName == modeName } ?: BlendMode.NORMAL
+                            onShadowCommit("Change shadow blend", liveShadow.copy(blendMode = mode))
+                        },
+                        label = "Shadow Blend"
+                    )
+                    SaltyNumberControl(
+                        label = "Shadow Opacity",
+                        value = liveShadow.opacity * 100f,
+                        min = 0f,
+                        max = 100f,
+                        step = 1f,
+                        unit = "%",
+                        onPreview = { onShadowPreview(liveShadow.copy(opacity = it / 100f)) },
+                        onCommit = { onShadowCommit("Change shadow opacity", liveShadow.copy(opacity = it / 100f)) }
+                    )
+                    SaltyNumberControl(
+                        label = "Light Angle",
+                        value = liveShadow.lightAngleDegrees,
+                        min = 0f,
+                        max = 360f,
+                        step = 1f,
+                        unit = "°",
+                        onPreview = { onShadowPreview(liveShadow.copy(lightAngleDegrees = it)) },
+                        onCommit = { onShadowCommit("Change shadow angle", liveShadow.copy(lightAngleDegrees = it)) }
+                    )
+                    SaltyNumberControl(
+                        label = "Distance",
+                        value = liveShadow.distance,
+                        min = 0f,
+                        max = 100f,
+                        step = 1f,
+                        unit = "px",
+                        onPreview = { onShadowPreview(liveShadow.copy(distance = it)) },
+                        onCommit = { onShadowCommit("Change shadow distance", liveShadow.copy(distance = it)) }
+                    )
+                    SaltyNumberControl(
+                        label = "Blur / Softness",
+                        value = liveShadow.blurRadius,
+                        min = 0f,
+                        max = 100f,
+                        step = 1f,
+                        unit = "px",
+                        onPreview = { onShadowPreview(liveShadow.copy(blurRadius = it)) },
+                        onCommit = { onShadowCommit("Change shadow blur", liveShadow.copy(blurRadius = it)) }
+                    )
+                    SaltyNumberControl(
+                        label = "Spread",
+                        value = liveShadow.spread,
+                        min = 0f,
+                        max = 50f,
+                        step = 1f,
+                        unit = "px",
+                        onPreview = { onShadowPreview(liveShadow.copy(spread = it)) },
+                        onCommit = { onShadowCommit("Change shadow spread", liveShadow.copy(spread = it)) }
+                    )
                 }
             }
         }

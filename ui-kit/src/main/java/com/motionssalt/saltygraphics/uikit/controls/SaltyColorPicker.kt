@@ -22,6 +22,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.OutlinedButton
+import com.motionssalt.saltygraphics.uikit.structure.SaltyPanelPage
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 import kotlin.math.roundToInt
 
@@ -351,5 +355,101 @@ fun SaltyColorPicker(
                 }
             }
         }
+    }
+}
+
+
+/**
+ * In-panel Color Picker page hosting SaltyColorPicker with back navigation.
+ */
+@Composable
+fun SaltyColorPickerPage(
+    title: String,
+    colorArgb: Long,
+    onPreview: (Long) -> Unit,
+    onCommit: (Long) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    presets: List<Long> = emptyList(),
+    supportsAlpha: Boolean = true,
+    supportsTransparent: Boolean = true,
+    applyLabel: String = "Set hex"
+) {
+    SaltyPanelPage(title = title, onBack = onBack, modifier = modifier) {
+        SaltyColorPicker(
+            colorArgb = colorArgb,
+            onColorChange = onPreview,
+            onColorCommit = onCommit,
+            supportsAlpha = supportsAlpha,
+            supportsTransparent = supportsTransparent,
+            applyLabel = applyLabel,
+            showChannelSliders = true,
+            presets = presets
+        )
+    }
+}
+
+/**
+ * Standard label + outlined color swatch button row for opening a panel color picker page.
+ */
+@Composable
+fun SaltyColorSwatchRow(
+    label: String,
+    colorArgb: Long,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    buttonTag: String = ""
+) {
+    val colors = SaltyTokens.colors
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = SaltyTokens.typography.bodySmall,
+            color = colors.textPrimary
+        )
+        OutlinedButton(
+            onClick = onClick,
+            modifier = if (buttonTag.isNotEmpty()) Modifier.testTag(buttonTag) else Modifier,
+            shape = SaltyTokens.shapes.button,
+            border = BorderStroke(1.dp, colors.outline)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, colors.outline, CircleShape)
+            ) {
+                SaltyCheckerboard(Modifier.fillMaxSize(), squareSizePx = 6f)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(colorArgb.toInt()))
+                )
+            }
+            Spacer(Modifier.width(SaltyTokens.spacing.sm))
+            Text(
+                text = String.format(java.util.Locale.US, "#%08X", colorArgb),
+                style = SaltyTokens.typography.mono,
+                color = colors.textPrimary
+            )
+        }
+    }
+}
+
+
+object SaltyRecentColorsRegistry {
+    val recentColors = mutableStateListOf(
+        0xFFFFFFFFL, 0xFF000000L, 0xFFFF0000L, 0xFF00FF00L,
+        0xFF0000FFL, 0xFFFFFF00L, 0xFFFF7A00L, 0xFF9C27B0L
+    )
+
+    fun recordColor(argb: Long) {
+        recentColors.remove(argb)
+        recentColors.add(0, argb)
+        if (recentColors.size > 16) recentColors.removeAt(recentColors.lastIndex)
     }
 }

@@ -7,9 +7,9 @@ import org.junit.Test
 /** Strict boundary for migrated entry points. Legacy screens are explicitly NOT certified by this test. */
 class ScaffoldMigrationBoundaryTest {
     private val forbidden = Regex(
-        "import\s+androidx\.compose\.(material3|foundation)(\.|\s)|" +
-        "\b\d+(?:\.\d+)?\.(?:dp|sp)\b|" +
-        "\bColor\s*\(|\b(?:Dialog|AlertDialog|ModalBottomSheet|Popup|DropdownMenu|Popover)\s*\("
+        """import\s+androidx\.compose\.(material3|foundation)(\.|\s)|""" +
+        """\d+(?:\.\d+)?\.(?:dp|sp)|""" +
+        """Color\s*\(|(?:Dialog|AlertDialog|ModalBottomSheet|Popup|DropdownMenu|Popover)\s*\("""
     )
 
     @Test fun migratedFeatureEntryPointsCannotIntroduceRawLayoutsOrTokens() {
@@ -34,7 +34,13 @@ class ScaffoldMigrationBoundaryTest {
             "ui/editor/VectorCreationFeature.kt",
             "ui/editor/ProjectLoadingPanel.kt",
             "ui/editor/ActionTreeDialog.kt",
-            "ui/editor/EditorWorkspace.kt"
+            "ui/editor/EditorWorkspace.kt",
+            "ui/editor/BlendingMaskDialog.kt",
+            "ui/editor/ReorderableLayerList.kt",
+            "ui/editor/LayersPanel.kt",
+            "ui/editor/GradientCanvasOverlay.kt",
+            "ui/controls/FillPanelPage.kt",
+            "ui/controls/BorderShadowPanelPage.kt"
         )
         for (rel in migratedPaths) {
             val source = File(appRoot, rel)

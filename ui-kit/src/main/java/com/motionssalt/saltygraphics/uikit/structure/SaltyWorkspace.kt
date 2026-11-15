@@ -317,6 +317,8 @@ fun SaltyReorderableLayerList(
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    val handleZonePx = 48.dp.toPx()
+                    if (down.position.x < size.width - handleZonePx) return@awaitEachGesture
                     val item = state.layoutInfo.visibleItemsInfo.find {
                         down.position.y >= it.offset && down.position.y < it.offset + it.size
                     } ?: return@awaitEachGesture
@@ -448,6 +450,10 @@ fun SaltyLayersPanel(
     var subPage by remember { mutableStateOf("list") } // "list" | "rename" | "paste"
     var layerToRename by remember { mutableStateOf<Layer?>(null) }
     var renameInput by remember { mutableStateOf("") }
+    var multiSelectMode by remember { mutableStateOf(false) }
+    LaunchedEffect(selectedLayerIds) {
+        if (selectedLayerIds.isEmpty()) multiSelectMode = false
+    }
 
     Surface(
         color = colors.surface,
@@ -690,10 +696,13 @@ fun SaltyLayersPanel(
                             onLockToggle = { onToggleLock(layer.id) },
                             onEnterGroup = { onEnterGroup(layer.id) },
                             onRowClick = {
-                                if (selectedLayerIds.size > 1) onToggleSelectMulti(layer.id)
+                                if (multiSelectMode || selectedLayerIds.size > 1) onToggleSelectMulti(layer.id)
                                 else onSelectLayer(layer.id)
                             },
-                            onRowLongClick = { onToggleSelectMulti(layer.id) }
+                            onRowLongClick = {
+                                multiSelectMode = true
+                                onToggleSelectMulti(layer.id)
+                            }
                         )
                     }
                 }
