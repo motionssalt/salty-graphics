@@ -24,6 +24,8 @@ import com.motionssalt.saltygraphics.engine.model.SelectionGeometry
 import com.motionssalt.saltygraphics.engine.model.SelectionHandle
 import com.motionssalt.saltygraphics.engine.model.SelectionPoint
 import com.motionssalt.saltygraphics.engine.model.Transform2D
+import com.motionssalt.saltygraphics.engine.model.VectorEditing
+import kotlin.math.hypot
 import com.motionssalt.saltygraphics.uikit.registry.OverlayRenderContext
 import com.motionssalt.saltygraphics.uikit.registry.SelectionOverlayBindings
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
@@ -94,14 +96,30 @@ fun SaltySelectionBoxOverlay(
 
                 val downDoc = docPt(down.position)
                 val startTransform = ctx.layer.transform
-                val hitRadiusDoc = sizes.touchTargetRadius.toPx() / effZoom
-                val handle = SelectionGeometry.hitHandle(
-                    point = downDoc,
-                    transform = startTransform,
-                    bounds = bnd.bounds,
-                    touchRadius = hitRadiusDoc,
-                    rotateStemLength = sizes.rotateStemLength.toPx() / effZoom
-                )
+                val touchRadiusPx = sizes.touchTargetRadius.toPx()
+                val rotateStemDoc = sizes.rotateStemLength.toPx() / effZoom
+                val box = bnd.bounds
+                val local = VectorEditing.toLocal(downDoc.x, downDoc.y, startTransform)
+                val candidates = SelectionHandle.entries.filter {
+                    it != SelectionHandle.NONE && it != SelectionHandle.BODY
+                }.map { h ->
+                    val pt = if (h == SelectionHandle.ROTATE) {
+                        val edge = SelectionGeometry.world(SelectionPoint(box.center.x, box.top), startTransform)
+                        val stem = SelectionPoint(0f, -rotateStemDoc).rotated(startTransform.rotationDegrees)
+                        edge + stem
+                    } else {
+                        SelectionGeometry.world(
+                            SelectionPoint(
+                                if (h.x < 0) box.left else if (h.x > 0) box.right else box.center.x,
+                                if (h.y < 0) box.top else if (h.y > 0) box.bottom else box.center.y
+                            ),
+                            startTransform
+                        )
+                    }
+                    h to hypot(pt.x - downDoc.x, pt.y - downDoc.y) * effZoom
+                }
+                val handle = candidates.filter { it.second <= touchRadiusPx }.minByOrNull { it.second }?.first
+                    ?: if (local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
                 if (handle == SelectionHandle.NONE) return@awaitEachGesture
                 down.consume()
 
