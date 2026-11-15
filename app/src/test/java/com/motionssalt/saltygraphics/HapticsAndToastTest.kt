@@ -5,12 +5,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import com.motionssalt.saltygraphics.data.SettingsManager
@@ -27,10 +29,14 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.LooperMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@LooperMode(LooperMode.Mode.PAUSED)
 class HapticsAndToastTest {
     @get:Rule val compose = createEmptyComposeRule()
 
@@ -148,6 +154,8 @@ class HapticsAndToastTest {
             compose.onNodeWithTag("ruler_track").performTouchInput {
                 swipeRight(startX = left + 20f, endX = right - 20f, durationMillis = 500)
             }
+            compose.mainClock.advanceTimeBy(1500L)
+            compose.waitForIdle()
             assertEquals("OFF mode must emit zero haptics", countAfterDrag, haptics.size)
         } finally {
             host.pause().stop().destroy()
@@ -157,6 +165,7 @@ class HapticsAndToastTest {
     @Test
     fun settingsDefaultsToLightScrollHapticsAndTogglesFireOnce() {
         val ctx = RuntimeEnvironment.getApplication()
+        ctx.getSharedPreferences("salty_settings", 0).edit().clear().commit()
         val mgr = SettingsManager(ctx)
         assertEquals(ScrollHapticsMode.LIGHT, mgr.scrollHapticsMode.value)
         mgr.setScrollHapticsMode(ScrollHapticsMode.NORMAL)
@@ -171,12 +180,16 @@ class HapticsAndToastTest {
         host.get().setContent {
             SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {
                 CompositionLocalProvider(LocalScrollHapticsMode provides ScrollHapticsMode.LIGHT) {
-                    SaltySwitch(checked = checked, onCheckedChange = { checked = it }, modifier = Modifier.testTag("test_switch"))
+                    Box(Modifier.requiredSize(200.dp, 80.dp)) {
+                        SaltySwitch(checked = checked, onCheckedChange = { checked = it }, modifier = Modifier.testTag("test_switch"))
+                    }
                 }
             }
         }
         try {
+            compose.waitForIdle()
             compose.onNodeWithTag("test_switch").performClick()
+            compose.waitForIdle()
             assertTrue(checked)
             assertEquals("Key toggle must fire haptic once", 1, hapticCalls)
         } finally {
@@ -223,6 +236,9 @@ class HapticsAndToastTest {
                 click(Offset(toastBounds.center.x, toastBounds.center.y))
             }
             assertTrue("In-app toast must not intercept canvas touches", canvasTapped)
+            SaltyToastManager.clear()
+            compose.mainClock.advanceTimeBy(2000L)
+            compose.waitForIdle()
         } finally {
             host.pause().stop().destroy()
         }

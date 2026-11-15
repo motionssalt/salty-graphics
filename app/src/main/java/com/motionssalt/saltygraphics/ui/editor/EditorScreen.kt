@@ -165,6 +165,10 @@ fun EditorScreen(
         }
     }
 
+    DisposableEffect(Unit) {
+        onDispose { SaltyToastManager.clear() }
+    }
+
     fun recordCommandAndAutoSave(identity: ActionIdentity, mutation: (ProjectDocument) -> ProjectDocument) {
         val treeRef = actionTree ?: return
         treeRef.recordCommand(identity, mutation)

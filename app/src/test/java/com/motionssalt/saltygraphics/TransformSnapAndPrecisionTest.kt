@@ -297,6 +297,8 @@ class TransformSnapAndPrecisionTest {
             assertEquals(250f, latestDoc.findLayerById("l1")!!.transform.translationX, 0.01f)
 
             // 5. Locked layer guard: select Locked Box and tap Nudge Up -> stays at (50, 50) + shows toast
+            compose.mainClock.advanceTimeBy(2500L)
+            compose.waitForIdle()
             compose.onNodeWithContentDescription("Layers").performClick()
             compose.onNodeWithText("Locked Box").performClick()
             compose.onNodeWithContentDescription("Close Layers").performClick()
