@@ -468,13 +468,20 @@ class BorderEditorMutationTest : FillEditorFixture() {
             compose.onNode(isToggleable() and hasAnyAncestor(hasTestTag("control_stroke_enabled"))).performClick()
 
             // Toggle Shadow on
+            compose.waitForIdle()
             compose.onNode(isToggleable() and hasAnyAncestor(hasTestTag("control_shadow_enabled"))).performScrollTo().performClick()
+            compose.waitForIdle()
 
             // Close panel
             compose.onAllNodesWithContentDescription("Back").filterToOne(hasAnyAncestor(hasTestTag("tools"))).performClick()
 
             // Verify document was updated with stroke and shadow enabled
-            compose.waitUntil(10000) { runBlocking { repo.getProject(docId)?.findLayerById("stroke_shape")?.effectiveStroke?.isEnabled == true } }
+            compose.waitUntil(10000) {
+                runBlocking {
+                    val l = repo.getProject(docId)?.findLayerById("stroke_shape")
+                    l?.effectiveStroke?.isEnabled == true && l.effectiveShadow.isEnabled
+                }
+            }
             runBlocking {
                 val saved = repo.getProject(docId)
                 val updatedLayer = saved?.findLayerById("stroke_shape")
