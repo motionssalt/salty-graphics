@@ -3,24 +3,25 @@ package com.motionssalt.saltygraphics.uikit.registry
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
-import com.motionssalt.saltygraphics.uikit.controls.DropdownOption
-import com.motionssalt.saltygraphics.uikit.controls.SegmentChipItem
 
 /**
  * Example template feature registered into the scaffold as a working template.
- * Demonstrates:
+ * Hidden behind the developer switch in production; demonstrates:
  * - Declarative registration (zero custom layout code in features)
- * - Switch, Ruler slider, Progress slider, Dropdown, Segmented chips, and Color picker
- * - Automatic typed history labels
+ * - Typed DocumentPropertyPath bindings across Switch, Ruler slider, Progress slider, and Color picker
+ * - Automatic verb/target/property history labels
  */
 object ExampleTemplateFeature {
-
-    fun createDefinition(): FeatureDefinition {
+    fun createDefinition(
+        visibleCondition: (ProjectDocument, Set<String>) -> Boolean = { _, _ -> true }
+    ): FeatureDefinition {
         return FeatureDefinition(
             id = "template_example",
             title = "Template Demo",
             icon = Icons.Default.Tune,
             placement = ToolPlacement.LAYER_SELECTED,
+            visibleCondition = visibleCondition,
+            defaultPageId = "template_main",
             pages = listOf(
                 FeaturePageDef(
                     id = "template_main",
@@ -32,15 +33,19 @@ object ExampleTemplateFeature {
                             controls = listOf(
                                 FeatureControlDef(
                                     id = "toggle_demo",
-                                    label = "Enable Feature",
+                                    label = "Enable Snapping",
                                     type = BoundControlType.SWITCH,
                                     defaultValue = true,
                                     binding = PropertyBinding(
-                                        getter = { doc, _ -> doc.editorSettings.snapEnabled },
-                                        setter = { doc, _, checked ->
-                                            doc.copy(editorSettings = doc.editorSettings.copy(snapEnabled = checked)) to
-                                                    if (checked) "Enable Snapping" else "Disable Snapping"
-                                        }
+                                        DocumentPropertyPath(
+                                            key = "template.snapEnabled",
+                                            target = "Snapping",
+                                            property = "enabled",
+                                            read = { doc, _ -> doc.editorSettings.snapEnabled },
+                                            write = { live, _, checked ->
+                                                live.updateEditorSettings { it.copy(snapEnabled = checked) }
+                                            }
+                                        )
                                     )
                                 ),
                                 FeatureControlDef(
@@ -52,11 +57,16 @@ object ExampleTemplateFeature {
                                     unit = "px",
                                     defaultValue = 50f,
                                     binding = PropertyBinding(
-                                        getter = { doc, _ -> doc.editorSettings.gridSize.toFloat() },
-                                        setter = { doc, _, newSize ->
-                                            val sz = newSize.toInt().coerceIn(10, 200)
-                                            doc.copy(editorSettings = doc.editorSettings.copy(gridSize = sz)) to "Change Grid Size"
-                                        }
+                                        DocumentPropertyPath(
+                                            key = "template.gridSize",
+                                            target = "Grid",
+                                            property = "size",
+                                            read = { doc, _ -> doc.editorSettings.gridSize.toFloat() },
+                                            write = { live, _, newSize ->
+                                                val sz = newSize.toInt().coerceIn(10, 200)
+                                                live.updateEditorSettings { it.copy(gridSize = sz) }
+                                            }
+                                        )
                                     )
                                 ),
                                 FeatureControlDef(
@@ -68,14 +78,20 @@ object ExampleTemplateFeature {
                                     unit = "%",
                                     defaultValue = 100f,
                                     binding = PropertyBinding(
-                                        getter = { doc, layerId ->
-                                            val layer = layerId?.let { doc.findLayerById(it) }
-                                            ((layer?.opacity ?: 1f) * 100f)
-                                        },
-                                        setter = { doc, layerId, newPct ->
-                                            if (layerId == null) return@PropertyBinding doc to "No-op"
-                                            doc.updateLayer(layerId) { it.copy(opacity = newPct / 100f) } to "Change Layer Opacity"
-                                        }
+                                        DocumentPropertyPath(
+                                            key = "template.layerOpacity",
+                                            target = "Layer",
+                                            property = "opacity",
+                                            exists = { doc, layerId -> layerId != null && doc.findLayerById(layerId) != null },
+                                            read = { doc, layerId ->
+                                                val layer = layerId?.let { doc.findLayerById(it) }
+                                                (layer?.opacity ?: 1f) * 100f
+                                            },
+                                            write = { live, layerId, newPct ->
+                                                if (layerId == null) live
+                                                else live.updateLayer(layerId) { it.copy(opacity = (newPct / 100f).coerceIn(0f, 1f)) }
+                                            }
+                                        )
                                     )
                                 )
                             )
@@ -90,10 +106,15 @@ object ExampleTemplateFeature {
                                     type = BoundControlType.COLOR_PICKER,
                                     defaultValue = 0x66808080L,
                                     binding = PropertyBinding(
-                                        getter = { doc, _ -> doc.editorSettings.gridColor },
-                                        setter = { doc, _, newColor ->
-                                            doc.copy(editorSettings = doc.editorSettings.copy(gridColor = newColor)) to "Change Grid Color"
-                                        }
+                                        DocumentPropertyPath(
+                                            key = "template.gridColor",
+                                            target = "Grid",
+                                            property = "color",
+                                            read = { doc, _ -> doc.editorSettings.gridColor },
+                                            write = { live, _, newColor ->
+                                                live.updateEditorSettings { it.copy(gridColor = newColor) }
+                                            }
+                                        )
                                     )
                                 )
                             )

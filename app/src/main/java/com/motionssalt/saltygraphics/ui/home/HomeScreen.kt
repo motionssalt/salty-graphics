@@ -5,36 +5,12 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.motionssalt.saltygraphics.data.ProjectRepository
-import com.motionssalt.saltygraphics.data.ProjectSummary
 import com.motionssalt.saltygraphics.render.ProjectThumbnailRenderer
-import com.motionssalt.saltygraphics.uikit.controls.SaltyTextField
-import com.motionssalt.saltygraphics.uikit.structure.SaltyAdaptiveGrid
-import com.motionssalt.saltygraphics.uikit.structure.SaltyBox
-import com.motionssalt.saltygraphics.uikit.structure.SaltyConfirmDialog
-import com.motionssalt.saltygraphics.uikit.structure.SaltyEmptyState
-import com.motionssalt.saltygraphics.uikit.structure.SaltyProjectCard
-import com.motionssalt.saltygraphics.uikit.structure.SaltyScreenScaffold
-import com.motionssalt.saltygraphics.uikit.structure.SaltySpace
-import com.motionssalt.saltygraphics.uikit.structure.SaltyTextTone
-import com.motionssalt.saltygraphics.uikit.structure.SaltyTopBarAction
-import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxSize
-import com.motionssalt.saltygraphics.uikit.structure.saltyGridItems
-import com.motionssalt.saltygraphics.uikit.structure.saltyPadding
+import com.motionssalt.saltygraphics.uikit.sublibs.home.SaltyHomeProjectItem
+import com.motionssalt.saltygraphics.uikit.sublibs.home.SaltyHomeScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,11 +27,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val projects by repository.projects.collectAsState()
-
     var selectedProjectIds by remember { mutableStateOf(setOf<String>()) }
-    val isSelectionMode = selectedProjectIds.isNotEmpty()
-    var projectToRename by remember { mutableStateOf<ProjectSummary?>(null) }
-    var renameText by remember { mutableStateOf("") }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
@@ -132,186 +104,57 @@ fun HomeScreen(
         }
     }
 
-    val topActions = buildList {
-        if (isSelectionMode) {
-            add(
-                SaltyTopBarAction(
-                    icon = Icons.Default.FileDownload,
-                    contentDescription = "Export .sg",
-                    tone = SaltyTextTone.ACCENT
-                ) {
-                    exportingProjectIds = selectedProjectIds
-                    if (selectedProjectIds.size == 1) {
-                        val proj = projects.find { it.id == selectedProjectIds.first() }
-                        val fileName = "${(proj?.name ?: "Project").replace(" ", "_")}.sg"
-                        exportSgLauncher.launch(fileName)
-                    } else {
-                        exportSgLauncher.launch("Salty_Projects_${selectedProjectIds.size}.zip")
-                    }
-                }
-            )
-            if (selectedProjectIds.size == 1) {
-                add(
-                    SaltyTopBarAction(
-                        icon = Icons.Default.Edit,
-                        contentDescription = "Rename"
-                    ) {
-                        val id = selectedProjectIds.first()
-                        val project = projects.find { it.id == id }
-                        if (project != null) {
-                            projectToRename = project
-                            renameText = project.name
-                        }
-                    }
-                )
-                add(
-                    SaltyTopBarAction(
-                        icon = Icons.Default.ContentCopy,
-                        contentDescription = "Duplicate"
-                    ) {
-                        coroutineScope.launch {
-                            repository.duplicateProject(selectedProjectIds.first())
-                            selectedProjectIds = emptySet()
-                        }
-                    }
-                )
-            }
-            add(
-                SaltyTopBarAction(
-                    icon = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tone = SaltyTextTone.ERROR
-                ) {
-                    coroutineScope.launch {
-                        repository.deleteProjects(selectedProjectIds)
-                        selectedProjectIds = emptySet()
-                    }
-                }
-            )
-            add(
-                SaltyTopBarAction(
-                    icon = Icons.Default.Close,
-                    contentDescription = "Clear Selection"
-                ) {
-                    selectedProjectIds = emptySet()
-                }
-            )
-        } else {
-            add(
-                SaltyTopBarAction(
-                    icon = Icons.Default.FileOpen,
-                    contentDescription = "Import .sg Project",
-                    tone = SaltyTextTone.ACCENT
-                ) {
-                    importLauncher.launch(arrayOf("*/*"))
-                }
-            )
-            add(
-                SaltyTopBarAction(
-                    icon = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tone = SaltyTextTone.SECONDARY
-                ) {
-                    onNavigateToSettings()
-                }
+    val homeItems = remember(projects) {
+        projects.map {
+            SaltyHomeProjectItem(
+                id = it.id,
+                name = it.name,
+                width = it.width,
+                height = it.height,
+                layerCount = it.layerCount,
+                modifiedAt = it.modifiedAt
             )
         }
     }
 
-    SaltyScreenScaffold(
-        title = if (isSelectionMode) "${selectedProjectIds.size} Selected" else "SALTY GRAPHICS",
-        accentTitle = !isSelectionMode,
-        actions = topActions,
-        fabIcon = Icons.Default.Add,
-        fabContentDescription = "New Project",
-        onFabClick = onNavigateToNewProject
-    ) { innerPadding ->
-        if (projects.isEmpty()) {
-            SaltyBox(
-                modifier = Modifier
-                    .saltyFillMaxSize()
-                    .saltyPadding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                SaltyEmptyState(
-                    message = "No projects yet. Tap + to create a new canvas or import a .sg project.",
-                    icon = Icons.Default.Palette,
-                    actionText = "New Project",
-                    onAction = onNavigateToNewProject
-                )
+    SaltyHomeScreen(
+        projects = homeItems,
+        selectedProjectIds = selectedProjectIds,
+        onSelectionChange = { selectedProjectIds = it },
+        onOpenProject = onNavigateToEditor,
+        onNewProject = onNavigateToNewProject,
+        onImportProjects = { importLauncher.launch(arrayOf("*/*")) },
+        onOpenSettings = onNavigateToSettings,
+        onExportSelected = { targetIds ->
+            exportingProjectIds = targetIds
+            if (targetIds.size == 1) {
+                val proj = projects.find { it.id == targetIds.first() }
+                val fileName = "${(proj?.name ?: "Project").replace(" ", "_")}.sg"
+                exportSgLauncher.launch(fileName)
+            } else {
+                exportSgLauncher.launch("Salty_Projects_${targetIds.size}.zip")
             }
-        } else {
-            SaltyAdaptiveGrid(
-                modifier = Modifier
-                    .saltyFillMaxSize()
-                    .saltyPadding(innerPadding),
-                spacing = SaltySpace.MD
+        },
+        onDuplicateProject = { id ->
+            coroutineScope.launch { repository.duplicateProject(id) }
+        },
+        onDeleteProjects = { ids ->
+            coroutineScope.launch { repository.deleteProjects(ids) }
+        },
+        onRenameProject = { id, newName ->
+            coroutineScope.launch { repository.renameProject(id, newName) }
+        },
+        thumbnailLoader = { item ->
+            val thumbnailBitmap by produceState<Bitmap?>(
+                initialValue = ProjectThumbnailRenderer.getCached(item.id),
+                key1 = item.id,
+                key2 = item.modifiedAt
             ) {
-                saltyGridItems(projects, key = { it.id }) { project ->
-                    val isSelected = selectedProjectIds.contains(project.id)
-                    val thumbnailBitmap by produceState<Bitmap?>(
-                        initialValue = ProjectThumbnailRenderer.getCached(project.id),
-                        key1 = project.id,
-                        key2 = project.modifiedAt
-                    ) {
-                        value = withContext(Dispatchers.IO) {
-                            ProjectThumbnailRenderer.getOrLoad(context, project.id)
-                        }
-                    }
-                    SaltyProjectCard(
-                        name = project.name,
-                        width = project.width,
-                        height = project.height,
-                        layerCount = project.layerCount,
-                        thumbnailBitmap = thumbnailBitmap,
-                        isSelected = isSelected,
-                        isSelectionMode = isSelectionMode,
-                        onClick = {
-                            if (isSelectionMode) {
-                                selectedProjectIds = if (isSelected) {
-                                    selectedProjectIds - project.id
-                                } else {
-                                    selectedProjectIds + project.id
-                                }
-                            } else {
-                                onNavigateToEditor(project.id)
-                            }
-                        },
-                        onLongClick = {
-                            selectedProjectIds = if (isSelected) {
-                                selectedProjectIds - project.id
-                            } else {
-                                selectedProjectIds + project.id
-                            }
-                        }
-                    )
+                value = withContext(Dispatchers.IO) {
+                    ProjectThumbnailRenderer.getOrLoad(context, item.id)
                 }
             }
+            thumbnailBitmap
         }
-    }
-
-    if (projectToRename != null) {
-        SaltyConfirmDialog(
-            title = "Rename Project",
-            confirmText = "Rename",
-            dismissText = "Cancel",
-            confirmEnabled = renameText.isNotBlank(),
-            onConfirm = {
-                val proj = projectToRename ?: return@SaltyConfirmDialog
-                coroutineScope.launch {
-                    repository.renameProject(proj.id, renameText.trim())
-                    projectToRename = null
-                    selectedProjectIds = emptySet()
-                }
-            },
-            onDismiss = { projectToRename = null },
-            bodyContent = {
-                SaltyTextField(
-                    value = renameText,
-                    onValueChange = { renameText = it },
-                    label = "Project Name"
-                )
-            }
-        )
-    }
+    )
 }

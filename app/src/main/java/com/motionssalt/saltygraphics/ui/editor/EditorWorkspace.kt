@@ -2,8 +2,6 @@ package com.motionssalt.saltygraphics.ui.editor
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.motionssalt.saltygraphics.uikit.structure.SaltyPanelColumnScope
-import com.motionssalt.saltygraphics.uikit.structure.SaltyPanelPage
 import com.motionssalt.saltygraphics.uikit.structure.SaltyWorkspace
 
 object PanelSizing {
@@ -25,20 +23,5 @@ fun EditorWorkspace(
         modifier = modifier,
         preview = preview,
         panel = panel
-    )
-}
-
-@Composable
-fun PanelPage(
-    title: String,
-    onBack: () -> Unit,
-    scrollable: Boolean = true,
-    content: @Composable SaltyPanelColumnScope.() -> Unit
-) {
-    SaltyPanelPage(
-        title = title,
-        onBack = onBack,
-        scrollable = scrollable,
-        content = content
     )
 }

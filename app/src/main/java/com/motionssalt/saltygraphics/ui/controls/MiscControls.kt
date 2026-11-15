@@ -1,17 +1,7 @@
 package com.motionssalt.saltygraphics.ui.controls
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.motionssalt.saltygraphics.uikit.controls.DropdownOption
-import com.motionssalt.saltygraphics.uikit.controls.SaltyInlineDropdown
-import com.motionssalt.saltygraphics.uikit.controls.SaltySegmentedChips
-import com.motionssalt.saltygraphics.uikit.structure.SaltyJustify
-import com.motionssalt.saltygraphics.uikit.structure.SaltyRow
-import com.motionssalt.saltygraphics.uikit.structure.SaltySpace
-import com.motionssalt.saltygraphics.uikit.structure.SaltyText
-import com.motionssalt.saltygraphics.uikit.structure.SaltyTextStyle
-import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxWidth
 
 @Composable
 fun SegmentedChipsControl(
@@ -37,21 +27,12 @@ fun ToggleControl(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    SaltyRow(
-        modifier = modifier.saltyFillMaxWidth(),
-        padding = SaltySpace.XS,
-        justify = SaltyJustify.SPACE_BETWEEN,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SaltyText(
-            text = label,
-            style = SaltyTextStyle.LABEL_MEDIUM
-        )
-        com.motionssalt.saltygraphics.uikit.controls.SaltySwitch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-    }
+    SaltyToggleRow(
+        label = label,
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier
+    )
 }
 
 @Composable

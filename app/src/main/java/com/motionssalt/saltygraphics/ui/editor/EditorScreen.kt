@@ -7,7 +7,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
@@ -22,12 +21,13 @@ import com.motionssalt.saltygraphics.media.MediaCache
 import com.motionssalt.saltygraphics.media.MediaImporter
 import com.motionssalt.saltygraphics.ui.controls.BorderShadowPanelPage
 import com.motionssalt.saltygraphics.ui.controls.FillPanelPage
-import com.motionssalt.saltygraphics.uikit.structure.SaltyBox
+import android.content.Context
+import com.motionssalt.saltygraphics.uikit.registry.ExampleTemplateFeature
+import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
+import com.motionssalt.saltygraphics.uikit.registry.ScaffoldFeaturePage
 import com.motionssalt.saltygraphics.uikit.structure.SaltyConfirmDialog
 import com.motionssalt.saltygraphics.uikit.structure.SaltyEditorScaffold
-import com.motionssalt.saltygraphics.uikit.structure.SaltyPanelPage
-import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxHeight
-import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxSize
+import com.motionssalt.saltygraphics.uikit.sublibs.bottompanel.SaltyEditorWorkspaceContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -43,6 +43,7 @@ fun EditorScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
+    SaltyBuiltInLibraryRegistry.ensureRegistered()
     val coroutineScope = rememberCoroutineScope()
 
     var projectDocument by remember { mutableStateOf<ProjectDocument?>(null) }
@@ -101,6 +102,11 @@ fun EditorScreen(
     var vectorPointIndex by remember { mutableStateOf<Int?>(null) }
     var vectorDraft by remember { mutableStateOf<Layer?>(null) }
     var isActionTreeOpen by remember { mutableStateOf(false) }
+    var isTemplateExampleOpen by remember { mutableStateOf(false) }
+    val devPrefs = remember(context) { context.getSharedPreferences("salty_dev_prefs", Context.MODE_PRIVATE) }
+    val devOptionsEnabled = remember(devPrefs) { devPrefs.getBoolean("dev_options", false) }
+    val debugEffectsEnabled = remember(devPrefs) { devPrefs.getBoolean("debug_effects", false) }
+    SideEffect { EditorToolFeatures.setDeveloperModeEnabled(devOptionsEnabled) }
 
     val loadState = remember(projectId) { MutableStateFlow<ProjectLoadState>(ProjectLoadState.Loading()) }
     val loading by loadState.collectAsState()
@@ -283,9 +289,9 @@ fun EditorScreen(
     BackHandler {
         if (exitSaveError != null) {
             exitSaveError = null
-        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isFillPanelOpen || isBorderShadowPanelOpen) {
+        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isFillPanelOpen || isBorderShadowPanelOpen || isTemplateExampleOpen) {
             isVectorMenuOpen = false; isVectorSettingsOpen = false; vectorDraft = null
-            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isFillPanelOpen = false; isBorderShadowPanelOpen = false
+            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isFillPanelOpen = false; isBorderShadowPanelOpen = false; isTemplateExampleOpen = false
         } else if (activeGroupId != null) {
             val crumbs = groupBreadcrumbs
             activeGroupId = if (crumbs.size > 1) crumbs[crumbs.size - 2].first else null
@@ -362,7 +368,7 @@ fun EditorScreen(
                     isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false
                     isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false
                     isBlendingOpen = false; isFillPanelOpen = false
-                    isBorderShadowPanelOpen = false; isProjectSettingsOpen = true
+                    isBorderShadowPanelOpen = false; isTemplateExampleOpen = false; isProjectSettingsOpen = true
                 },
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },
                 onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.1f) },
@@ -390,10 +396,10 @@ fun EditorScreen(
             )
         }
     ) { contentModifier ->
-        EditorWorkspace(
+        SaltyEditorWorkspaceContainer(
             modifier = contentModifier,
-            preview = {
-                SaltyBox(modifier = Modifier.saltyFillMaxSize()) {
+            isLayersPanelOpen = isLayersPanelOpen,
+            canvasContent = {
                     CanvasView(
                         document = (vectorDraft?.let { draft -> doc.updateLayer(draft.id) { draft } } ?: doc).copy(activeGroupId = activeGroupId),
                         selectedLayerIds = selectedLayerIds,
@@ -460,6 +466,8 @@ fun EditorScreen(
                         }
                     )
 
+            },
+            overlayContent = {
                     if (isFillPanelOpen && currentSelectedLayer?.effectiveFill?.type == FillType.GRADIENT) {
                         val targetId = currentSelectedLayer.id
                         GradientCanvasOverlay(
@@ -482,12 +490,8 @@ fun EditorScreen(
                         )
                     }
 
-                    if (isLayersPanelOpen) {
-                        SaltyBox(
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .saltyFillMaxHeight()
-                        ) {
+            },
+            layersPanelContent = {
                             LayersPanel(
                                 layers = panelLayers,
                                 selectedLayerIds = selectedLayerIds,
@@ -599,16 +603,13 @@ fun EditorScreen(
                                     }
                                 }
                             )
-                        }
-                    }
-                }
             },
-            panel = {
+            panelContent = {
                 val pageOpen = isVectorMenuOpen || isProjectSettingsOpen ||
                     (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) ||
                     (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) ||
                     (isTextSettingsOpen && currentSelectedLayer?.textData != null) ||
-                    (currentSelectedLayer != null && (isTransformPanelOpen || isEffectsSheetOpen || isBlendingOpen || isFillPanelOpen || isBorderShadowPanelOpen))
+                    (currentSelectedLayer != null && (isTransformPanelOpen || isEffectsSheetOpen || isBlendingOpen || isFillPanelOpen || isBorderShadowPanelOpen || isTemplateExampleOpen))
                 if (isVectorMenuOpen) {
                     VectorCreationPage(document = doc, onChoose = { choice ->
                         if (choice == "Import SVG") svgLauncher.launch(arrayOf("image/svg+xml", "text/xml", "application/xml", "application/octet-stream"))
@@ -678,7 +679,7 @@ fun EditorScreen(
                             val live = tree.currentDocument
                             projectDocument = change?.apply(live) ?: live
                         },
-                        onBack = { isBorderShadowPanelOpen = false }
+                        onBack = { isBorderShadowPanelOpen = false; isTemplateExampleOpen = false }
                     )
                 } else if (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) {
                     ShapeSettingsDialog(
@@ -813,6 +814,7 @@ fun EditorScreen(
                                 isFillPanelOpen = true
                             }
                         },
+                        onOpenTemplateExample = { isTemplateExampleOpen = true },
                         onOpenBorderShadow = {
                             if (currentSelectedLayer != null) {
                                 isBorderShadowPanelOpen = true
@@ -855,93 +857,105 @@ fun EditorScreen(
                 }
 
                 if (isTransformPanelOpen && currentSelectedLayer != null) {
-                    SaltyPanelPage(
-                        title = "Transform",
-                        onBack = {
+                    val targetId = currentSelectedLayer.id
+                    val bounds = selectionBounds(context, doc, currentSelectedLayer)
+                    val otherLayers = doc.activeLayers
+                        .filter { it.id != targetId && it.isVisible && it.type != LayerType.ADJUSTMENT }
+                        .map { selectionBounds(context, doc, it) to it.transform }
+                    val otherAngles = doc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
+                    val snapCtx = TransformSnapContext(
+                        bounds = bounds,
+                        otherLayers = otherLayers,
+                        otherAngles = otherAngles,
+                        canvasWidth = doc.canvasSize.width.toFloat(),
+                        canvasHeight = doc.canvasSize.height.toFloat(),
+                        effectiveZoom = zoom,
+                        snapEnabled = doc.editorSettings.snapEnabled,
+                        snapToGrid = doc.editorSettings.snapToGrid,
+                        showGrid = doc.editorSettings.showGrid,
+                        gridSize = doc.editorSettings.gridSize,
+                        isSquareGrid = doc.editorSettings.isSquareGrid,
+                        tolerancePx = doc.editorSettings.snapTolerancePx,
+                        onGuidesChange = { guides, gridX, gridY ->
+                            externalSmartGuides = guides
+                            externalSnappedGridX = gridX
+                            externalSnappedGridY = gridY
+                        }
+                    )
+                    TransformPanel(
+                        transform = currentSelectedLayer.transform,
+                        snapContext = snapCtx,
+                        onTransformChange = { previewT ->
+                            projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = previewT) }
+                        },
+                        onTransformCommit = { finalT ->
+                            val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = finalT) }
+                            recordAndAutoSave("Transform Layer", updated)
+                        },
+                        onClose = {
                             externalSmartGuides = emptyList()
                             externalSnappedGridX = null
                             externalSnappedGridY = null
                             isTransformPanelOpen = false
-                        }
-                    ) {
-                        val targetId = currentSelectedLayer.id
-                        val bounds = selectionBounds(context, doc, currentSelectedLayer)
-                        val otherLayers = doc.activeLayers
-                            .filter { it.id != targetId && it.isVisible && it.type != LayerType.ADJUSTMENT }
-                            .map { selectionBounds(context, doc, it) to it.transform }
-                        val otherAngles = doc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
-                        val snapCtx = TransformSnapContext(
-                            bounds = bounds,
-                            otherLayers = otherLayers,
-                            otherAngles = otherAngles,
-                            canvasWidth = doc.canvasSize.width.toFloat(),
-                            canvasHeight = doc.canvasSize.height.toFloat(),
-                            effectiveZoom = zoom,
-                            snapEnabled = doc.editorSettings.snapEnabled,
-                            snapToGrid = doc.editorSettings.snapToGrid,
-                            showGrid = doc.editorSettings.showGrid,
-                            gridSize = doc.editorSettings.gridSize,
-                            isSquareGrid = doc.editorSettings.isSquareGrid,
-                            tolerancePx = doc.editorSettings.snapTolerancePx,
-                            onGuidesChange = { guides, gridX, gridY ->
-                                externalSmartGuides = guides
-                                externalSnappedGridX = gridX
-                                externalSnappedGridY = gridY
-                            }
-                        )
-                        TransformPanel(
-                            transform = currentSelectedLayer.transform,
-                            snapContext = snapCtx,
-                            onTransformChange = { previewT ->
-                                projectDocument = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = previewT) }
-                            },
-                            onTransformCommit = { finalT ->
-                                val updated = doc.updateLayer(currentSelectedLayer.id) { it.copy(transform = finalT) }
-                                recordAndAutoSave("Transform Layer", updated)
-                            },
-                            onClose = {
-                                externalSmartGuides = emptyList()
-                                externalSnappedGridX = null
-                                externalSnappedGridY = null
-                                isTransformPanelOpen = false
-                            }
-                        )
-                    }
+                        },
+                        wrapInPanelPage = true
+                    )
                 }
 
                 if (isEffectsSheetOpen && currentSelectedLayer != null) {
-                    SaltyPanelPage("Effects", onBack = { isEffectsSheetOpen = false }, scrollable = false) {
-                        EffectSettingsSheet(
-                            targetLayer = currentSelectedLayer,
-                            allLayers = doc.activeLayers,
-                            onAddEffect = { effect ->
-                                val def = EffectRegistry.getEffectDefinition(effect.effectId)
-                                val identity = ActionIdentity("Add", def?.name ?: "Effect")
-                                recordCommandAndAutoSave(identity) { latestDoc ->
-                                    latestDoc.updateLayer(currentSelectedLayer.id) {
-                                        it.copy(effects = it.effects + effect)
-                                    }
+                    EffectSettingsSheet(
+                        targetLayer = currentSelectedLayer,
+                        allLayers = doc.activeLayers,
+                        includeDebugEffects = debugEffectsEnabled,
+                        onAddEffect = { effect ->
+                            val def = EffectRegistry.getEffectDefinition(effect.effectId)
+                            val identity = ActionIdentity("Add", def?.name ?: "Effect")
+                            recordCommandAndAutoSave(identity) { latestDoc ->
+                                latestDoc.updateLayer(currentSelectedLayer.id) {
+                                    it.copy(effects = it.effects + effect)
                                 }
-                            },
-                            onRemoveEffect = { effectId ->
-                                val def = EffectRegistry.getEffectDefinition(effectId)
-                                val identity = ActionIdentity("Remove", def?.name ?: "Effect")
-                                recordCommandAndAutoSave(identity) { latestDoc ->
-                                    latestDoc.updateLayer(currentSelectedLayer.id) {
-                                        it.copy(effects = it.effects.filter { e -> e.effectId != effectId })
-                                    }
+                            }
+                        },
+                        onRemoveEffect = { effectId ->
+                            val def = EffectRegistry.getEffectDefinition(effectId)
+                            val identity = ActionIdentity("Remove", def?.name ?: "Effect")
+                            recordCommandAndAutoSave(identity) { latestDoc ->
+                                latestDoc.updateLayer(currentSelectedLayer.id) {
+                                    it.copy(effects = it.effects.filter { e -> e.effectId != effectId })
                                 }
-                            },
-                            onUpdateEffect = { identity, updatedEffect ->
-                                recordCommandAndAutoSave(identity) { latestDoc ->
-                                    latestDoc.updateLayer(currentSelectedLayer.id) {
-                                        it.copy(effects = it.effects.map { e -> if (e.effectId == updatedEffect.effectId) updatedEffect else e })
-                                    }
+                            }
+                        },
+                        onUpdateEffect = { identity, updatedEffect ->
+                            recordCommandAndAutoSave(identity) { latestDoc ->
+                                latestDoc.updateLayer(currentSelectedLayer.id) {
+                                    it.copy(effects = it.effects.map { e -> if (e.effectId == updatedEffect.effectId) updatedEffect else e })
                                 }
-                            },
-                            onClose = { isEffectsSheetOpen = false }
-                        )
-                    }
+                            }
+                        },
+                        onClose = { isEffectsSheetOpen = false },
+                        wrapInPanelPage = true
+                    )
+                }
+
+                if (isTemplateExampleOpen && currentSelectedLayer != null) {
+                    val templateDef = remember { ExampleTemplateFeature.createDefinition() }
+                    ScaffoldFeaturePage(
+                        feature = templateDef,
+                        pageId = "template_main",
+                        document = doc,
+                        layerId = currentSelectedLayer.id,
+                        onPreview = { change ->
+                            val base = tree.currentDocument
+                            projectDocument = if (change != null && change.appliesTo(base)) change.apply(base) else base
+                        },
+                        onCommit = { change ->
+                            val live = tree.currentDocument
+                            if (change.appliesTo(live)) {
+                                recordCommandAndAutoSave(change.identity(live), change::apply)
+                            }
+                        },
+                        onBack = { isTemplateExampleOpen = false }
+                    )
                 }
             }
         )

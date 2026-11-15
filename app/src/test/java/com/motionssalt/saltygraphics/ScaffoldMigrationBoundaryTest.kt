@@ -1,10 +1,17 @@
 package com.motionssalt.saltygraphics
 
+import com.motionssalt.saltygraphics.engine.model.Layer
+import com.motionssalt.saltygraphics.engine.model.LayerType
+import com.motionssalt.saltygraphics.engine.model.ProjectDocument
+import com.motionssalt.saltygraphics.ui.editor.EditorToolFeatures
+import com.motionssalt.saltygraphics.uikit.registry.LibraryComponentRegistry
+import com.motionssalt.saltygraphics.uikit.registry.OverlayRegistry
+import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
 import java.io.File
 import org.junit.Assert.*
 import org.junit.Test
 
-/** Strict module-boundary guard enforcing that :app UI screens/controls stay on :ui-kit. */
+/** Strict module-boundary guard enforcing that :app UI screens/controls and :ui-kit sublibs stay on :ui-kit core. */
 class ScaffoldMigrationBoundaryTest {
     private val forbidden = Regex(
         """import\s+androidx\.compose\.(material3|foundation)(\.|\s)|""" +
@@ -12,9 +19,14 @@ class ScaffoldMigrationBoundaryTest {
         """\bColor\s*\(|(?:^|[^\w])(?:Dialog|AlertDialog|ModalBottomSheet|Popup|DropdownMenu|Popover)\s*\("""
     )
 
+    private fun appRoot(): File = File("src/main/java/com/motionssalt/saltygraphics")
+        .takeIf(File::exists) ?: File("app/src/main/java/com/motionssalt/saltygraphics")
+
+    private fun uikitRoot(): File = File("../ui-kit/src/main/java/com/motionssalt/saltygraphics/uikit")
+        .takeIf(File::exists) ?: File("ui-kit/src/main/java/com/motionssalt/saltygraphics/uikit")
+
     @Test fun migratedFeatureEntryPointsCannotIntroduceRawLayoutsOrTokens() {
-        val appRoot = File("src/main/java/com/motionssalt/saltygraphics")
-            .takeIf(File::exists) ?: File("app/src/main/java/com/motionssalt/saltygraphics")
+        val appRoot = appRoot()
         val migratedPaths = listOf(
             "MainActivity.kt",
             "navigation/NavGraph.kt",
@@ -62,8 +74,6 @@ class ScaffoldMigrationBoundaryTest {
             assertTrue("Migrated source must exist: $rel", source.isFile)
             assertFalse("$rel bypasses :ui-kit; add missing UI to the library instead", forbidden.containsMatchIn(source.readText()))
         }
-
-        // Also scan all UI files in app/ui excluding CanvasView.kt (raw drawing canvas surface)
         val uiDir = File(appRoot, "ui")
         val excluded = setOf("CanvasView.kt")
         val allUiFiles = uiDir.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in excluded }.toList()
@@ -79,15 +89,62 @@ class ScaffoldMigrationBoundaryTest {
         }
     }
 
-    @Test fun declarationOnlyFeaturesCannotHideLayoutsBehindLibraryWrappers() {
-        val root = File("src/main/java/com/motionssalt/saltygraphics")
-            .takeIf(File::exists) ?: File("app/src/main/java/com/motionssalt/saltygraphics")
-        val layouts = Regex("""\bSalty(?:Row|Column|Box|Card|SectionCard|LazyColumn|Text|Button|PanelPage|NumberControl)\s*\(""")
-        for (path in listOf("ui/editor/ProjectSettingsPage.kt", "ui/editor/ProjectSettingsFeature.kt",
-            "ui/editor/ShapeSettingsDialog.kt", "ui/editor/ShapeSettingsFeature.kt",
-            "ui/controls/BorderShadowPanelPage.kt", "ui/controls/BorderShadowFeature.kt")) {
-            assertFalse("$path must declare controls/use ScaffoldFeaturePage, not hand-code layouts with wrappers",
-                layouts.containsMatchIn(File(root, path).readText()))
+    @Test fun declarationOnlyFeaturesAndMigratedAppScreensCannotOwnLayouts() {
+        val root = appRoot()
+        val layouts = Regex("""\bSalty(?:Row|Column|Box|Card|SectionCard|LazyColumn|AdaptiveGrid|Text|Button|PanelPage|ScreenScaffold|NumberControl)\s*\(""")
+        val uiDir = File(root, "ui")
+        val excluded = setOf("CanvasView.kt")
+        val allUiFiles = uiDir.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in excluded }.toList()
+        assertTrue(allUiFiles.size >= 30)
+        for (file in allUiFiles) {
+            assertFalse(
+                "${file.relativeTo(root)} must delegate to :ui-kit sublibs/declarations, not hand-code layouts",
+                layouts.containsMatchIn(file.readText())
+            )
+        }
+    }
+
+    @Test fun allElevenSubLibrariesExistAndStayStrictlyIsolated() {
+        val sublibsDir = File(uikitRoot(), "sublibs")
+        assertTrue("sublibs directory must exist in :ui-kit", sublibsDir.isDirectory)
+        val expectedSublibs = listOf(
+            "topbar", "bottompanel", "layers", "history",
+            "home", "settings", "newproject", "export",
+            "text", "vector", "effects"
+        )
+        for (sub in expectedSublibs) {
+            val dir = File(sublibsDir, sub)
+            assertTrue("Sub-library $sub must exist", dir.isDirectory)
+            val ktFiles = dir.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+            assertTrue("Sub-library $sub must contain Kotlin source", ktFiles.isNotEmpty())
+            for (f in ktFiles) {
+                val txt = f.readText()
+                assertFalse("Sub-library $sub (${f.name}) cannot bypass :ui-kit core", forbidden.containsMatchIn(txt))
+                val crossImport = Regex("import\s+com\.motionssalt\.saltygraphics\.uikit\.sublibs\.(?!${sub}(?:\.|\s))")
+                assertFalse("Sub-library $sub (${f.name}) cannot depend on sibling sub-libraries", crossImport.containsMatchIn(txt))
+            }
+        }
+    }
+
+    @Test fun builtInLibraryRegistryAndDeveloperExampleFeatureWorkInProduction() {
+        SaltyBuiltInLibraryRegistry.ensureRegistered()
+        for (id in listOf("transform_trackpad", "gradient_bar", "history_tree", "vector_toolbar", "media_picker_grid", "layer_selector")) {
+            assertTrue("Missing built-in library component: $id", LibraryComponentRegistry.contains(id))
+        }
+        for (id in listOf("gradient_handles", "vector_editor", "selection_box")) {
+            assertTrue("Missing built-in overlay: $id", OverlayRegistry.contains(id))
+        }
+
+        val layer = Layer(name = "Shape", type = LayerType.SHAPE)
+        val doc = ProjectDocument(layers = listOf(layer))
+        val prev = EditorToolFeatures.isDeveloperModeEnabled()
+        try {
+            EditorToolFeatures.setDeveloperModeEnabled(false)
+            assertFalse(EditorToolFeatures.catalog.queryTools(doc, setOf(layer.id)).any { it.id == "template_example" })
+            EditorToolFeatures.setDeveloperModeEnabled(true)
+            assertTrue(EditorToolFeatures.catalog.queryTools(doc, setOf(layer.id)).any { it.id == "template_example" })
+        } finally {
+            EditorToolFeatures.setDeveloperModeEnabled(prev)
         }
     }
 

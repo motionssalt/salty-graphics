@@ -2,15 +2,21 @@ package com.motionssalt.saltygraphics.ui.editor
 
 import androidx.compose.runtime.Composable
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
-import com.motionssalt.saltygraphics.uikit.structure.SaltyEditorTopBar
+import com.motionssalt.saltygraphics.uikit.sublibs.topbar.SaltyTopBarSublib
 
 @Composable
 fun TopPanel(
+    projectName: String,
+    groupBreadcrumbs: List<Pair<String, String>> = emptyList(),
+    zoom: Float,
     previewQuality: PreviewQuality,
     canUndo: Boolean,
     canRedo: Boolean,
     showGrid: Boolean,
     gridSize: Int,
+    isLayersPanelOpen: Boolean,
+    isCanvasLocked: Boolean = false,
+    onToggleCanvasLock: () -> Unit = {},
     onNavigateBack: () -> Unit,
     onToggleLayers: () -> Unit,
     onPreviewQualityClick: () -> Unit,
@@ -25,16 +31,20 @@ fun TopPanel(
     onReset100Percent: () -> Unit,
     onToggleGrid: () -> Unit,
     onGridSizeChange: (Int) -> Unit,
-    onSaveSgClick: () -> Unit = {},
-    isCanvasLocked: Boolean = false,
-    onToggleCanvasLock: () -> Unit = {}
+    onSaveSgClick: () -> Unit
 ) {
-    SaltyEditorTopBar(
+    SaltyTopBarSublib(
+        projectName = projectName,
+        groupBreadcrumbs = groupBreadcrumbs,
+        zoom = zoom,
         previewQuality = previewQuality,
         canUndo = canUndo,
         canRedo = canRedo,
         showGrid = showGrid,
         gridSize = gridSize,
+        isLayersPanelOpen = isLayersPanelOpen,
+        isCanvasLocked = isCanvasLocked,
+        onToggleCanvasLock = onToggleCanvasLock,
         onNavigateBack = onNavigateBack,
         onToggleLayers = onToggleLayers,
         onPreviewQualityClick = onPreviewQualityClick,
@@ -49,8 +59,6 @@ fun TopPanel(
         onReset100Percent = onReset100Percent,
         onToggleGrid = onToggleGrid,
         onGridSizeChange = onGridSizeChange,
-        onSaveSgClick = onSaveSgClick,
-        isCanvasLocked = isCanvasLocked,
-        onToggleCanvasLock = onToggleCanvasLock
+        onSaveSgClick = onSaveSgClick
     )
 }

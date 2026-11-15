@@ -10,9 +10,23 @@ import com.motionssalt.saltygraphics.uikit.registry.*
 object EditorToolFeatures {
     private val visual = LayerType.entries.toSet() - LayerType.ADJUSTMENT
     private val rasterizable = setOf(LayerType.TEXT, LayerType.VECTOR, LayerType.SHAPE)
-    private fun tool(id: String, title: String, icon: ImageVector, placement: ToolPlacement,
-                     types: Set<LayerType> = emptySet()) =
-        FeatureDefinition(id, title, icon, placement, supportedLayerTypes = types)
+
+    @Volatile
+    private var developerModeEnabled: Boolean = false
+
+    fun setDeveloperModeEnabled(enabled: Boolean) {
+        developerModeEnabled = enabled
+    }
+
+    fun isDeveloperModeEnabled(): Boolean = developerModeEnabled
+
+    private fun tool(
+        id: String,
+        title: String,
+        icon: ImageVector,
+        placement: ToolPlacement,
+        types: Set<LayerType> = emptySet()
+    ) = FeatureDefinition(id, title, icon, placement, supportedLayerTypes = types)
 
     val catalog = FeatureCatalog().apply {
         listOf(
@@ -29,7 +43,8 @@ object EditorToolFeatures {
             tool("blending", "Blending & Mask", Icons.Default.Layers, ToolPlacement.LAYER_SELECTED),
             tool("duplicate", "Duplicate", Icons.Default.ControlPointDuplicate, ToolPlacement.LAYER_SELECTED),
             tool("rasterize", "Rasterize", Icons.Default.PhotoFilter, ToolPlacement.LAYER_SELECTED, rasterizable),
-            tool("delete", "Delete", Icons.Default.Delete, ToolPlacement.LAYER_SELECTED)
+            tool("delete", "Delete", Icons.Default.Delete, ToolPlacement.LAYER_SELECTED),
+            ExampleTemplateFeature.createDefinition(visibleCondition = { _, _ -> developerModeEnabled })
         ).forEach(::register)
     }
 }

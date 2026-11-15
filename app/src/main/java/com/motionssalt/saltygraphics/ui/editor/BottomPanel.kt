@@ -3,7 +3,8 @@ package com.motionssalt.saltygraphics.ui.editor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.motionssalt.saltygraphics.engine.model.Layer
-import com.motionssalt.saltygraphics.uikit.structure.ScaffoldToolPanel
+import com.motionssalt.saltygraphics.engine.model.ProjectDocument
+import com.motionssalt.saltygraphics.uikit.sublibs.bottompanel.SaltyBottomToolGridSublib
 
 @Composable
 fun BottomPanel(
@@ -15,12 +16,12 @@ fun BottomPanel(
     onOpenBorderShadow: (() -> Unit)? = null,
     onDuplicate: (() -> Unit)? = null,
     onRasterize: (() -> Unit)? = null,
+    onOpenTemplateExample: (() -> Unit)? = null,
     groupBreadcrumbs: List<Pair<String, String>> = emptyList(),
     onPopGroup: (() -> Unit)? = null,
     onJumpToGroup: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    document: com.motionssalt.saltygraphics.engine.model.ProjectDocument =
-        com.motionssalt.saltygraphics.engine.model.ProjectDocument(layers = listOfNotNull(selectedLayer))
+    document: ProjectDocument = ProjectDocument(layers = listOfNotNull(selectedLayer))
 ) {
     val actions = buildMap<String, () -> Unit> {
         put("media", onAddMedia); put("text", onAddText); put("adjustment", onAddAdjustment)
@@ -31,8 +32,9 @@ fun BottomPanel(
         onOpenBorderShadow?.let { put("border_shadow", it) }
         onDuplicate?.let { put("duplicate", it) }
         onRasterize?.let { put("rasterize", it) }
+        onOpenTemplateExample?.let { put("template_example", it) }
     }
-    ScaffoldToolPanel(
+    SaltyBottomToolGridSublib(
         catalog = EditorToolFeatures.catalog,
         document = document,
         selectedLayerIds = setOfNotNull(selectedLayer?.id),

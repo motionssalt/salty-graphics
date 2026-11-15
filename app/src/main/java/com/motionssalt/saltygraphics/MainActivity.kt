@@ -16,6 +16,7 @@ import com.motionssalt.saltygraphics.data.ProjectRepository
 import com.motionssalt.saltygraphics.data.SettingsManager
 import com.motionssalt.saltygraphics.navigation.Screen
 import com.motionssalt.saltygraphics.theme.*
+import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
 import com.motionssalt.saltygraphics.uikit.structure.SaltyRootSurface
 import com.motionssalt.saltygraphics.uikit.structure.saltyIsSystemInDarkTheme
 import com.motionssalt.saltygraphics.ui.editor.EditorScreen
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SaltyBuiltInLibraryRegistry.ensureRegistered()
 
         // Install uncaught crash logger
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()

@@ -126,6 +126,7 @@ fun ScaffoldFeaturePage(
     modifier: Modifier = Modifier,
     onPreview: (FeatureChange<*>?) -> Unit = {}
 ) {
+    SaltyBuiltInLibraryRegistry.ensureRegistered()
     val page = feature.pages.firstOrNull { it.id == pageId } ?: return
     var colorControlId by remember(feature.id, pageId, layerId) { mutableStateOf<String?>(null) }
     var numericControlId by remember(feature.id, pageId, layerId) { mutableStateOf<String?>(null) }
