@@ -59,7 +59,7 @@ data class SelectionOverlayBindings(
 data class SaltyMediaPickerState(
     val media: List<Pair<String, Bitmap?>>,
     val selectedPath: String? = null,
-    val onImportRequest: () -> Unit = {}
+    val onImportRequest: () -> Unit
 )
 
 /** Production adapter state for the registered history_tree library component. */
@@ -120,6 +120,9 @@ object LibraryComponentRegistry {
 
     fun get(id: String): LibraryComponentEntry<Any?>? = components[id]
 
+    fun resolveRequired(id: String): LibraryComponentEntry<Any?> =
+        requireNotNull(get(id)) { "Unregistered library component: $id" }
+
     fun registeredIds(): Set<String> = components.keys.toSet()
 }
 
@@ -156,6 +159,29 @@ fun ScaffoldCanvasOverlay(id: String, context: OverlayRenderContext) {
     key(id, context.document.id, context.layer.id) {
         Box(Modifier.fillMaxSize().testTag("registered_overlay_$id")) {
             entry.renderer(context)
+        }
+    }
+}
+
+/**
+ * Shared host for a registered library surface. Production adapters and declarative
+ * property pages use the same resolver; a missing registration must not silently
+ * remove an editing control. The library renderer, never the feature, owns layout.
+ */
+@Suppress("UNCHECKED_CAST")
+@Composable
+fun <T> ScaffoldLibraryComponent(
+    id: String,
+    label: String,
+    current: T,
+    onPreview: (T) -> Unit,
+    onCommit: (T) -> Unit
+) {
+    SaltyBuiltInLibraryRegistry.ensureRegistered()
+    val entry = LibraryComponentRegistry.resolveRequired(id)
+    key(id) {
+        Box(Modifier.testTag("registered_component_$id")) {
+            entry.renderer(label, current, { onPreview(it as T) }, { onCommit(it as T) })
         }
     }
 }

@@ -186,6 +186,18 @@ class ScaffoldMigrationBoundaryTest {
         assertTrue(editor.contains("onCancel = { projectDocument = actionTree?.currentDocument }"))
     }
 
+    @Test fun specialSurfaceHostsMustUseTheSharedRegisteredResolver() {
+        val fill = File(uikitRoot(), "controls/SaltyExtraControls.kt").readText()
+        assertTrue(fill.contains("ScaffoldLibraryComponent("))
+        assertTrue(fill.contains("id = \"media_picker_grid\""))
+        assertFalse("Production media picker must not bypass registration", fill.contains("SaltyMediaPickerGrid("))
+        val history = File(uikitRoot(), "sublibs/history/SaltyHistorySublib.kt").readText()
+        assertTrue(history.contains("ScaffoldLibraryComponent("))
+        val registry = File(uikitRoot(), "registry/FeatureRegistry.kt").readText()
+        assertTrue(registry.contains("ScaffoldLibraryComponent("))
+        assertFalse("Registered controls cannot silently disappear", registry.contains("entry?.renderer"))
+    }
+
     @Test fun guardRejectsRawLayoutsWidgetsColorsAndPopupRegressions() {
         for (snippet in listOf(
             "import androidx.compose.foundation.layout.Row", "import androidx.compose.material3.Text",

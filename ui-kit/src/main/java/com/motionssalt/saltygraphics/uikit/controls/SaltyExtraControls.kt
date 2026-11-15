@@ -11,7 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.motionssalt.saltygraphics.engine.model.*
-import com.motionssalt.saltygraphics.uikit.registry.LibraryComponentRegistry
+import com.motionssalt.saltygraphics.uikit.registry.SaltyMediaPickerState
+import com.motionssalt.saltygraphics.uikit.registry.ScaffoldLibraryComponent
 import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
 import com.motionssalt.saltygraphics.uikit.structure.*
 import kotlin.math.abs
@@ -280,13 +281,17 @@ fun SaltyFillPanelPage(
             }
         }
         "media" -> SaltyPanelPage(title = "Project Images", onBack = { page = "fill" }) {
-            SaltyMediaPickerGrid(
-                media = media,
-                onSelectMedia = { path ->
-                    commit("Choose media fill", live.copy(type = FillType.MEDIA, mediaAssetPath = path))
-                    page = "fill"
-                },
-                onImport = onImport
+            ScaffoldLibraryComponent(
+                id = "media_picker_grid",
+                label = "Project Images",
+                current = SaltyMediaPickerState(media, live.mediaAssetPath, onImport),
+                onPreview = {}, // Selection is discrete; there are no draft frames.
+                onCommit = { selected ->
+                    selected.selectedPath?.let { path ->
+                        commit("Choose media fill", live.copy(type = FillType.MEDIA, mediaAssetPath = path))
+                        page = "fill"
+                    }
+                }
             )
         }
         else -> SaltyPanelPage(title = "Fill Settings", onBack = onBack) {

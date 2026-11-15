@@ -376,7 +376,36 @@ No additional V/E item is marked done, and no release, tag, signing, application
 reference-keyflaw or unrelated UI-refinement change was made. Final handoff changes
 only docs/state and preserves the verified application source.
 
-## V0 Complete Scaffold & Component Library — 2026-11-15
+## V0 library delegation checkpoint — 2026-11-15 (not full acceptance)
 - Reviewed and checked in the 4 remaining golden baselines (`components_overlays_{dark,light}.png`, `components_sublibs_{dark,light}.png`) from Actions run `43712579244` (291/295 passed; only those 4 missing baselines failed).
 - All 18 screens/panels in the migration checklist delegate strictly to `:ui-kit` sub-libraries, declarative `ScaffoldFeaturePage`/`ScaffoldToolPanel`/`ScaffoldToolPicker` hosts, and `ScaffoldCanvasOverlay` (`selection_box`, `gradient_handles`, `vector_editor`).
 - `ScaffoldMigrationBoundaryTest` enforces zero `material3`/`foundation.layout` imports in `app/src/main`, zero literal `dp`/`sp`/`Color(...)`/banned popups, strict isolation across all 11 `:ui-kit` sub-libraries, and registered overlay/component dispatch.
+
+
+### V0 registered special-surface host — verification pending
+`ScaffoldLibraryComponent` is the shared host for library-owned special surfaces.
+A feature supplies a component id, current data and preview/commit bindings, never
+layout. `RenderBoundControl` uses this same host for `LIBRARY_COMPONENT`; missing
+registrations fail with their id instead of silently hiding the control. The host
+also exposes a stable `registered_component_<id>` semantics tag for production tests.
+
+The production Fill media page now resolves `media_picker_grid` with
+`SaltyMediaPickerState(media, selectedPath, onImportRequest)`. Import must be supplied
+explicitly, not silently default to a no-op. Selection commits the chosen path
+without reordering project assets or creating a layer; the Fill page still owns its
+existing labelled, live-document command. History's library sub-surface also uses
+this shared resolver rather than a separate renderer lookup. Component visuals,
+existing navigation and golden baselines are unchanged.
+
+Acceptance tests operate import/selection through the shared host, replace data and
+callbacks during recomposition, and ensure no stale session callback or artificial
+preview appears. The real Editor Fill test verifies registered dispatch, saved path,
+actual project-asset pixels, Undo/Redo and an unobscured canvas. A source guard prevents
+bypassing registration again. These tests require native CI acceptance.
+
+**Current acceptance boundary:** the preceding delegation checklist and checked-in
+PNG fixtures do not prove every feature has complete typed bindings or every component
+state/theme is covered. In particular, the production Fill gradient bar and Transform
+trackpad still directly call primitives while their registered adapters exist beside
+them. V0 remains in progress until real registered integration and its full criteria
+are verified. Do not accept id-only tests as production integration.

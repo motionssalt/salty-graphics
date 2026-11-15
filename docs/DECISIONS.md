@@ -693,3 +693,23 @@ feature amendments are not accepted merely because existing vector tests pass.
 No additional V/E item is marked done, and no release, tag, signing, applicationId,
 reference-keyflaw or unrelated UI-refinement change was made. Final handoff changes
 only docs/state and preserves the verified application source.
+
+
+## Round 4 resumed regression repair and V0 special-surface dispatch
+Inherited head `0ad6365` failed Actions 43743186378. The registered vector regression
+had two real Editor hosts in one Robolectric class; they now follow existing
+one-host-per-isolated-worker practice without disabling tests or increasing timeout.
+The rotated text test exposed a real bounds problem: FREE text's unwrapped glyph
+extent could put width handles outside the clipped viewport. Editing now uses the
+stored text-container width (shared by drawing and hit testing); a drag changes width
+and wraps without scaling glyphs. Non-editing transform bounds are unchanged. Exact
+rotated/zoomed width delta and one-commit assertions strengthen the regression.
+
+The Fill media page bypassed its registered component despite a passing id-only
+registry test. Route it through the reusable `ScaffoldLibraryComponent` with real
+asset/import/selection bindings. History and declaration-bound extensions share this
+resolver too; absent ids throw rather than silently dropping controls. The import
+callback is required. There are no new visual components or styling changes.
+Production tests now follow Editor -> registered picker -> project asset -> renderer
+and Undo/Redo; separate host tests cover replacing live bindings and preserving asset
+order. CI verification is pending. V0, later amendments and release remain incomplete.

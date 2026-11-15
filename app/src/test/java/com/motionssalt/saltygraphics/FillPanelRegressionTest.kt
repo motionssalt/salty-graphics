@@ -55,11 +55,26 @@ class FillPanelMediaRegressionTest : FillEditorFixture() {
             compose.onNodeWithText("Fill").performClick()
             compose.onNodeWithText("Media Fill").performScrollTo().performClick()
             compose.onNodeWithText("Choose Media Image").performScrollTo().performClick()
+            compose.onNodeWithTag("registered_component_media_picker_grid").assertIsDisplayed()
             compose.onNodeWithText("Import from device").assertExists()
             compose.onNodeWithTag("fill_media_assets/test.png").performScrollTo().performClick()
             compose.waitUntil(10000) {runBlocking {repo.getProject(id)?.findLayerById(layer.id)?.effectiveFill?.mediaAssetPath=="assets/test.png"}}
             val saved=runBlocking {repo.getProject(id)!!}
             assertEquals(listOf(layer.id),saved.layers.map{it.id})
+            val selected = saved.findLayerById(layer.id)!!
+            val source = requireNotNull(android.graphics.BitmapFactory.decodeFile(
+                java.io.File(repo.getAssetsDir(id), selected.effectiveFill.mediaAssetPath!!.removePrefix("assets/")).absolutePath
+            )) { "The selected project asset must exist" }
+            val rendered = LayerCompositor.renderLayerContent(selected, 600, 600, mediaResolver = { path ->
+                assertEquals("assets/test.png", path)
+                source
+            })
+            assertEquals("Registered selection must reach the real media renderer", Color.BLUE, rendered.getPixel(300, 300))
+            rendered.recycle(); source.recycle()
+            compose.onNodeWithContentDescription("Undo").performClick()
+            compose.waitUntil(10000) { runBlocking { repo.getProject(id)?.findLayerById(layer.id)?.effectiveFill?.mediaAssetPath == null } }
+            compose.onNodeWithContentDescription("Redo").performClick()
+            compose.waitUntil(10000) { runBlocking { repo.getProject(id)?.findLayerById(layer.id)?.effectiveFill?.mediaAssetPath == "assets/test.png" } }
             compose.onAllNodes(isDialog()).assertCountEquals(0)
             compose.onNodeWithTag("preview").assertIsDisplayed()
         }

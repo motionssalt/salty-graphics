@@ -242,8 +242,13 @@ internal fun <T> RenderBoundControl(
         }
         BoundControlType.TEXT_FIELD -> SaltyTextField(current as String, { commit(it as T) }, label = control.label)
         BoundControlType.LIBRARY_COMPONENT -> {
-            val entry = control.componentId?.let { LibraryComponentRegistry.get(it) }
-            entry?.renderer?.invoke(control.label, current, { preview(it as T) }, { commit(it as T) })
+            ScaffoldLibraryComponent(
+                id = requireNotNull(control.componentId) { "Library component id required: ${control.id}" },
+                label = control.label,
+                current = current,
+                onPreview = ::preview,
+                onCommit = ::commit
+            )
         }
         BoundControlType.CUSTOM -> control.customRenderer?.invoke(current, ::commit)
     }
