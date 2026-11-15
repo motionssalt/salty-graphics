@@ -489,7 +489,7 @@ fun EditorScreen(
 
                     if (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) {
                         VectorCanvasOverlay(
-                            currentSelectedLayer, doc.canvasSize, vectorPathIndex, vectorPointIndex, vectorTool,
+                            currentSelectedLayer, doc, vectorPathIndex, vectorPointIndex, vectorTool,
                             zoom, panOffset, { vectorPointIndex = it }, { vectorDraft = it },
                             { changed -> recordAndAutoSave("Edit vector points", doc.updateLayer(changed.id) { changed }) },
                             { isVectorSettingsOpen = false; vectorDraft = null }

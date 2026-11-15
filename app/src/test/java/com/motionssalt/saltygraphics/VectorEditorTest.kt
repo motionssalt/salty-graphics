@@ -44,7 +44,7 @@ class VectorEditorTest {
         host.get().setContent { MaterialTheme {
             Column(Modifier.requiredSize(412.dp,820.dp)) {
                 Box(Modifier.height(400.dp).fillMaxWidth()) {
-                    VectorCanvasOverlay(layer,CanvasSize(1000,1000),pathIndex,selected,tool,1f,Offset.Zero,
+                    VectorCanvasOverlay(layer,tree.currentDocument.copy(canvasSize=CanvasSize(1000,1000)),pathIndex,selected,tool,1f,Offset.Zero,
                         {selected=it},{},{commit("Gesture",it)},{})
                 }
                 Box(Modifier.weight(1f)) {
@@ -53,6 +53,7 @@ class VectorEditorTest {
             }
         } }
         try {
+            compose.onNodeWithTag("registered_overlay_vector_editor").assertIsDisplayed()
             val handles=compose.onNodeWithTag("vector_handles")
             handles.performTouchInput { click(Offset(140f,170f)) }
             compose.waitForIdle()

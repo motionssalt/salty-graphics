@@ -2,15 +2,17 @@ package com.motionssalt.saltygraphics.ui.editor
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
-import com.motionssalt.saltygraphics.engine.model.CanvasSize
+import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.engine.model.Layer
-import com.motionssalt.saltygraphics.uikit.overlays.SaltyVectorCanvasOverlay
+import com.motionssalt.saltygraphics.uikit.registry.OverlayRenderContext
+import com.motionssalt.saltygraphics.uikit.registry.ScaffoldCanvasOverlay
+import com.motionssalt.saltygraphics.uikit.registry.VectorOverlayBindings
 import com.motionssalt.saltygraphics.uikit.overlays.SaltyVectorToolMode
 
 @Composable
 fun VectorCanvasOverlay(
     layer: Layer,
-    canvasSize: CanvasSize,
+    document: ProjectDocument,
     pathIndex: Int,
     selectedPoint: Int?,
     tool: VectorTool,
@@ -27,17 +29,17 @@ fun VectorCanvasOverlay(
         VectorTool.REMOVE -> SaltyVectorToolMode.REMOVE
         VectorTool.SMOOTH -> SaltyVectorToolMode.SMOOTH
     }
-    SaltyVectorCanvasOverlay(
-        layer = layer,
-        canvasSize = canvasSize,
-        pathIndex = pathIndex,
-        selectedPoint = selectedPoint,
-        tool = mappedTool,
-        zoom = zoom,
-        pan = pan,
-        onSelectPoint = onSelectPoint,
-        onPreview = onPreview,
-        onCommit = onCommit,
-        onDone = onDone
+    ScaffoldCanvasOverlay(
+        id = "vector_editor",
+        context = OverlayRenderContext(
+            document = document,
+            layer = layer,
+            canvasSize = document.canvasSize,
+            zoom = zoom,
+            pan = pan,
+            vectorEditing = VectorOverlayBindings(
+                pathIndex, selectedPoint, mappedTool, onSelectPoint, onPreview, onCommit, onDone
+            )
+        )
     )
 }

@@ -163,18 +163,21 @@ object SaltyBuiltInLibraryRegistry {
                     id = "vector_editor",
                     description = "On-canvas vector Bezier point and handle editor"
                 ) { ctx ->
+                    val bindings = requireNotNull(ctx.vectorEditing) {
+                        "vector_editor requires real tool, selection, preview, commit and Done bindings"
+                    }
                     SaltyVectorCanvasOverlay(
                         layer = ctx.layer,
                         canvasSize = ctx.canvasSize,
-                        pathIndex = 0,
-                        selectedPoint = null,
-                        tool = SaltyVectorToolMode.SELECT,
+                        pathIndex = bindings.pathIndex,
+                        selectedPoint = bindings.selectedPoint,
+                        tool = bindings.tool,
                         zoom = ctx.zoom,
                         pan = ctx.pan,
-                        onSelectPoint = {},
-                        onPreview = {},
-                        onCommit = {},
-                        onDone = {}
+                        onSelectPoint = bindings.onSelectPoint,
+                        onPreview = bindings.onPreview,
+                        onCommit = bindings.onCommit,
+                        onDone = bindings.onDone
                     )
                 }
             )

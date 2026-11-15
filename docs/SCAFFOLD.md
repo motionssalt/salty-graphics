@@ -308,8 +308,9 @@ the registered path at three zooms and two layer rotations, plus cancel/disposal
 the existing real Editor test checks persistence, labels and Undo/Redo. CI acceptance
 is pending at this checkpoint. No new visual component or new golden baseline.
 
-Only gradient production registration is certified by this change: vector and
-selection registry entries still require real host bindings and migration. Likewise,
+At the gradient checkpoint only gradient production registration was wired;
+the vector follow-up below connects its real host bindings. Selection registry
+migration still remains. Likewise,
 the built-in media/trackpad/example registrations are not accepted merely because
 an id exists. This does not complete V0/V7/V24 or the full component golden matrix.
 Checklist rows contradicted by the wrapper-only audit above are reopened, retaining
@@ -332,3 +333,15 @@ Tests cover ordinary-user invisibility, the actual developer tile/page, persiste
 changes, specific labels, unrelated-property preservation and Undo/Redo. They reuse
 the existing shared controls and reviewed goldens; no feature layout or visual
 styling was added. Native CI verification is required before acceptance.
+
+
+### Registered vector overlay follow-up
+The existing `VectorCanvasOverlay` facade also resolves `vector_editor` through
+`ScaffoldCanvasOverlay`. `VectorOverlayBindings` supplies the real active path,
+selected anchor, tool, selection callback, draft/commit callbacks and Done action.
+The built-in entry requires these values rather than hardcoding path 0/Select with
+no-op callbacks. The existing add/move/smooth/remove/multiple-path/archive/history
+pointer test now exercises this registered production facade, with an additional
+real Editor -> Edit -> pointer -> saved history regression. Existing vector geometry,
+precision controls and styling are unchanged; this is not V18/V41 acceptance or a
+claim that the whole vector panel is declaratively migrated. CI remains required.

@@ -13,11 +13,8 @@ import com.motionssalt.saltygraphics.engine.model.FillData
 import com.motionssalt.saltygraphics.engine.model.CanvasSize
 import com.motionssalt.saltygraphics.engine.model.Layer
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
+import com.motionssalt.saltygraphics.uikit.overlays.SaltyVectorToolMode
 
-/**
- * Context passed to registered on-canvas overlays.
- * Overlays register in :ui-kit and never live inside feature-specific modal windows.
- */
 /** Required callbacks for a real, history-aware gradient editing session. No no-op defaults. */
 data class GradientOverlayBindings(
     val onPreview: (FillData) -> Unit,
@@ -25,13 +22,26 @@ data class GradientOverlayBindings(
     val onCancel: () -> Unit
 )
 
+/** Vector session values and real editor callbacks, never silent no-op bindings. */
+data class VectorOverlayBindings(
+    val pathIndex: Int,
+    val selectedPoint: Int?,
+    val tool: SaltyVectorToolMode,
+    val onSelectPoint: (Int?) -> Unit,
+    val onPreview: (Layer?) -> Unit,
+    val onCommit: (Layer) -> Unit,
+    val onDone: () -> Unit
+)
+
+/** Context passed to library-owned registered overlays, not feature modal windows. */
 data class OverlayRenderContext(
     val document: ProjectDocument,
     val layer: Layer,
     val canvasSize: CanvasSize,
     val zoom: Float,
     val pan: Offset,
-    val gradientEditing: GradientOverlayBindings? = null
+    val gradientEditing: GradientOverlayBindings? = null,
+    val vectorEditing: VectorOverlayBindings? = null
 )
 
 data class LibraryComponentEntry<T>(

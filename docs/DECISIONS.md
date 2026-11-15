@@ -640,3 +640,14 @@ visibility. Default visibility is false without a host-provided
 developer condition, and both page dispatch and rendering enforce the existing switch.
 No new sample data, UI layout, styling or ordinary-user tool is introduced. Production
 editor tests verify real saved mutations and history, not just registry membership.
+
+
+### V0 vector registry: remove inert default session state
+As with gradient handles, the `vector_editor` registry entry previously drew an
+unbound overlay: path 0, no selected point, Select tool and no-op edit callbacks.
+Production bypassed it through a direct component call. Route the existing app facade
+through the library host and require typed `VectorOverlayBindings` for the active
+session and all callbacks. The already-existing library gesture and rendering code
+is untouched. Existing multi-path/gesture/history/archive tests now take the registry
+route; a production Editor test verifies real pointer geometry changes are saved and
+undoable. V41 handle visibility/hit-test amendments remain separate pending work.
