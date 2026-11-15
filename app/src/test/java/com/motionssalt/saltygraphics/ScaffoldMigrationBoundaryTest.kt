@@ -120,7 +120,7 @@ class ScaffoldMigrationBoundaryTest {
             for (f in ktFiles) {
                 val txt = f.readText()
                 assertFalse("Sub-library $sub (${f.name}) cannot bypass :ui-kit core", forbidden.containsMatchIn(txt))
-                val crossImport = Regex("import\s+com\.motionssalt\.saltygraphics\.uikit\.sublibs\.(?!${sub}(?:\.|\s))")
+                val crossImport = Regex("""import\s+com\.motionssalt\.saltygraphics\.uikit\.sublibs\.(?!${sub}(?:\.|\s))""")
                 assertFalse("Sub-library $sub (${f.name}) cannot depend on sibling sub-libraries", crossImport.containsMatchIn(txt))
             }
         }
