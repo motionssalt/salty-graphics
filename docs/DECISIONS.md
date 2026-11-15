@@ -604,3 +604,26 @@ production extension/overlay registry use, hidden developer template integration
 all-component/state goldens remain. No new release/tag, old releases/reference APK,
 stable signing secrets and applicationId untouched. Final handoff commit is docs/state
 only and does not change the verified application code. No UI refinement.
+
+
+## V0 registered gradient overlay integration — 2026-11-15
+Root cause of the registry gap: a prior session registered overlay names with no-op
+callbacks but production continued calling the concrete overlay directly. An id-only
+registry test passed without proving that editing could flow through the scaffold.
+`ScaffoldCanvasOverlay` now resolves the real production gradient renderer and keys
+its lifetime by document/target. `GradientOverlayBindings` requires real preview,
+structured-identity commit and cancel handlers; the built-in entry rejects missing
+bindings instead of silently accepting edits. Gradient previews synchronize legacy
+fill mirrors with `withUniversalFill`; only commit records/saves a live-tree command.
+
+A second lifetime gap left draft pixels after the gesture's coroutine was disposed:
+the old rollback ran only after a normal pointer loop exit. Use `try/finally` so
+cancel, page closure and target unmount discard drafts without adding history.
+Finished start/end/center/whole/free-point drags have specific structured labels.
+Geometry, colors and sizing are unchanged; existing reviewed library goldens remain
+mandatory. Registered pointer/history tests and the production Editor fill test must
+pass in the existing test workflow before this partial migration is accepted.
+
+Latest inherited run 43700394896 is green but does not establish full V0 acceptance.
+V0 is reopened, later active items paused, and unsupported migration checkmarks are
+removed. No release, tag, applicationId, signing or reference-keyflaw change.

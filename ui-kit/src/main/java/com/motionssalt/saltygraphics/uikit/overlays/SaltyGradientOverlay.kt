@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.engine.model.*
+import com.motionssalt.saltygraphics.engine.action.ActionIdentity
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 import kotlin.math.*
 
@@ -156,13 +157,17 @@ fun SaltyGradientLayerOverlay(
     pan: Offset,
     onPreview: (FillData) -> Unit,
     onCommit: (FillData) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onGestureCommit: ((ActionIdentity, FillData) -> Unit)? = null,
+    onCancel: (() -> Unit)? = null
 ) {
     val colors = SaltyTokens.colors
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     val live by rememberUpdatedState(layer)
     val preview by rememberUpdatedState(onPreview)
     val commit by rememberUpdatedState(onCommit)
+    val gestureCommit by rememberUpdatedState(onGestureCommit)
+    val cancel by rememberUpdatedState(onCancel)
     val livePan by rememberUpdatedState(pan)
     val fit = if (viewport.width > 0 && viewport.height > 0) {
         min(viewport.width / canvasSize.width.toFloat(), viewport.height / canvasSize.height.toFloat()) * 0.94f
@@ -239,9 +244,11 @@ fun SaltyGradientLayerOverlay(
                         ?: return@awaitEachGesture
                     down.consume()
                     var changed = false
-                    var cancelled = false
+                    var cancelled = true
+                    var completed = false
                     var working = original.effectiveFill
                     val startWorldCenter = points.firstOrNull()
+                    try {
                     while (true) {
                         val event = awaitPointerEvent(PointerEventPass.Initial)
                         val c = event.changes.firstOrNull { it.id == down.id } ?: break
@@ -346,11 +353,31 @@ fun SaltyGradientLayerOverlay(
                             }
                         }
                         working = original.effectiveFill.copy(gradient = updated)
-                        preview(working)
                         changed = true
+                        preview(working)
                         c.consume()
                     }
-                    if (cancelled) preview(original.effectiveFill) else if (changed) commit(working)
+                    if (changed && !cancelled) {
+                        completed = true
+                        val identity = when {
+                            original.effectiveFill.gradient.type == GradientType.FREEFORM -> ActionIdentity("Move", "gradient", "point")
+                            original.effectiveFill.gradient.type == GradientType.LINEAR && hit == 1 -> ActionIdentity("Move", "gradient", "start")
+                            original.effectiveFill.gradient.type == GradientType.LINEAR && hit == 2 -> ActionIdentity("Move", "gradient", "end")
+                            original.effectiveFill.gradient.type == GradientType.LINEAR -> ActionIdentity("Move", "gradient")
+                            hit == 0 -> ActionIdentity("Move", "gradient", "center")
+                            else -> ActionIdentity("Change", "gradient", "radius")
+                        }
+                        val labelled = gestureCommit
+                        if (labelled != null) labelled(identity, working) else commit(working)
+                    }
+                    } finally {
+                        // Also runs if the page/target is disposed during pointer input.
+                        // A draft is never a committed document or an autosave.
+                        if (changed && !completed) {
+                            val rollback = cancel
+                            if (rollback != null) rollback() else preview(original.effectiveFill)
+                        }
+                    }
                 }
             }
     ) {

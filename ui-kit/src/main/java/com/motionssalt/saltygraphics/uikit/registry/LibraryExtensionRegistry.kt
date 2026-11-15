@@ -3,6 +3,13 @@ package com.motionssalt.saltygraphics.uikit.registry
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.key
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import com.motionssalt.saltygraphics.engine.action.ActionIdentity
+import com.motionssalt.saltygraphics.engine.model.FillData
 import com.motionssalt.saltygraphics.engine.model.CanvasSize
 import com.motionssalt.saltygraphics.engine.model.Layer
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
@@ -11,12 +18,20 @@ import com.motionssalt.saltygraphics.engine.model.ProjectDocument
  * Context passed to registered on-canvas overlays.
  * Overlays register in :ui-kit and never live inside feature-specific modal windows.
  */
+/** Required callbacks for a real, history-aware gradient editing session. No no-op defaults. */
+data class GradientOverlayBindings(
+    val onPreview: (FillData) -> Unit,
+    val onCommit: (ActionIdentity, FillData) -> Unit,
+    val onCancel: () -> Unit
+)
+
 data class OverlayRenderContext(
     val document: ProjectDocument,
     val layer: Layer,
     val canvasSize: CanvasSize,
     val zoom: Float,
-    val pan: Offset
+    val pan: Offset,
+    val gradientEditing: GradientOverlayBindings? = null
 )
 
 data class LibraryComponentEntry<T>(
@@ -81,4 +96,19 @@ object OverlayRegistry {
     fun get(id: String): OverlayEntry? = overlays[id]
 
     fun allOverlays(): List<OverlayEntry> = overlays.values.toList()
+}
+
+/**
+ * Library-owned overlay host. Feature facades pass data and bindings, never a renderer.
+ * Keying by document/target cancels an active gesture before another target is mounted.
+ */
+@Composable
+fun ScaffoldCanvasOverlay(id: String, context: OverlayRenderContext) {
+    SaltyBuiltInLibraryRegistry.ensureRegistered()
+    val entry = requireNotNull(OverlayRegistry.get(id)) { "Unregistered canvas overlay: $id" }
+    key(id, context.document.id, context.layer.id) {
+        Box(Modifier.fillMaxSize().testTag("registered_overlay_$id")) {
+            entry.renderer(context)
+        }
+    }
 }

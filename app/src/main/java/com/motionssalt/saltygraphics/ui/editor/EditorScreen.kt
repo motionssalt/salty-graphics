@@ -477,13 +477,14 @@ fun EditorScreen(
                     if (isFillPanelOpen && currentSelectedLayer?.effectiveFill?.type == FillType.GRADIENT) {
                         val targetId = currentSelectedLayer.id
                         GradientCanvasOverlay(
-                            currentSelectedLayer, doc.canvasSize, zoom, panOffset,
-                            onPreview = { fill -> projectDocument = projectDocument?.updateLayer(targetId) { it.copy(fillData = fill) } },
-                            onCommit = { fill ->
-                                recordCommandAndAutoSave(ActionIdentity("Change", "Layer", "gradient geometry")) { live ->
+                            doc, currentSelectedLayer, zoom, panOffset,
+                            onPreview = { fill -> projectDocument = projectDocument?.updateLayer(targetId) { it.withUniversalFill(fill) } },
+                            onCommit = { identity, fill ->
+                                recordCommandAndAutoSave(identity) { live ->
                                     live.updateLayer(targetId) { it.withUniversalFill(fill) }
                                 }
-                            }
+                            },
+                            onCancel = { projectDocument = actionTree?.currentDocument }
                         )
                     }
 

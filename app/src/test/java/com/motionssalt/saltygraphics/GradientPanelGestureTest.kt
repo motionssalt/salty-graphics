@@ -28,6 +28,7 @@ class GradientPanelGestureTest : FillEditorFixture() {
             compose.onNodeWithText("Edit Gradient").performClick()
             compose.onNodeWithText("Gradient Settings").assertIsDisplayed()
             compose.onAllNodes(isDialog()).assertCountEquals(0)
+            compose.onNodeWithTag("registered_overlay_gradient_handles").assertIsDisplayed()
             val node=compose.onNodeWithTag("gradient_handles")
             val rect=node.getUnclippedBoundsInRoot()
             val fit=min((rect.right-rect.left).value/1000f,(rect.bottom-rect.top).value/1000f)*.94f
@@ -42,7 +43,23 @@ class GradientPanelGestureTest : FillEditorFixture() {
             assertEquals(.6f,changed.effectiveFill.gradient.centerX,.015f)
             assertEquals(.55f,changed.effectiveFill.gradient.centerY,.015f)
             assertEquals("A gesture commits one action",2,loaded.result.historySnapshot!!.nodes.size)
+            assertEquals("Move gradient", loaded.result.historySnapshot!!.nodes.getValue(
+                loaded.result.historySnapshot!!.currentNodeId).description)
             assertEquals(layer.transform,changed.transform)
+            // A cancelled registered-overlay drag cannot persist a draft or add a node.
+            val committedFill = changed.effectiveFill
+            node.performTouchInput {
+                val movedCenter = center + Offset(40f * fit, 20f * fit)
+                down(movedCenter); moveTo(movedCenter + Offset(20f * fit, 10f * fit), 100); cancel()
+            }
+            compose.waitForIdle()
+            assertEquals(committedFill, runBlocking { repo.getProject(id)!! }.findLayerById(layer.id)!!.effectiveFill)
+            val afterCancel = runBlocking { repo.openProject(id) } as ProjectLoadState.Loaded
+            assertEquals(2, afterCancel.result.historySnapshot!!.nodes.size)
+            compose.onNodeWithContentDescription("Undo").performClick()
+            compose.waitUntil(10000) { runBlocking { repo.getProject(id)!! }.findLayerById(layer.id)!!.effectiveFill == layer.effectiveFill }
+            compose.onNodeWithContentDescription("Redo").performClick()
+            compose.waitUntil(10000) { runBlocking { repo.getProject(id)!! }.findLayerById(layer.id)!!.effectiveFill == committedFill }
             compose.onNodeWithTag("tools").assertIsDisplayed()
             compose.onNodeWithTag("preview").assertIsDisplayed()
             compose.onAllNodes(isDialog()).assertCountEquals(0)

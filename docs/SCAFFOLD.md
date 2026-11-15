@@ -113,24 +113,24 @@ The app still has raw layouts and Material dependencies. Do not mark V0 complete
 until they are removed and every component has actual rendered golden coverage.
 
 
-- [x] **Home Screen**: Migrated to `:ui-kit` `sublibs.home.SaltyHomeScreen` using `SaltyTokens`, `SaltyProjectCard`, `SaltyEmptyState`, and shared controls.
-- [x] **Settings Screen**: Migrated to `:ui-kit` `sublibs.settings.SaltySettingsScreen` using `SaltyTokens`, `SaltySwitch`, `SaltyProgressSlider`, and `SaltySectionCard`.
-- [x] **New Project Screen**: Migrated to `:ui-kit` `sublibs.newproject.SaltyNewProjectScreen` using `SaltyTokens`, `SaltyAspectRatioTile`, and shared controls.
-- [x] **Export Screen**: Migrated to `:ui-kit` `sublibs.export.SaltyExportScreen` using `SaltyTokens`, progress sliders, format chips, and shared controls.
+- [ ] **Home Screen**: Migrated to `:ui-kit` `sublibs.home.SaltyHomeScreen` using `SaltyTokens`, `SaltyProjectCard`, `SaltyEmptyState`, and shared controls.
+- [ ] **Settings Screen**: Migrated to `:ui-kit` `sublibs.settings.SaltySettingsScreen` using `SaltyTokens`, `SaltySwitch`, `SaltyProgressSlider`, and `SaltySectionCard`.
+- [ ] **New Project Screen**: Migrated to `:ui-kit` `sublibs.newproject.SaltyNewProjectScreen` using `SaltyTokens`, `SaltyAspectRatioTile`, and shared controls.
+- [ ] **Export Screen**: Migrated to `:ui-kit` `sublibs.export.SaltyExportScreen` using `SaltyTokens`, progress sliders, format chips, and shared controls.
 - [x] **Project Settings**: Production declaration and typed commands use `ScaffoldFeaturePage` with shared controls, panel-native color pages, inline quality selector, readouts and a non-scrolling numeric-entry footer. Real UI/history/pointer tests and reviewed production-theme PNGs pass in Actions 43163047303. Full device IME behavior and whole-app walkthrough remain V24 acceptance, not certified by this screen migration.
 - [x] **Editor Top Bar**: `TopPanel` is now a binding-only facade over `SaltyEditorTopBar` in `:ui-kit`. Shared library owns layout/tokens; navigation is horizontally scrollable and operations/settings remain pinned on narrow screens. Screenshot matrix remains pending.
 - [x] **Bottom Panel Tool Grid**: Production `BottomPanel` supplies action bindings only. `EditorToolFeatures` declares metadata/eligibility, and `ScaffoldToolPanel` in `:ui-kit` draws the existing fixed three-column grid and group breadcrumbs through `FeatureCatalog.queryTools`.
-- [x] **Fill & Gradient**: Migrated to `:ui-kit` `SaltyFillPanelPage`, `SaltyColorPicker`, `SaltyGradientLayerOverlay`, and `SaltyMediaPickerGrid`.
+- [ ] **Fill & Gradient**: Migrated to `:ui-kit` `SaltyFillPanelPage`, `SaltyColorPicker`, `SaltyGradientLayerOverlay`, and `SaltyMediaPickerGrid`.
 - [x] **Border & Shadow (existing page)**: `BorderShadowFeature` declares 18 typed controls and the page only binds `ScaffoldFeaturePage`. Actions 43691971931 verifies production pointer preview/commit/cancel, independent color/opacity, live property writes, legacy mirrors, native render changes, archive and history. This is V0 page migration only: V8/V30 Effects-only reachability and the full amended feature matrix remain pending.
-- [x] **Transform**: Migrated to `:ui-kit` `SaltyTransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
-- [x] **Blending & Masks**: Migrated to `:ui-kit` `SaltyBlendingMaskPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
-- [x] **Text & Text Options**: Migrated to `:ui-kit` `sublibs.text.SaltyTextOptionsPage`, multiline text box, font family picker, alignment chips.
+- [ ] **Transform**: Migrated to `:ui-kit` `SaltyTransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
+- [ ] **Blending & Masks**: Migrated to `:ui-kit` `SaltyBlendingMaskPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
+- [ ] **Text & Text Options**: Migrated to `:ui-kit` `sublibs.text.SaltyTextOptionsPage`, multiline text box, font family picker, alignment chips.
 - [x] **Shape & Shape Settings**: Geometry is a typed `ShapeSettingsFeature` declaration; creation choices are registered by `ShapePickerFeature` and drawn with shared `ScaffoldToolPicker`. Actions 43209833401 verifies production Edit/Undo/Redo, target switches, property-only history, pointer previews/commit/cancel, native compositor changes, .sg preservation, seven creation defaults, architecture guards and reviewed light/dark library chooser PNGs. This does not certify all other app screens.
-- [x] **Vector Tool & Curve Editing**: Migrated to `:ui-kit` `sublibs.vector.SaltyVectorPage` and `SaltyVectorCanvasOverlay`, independent handles toggle, corner/smooth toggle, angle lock.
-- [x] **Rasterize Layer**: Migrated to `:ui-kit` `SaltyConfirmDialog` offering duplicate-and-rasterize option and `LayerRasterizer` action.
-- [x] **Layers Panel**: Migrated to `:ui-kit` `sublibs.layers.SaltyLayersPanelSublib` and `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
-- [x] **History Panel / Action Tree**: Migrated to `:ui-kit` `sublibs.history.SaltyHistoryTreeSublib` and `SaltyHistoryTree`, clean lane layout, branching timeline, pan and zoom.
-- [x] **Effects Engine**: Migrated to `:ui-kit` `sublibs.effects.SaltyEffectsPage`; effect definitions auto-generate settings through the shared control engine.
+- [ ] **Vector Tool & Curve Editing**: Migrated to `:ui-kit` `sublibs.vector.SaltyVectorPage` and `SaltyVectorCanvasOverlay`, independent handles toggle, corner/smooth toggle, angle lock.
+- [ ] **Rasterize Layer**: Migrated to `:ui-kit` `SaltyConfirmDialog` offering duplicate-and-rasterize option and `LayerRasterizer` action.
+- [ ] **Layers Panel**: Migrated to `:ui-kit` `sublibs.layers.SaltyLayersPanelSublib` and `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
+- [ ] **History Panel / Action Tree**: Migrated to `:ui-kit` `sublibs.history.SaltyHistoryTreeSublib` and `SaltyHistoryTree`, clean lane layout, branching timeline, pan and zoom.
+- [ ] **Effects Engine**: Migrated to `:ui-kit` `sublibs.effects.SaltyEffectsPage`; effect definitions auto-generate settings through the shared control engine.
 
 
 ### V0 verified-scope boundaries and tool registrations
@@ -289,3 +289,28 @@ Material/Compose APIs for legacy areas; complete production extension/overlay re
 integration, developer example wiring and every-component/state/theme goldens remain.
 The V8/V30 Effects-only change is deliberately not claimed. Continue V0 first. No new
 release/tag, no web/applet preview, no emulator screenshot loop or UI refinement.
+
+
+### Registered gradient overlay: production dispatch and gesture lifetime
+The production `GradientCanvasOverlay` facade now passes its live document, target,
+viewport values and `GradientOverlayBindings` to `ScaffoldCanvasOverlay`. The host
+resolves `gradient_handles` from `OverlayRegistry`; it keys the session by document
+and layer id. The built-in entry **requires** preview, labelled commit and cancellation
+bindings. It no longer silently draws an inert overlay with no-op callbacks.
+
+`SaltyGradientLayerOverlay` retains its existing appearance and geometry. Finished
+start/end/center/whole-gradient/free-point gestures send a structured, specific
+`ActionIdentity` once. Preview frames update only the visible draft, never autosave
+or history. Both pointer cancellation and disposal of an in-flight gesture roll the
+host back to its committed action-tree state via `finally`. The primitive fallback
+API still rolls back to its starting fill for legacy callers. Real UI tests exercise
+the registered path at three zooms and two layer rotations, plus cancel/disposal;
+the existing real Editor test checks persistence, labels and Undo/Redo. CI acceptance
+is pending at this checkpoint. No new visual component or new golden baseline.
+
+Only gradient production registration is certified by this change: vector and
+selection registry entries still require real host bindings and migration. Likewise,
+the built-in media/trackpad/example registrations are not accepted merely because
+an id exists. This does not complete V0/V7/V24 or the full component golden matrix.
+Checklist rows contradicted by the wrapper-only audit above are reopened, retaining
+their historical descriptions rather than mistaking component reuse for registration.

@@ -139,13 +139,20 @@ object SaltyBuiltInLibraryRegistry {
                     id = "gradient_handles",
                     description = "Independent on-canvas gradient start, end, and center handles"
                 ) { ctx ->
+                    val bindings = requireNotNull(ctx.gradientEditing) {
+                        "gradient_handles requires preview, labelled commit and cancellation bindings"
+                    }
                     SaltyGradientLayerOverlay(
                         layer = ctx.layer,
                         canvasSize = ctx.canvasSize,
                         zoom = ctx.zoom,
                         pan = ctx.pan,
-                        onPreview = { _: FillData -> },
-                        onCommit = { _: FillData -> }
+                        onPreview = bindings.onPreview,
+                        onCommit = { fill -> bindings.onCommit(
+                            com.motionssalt.saltygraphics.engine.action.ActionIdentity("Change", "Layer", "gradient geometry"), fill
+                        ) },
+                        onGestureCommit = bindings.onCommit,
+                        onCancel = bindings.onCancel
                     )
                 }
             )
