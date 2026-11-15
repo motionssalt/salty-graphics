@@ -72,11 +72,12 @@ internal fun selectionBounds(context: Context, document: ProjectDocument, layer:
     if (textEditing && layer.type == LayerType.TEXT && layer.textData != null) {
         val data = requireNotNull(layer.textData)
         val layout = TextLayoutEngine.computeLayout(data, selectionTextPaint(context, data))
-        val frameW = if (data.boxMode == TextBoxMode.FREE) {
-            max(data.boxWidth, layout.totalWidth).coerceAtLeast(1f)
-        } else {
-            data.boxWidth.coerceAtLeast(1f)
-        }
+        // The editing frame is the width constraint, not the unwrapped glyph extent.
+        // FREE text can be much wider than the viewport (especially after rotation/
+        // zoom); using its measured line width puts both resize handles off-screen.
+        // Resizing this frame switches to PARAGRAPH without scaling the glyphs.
+        // The non-editing selection keeps the normal content bounds above.
+        val frameW = data.boxWidth.coerceAtLeast(1f)
         val frameH = max(data.boxHeight, layout.totalHeight).coerceAtLeast(1f)
         SelectionBounds(-frameW / 2f, -frameH / 2f, frameW / 2f, frameH / 2f)
     } else if(layer.id=="__selection__") {

@@ -62,6 +62,13 @@ class RegisteredVectorEditorTest : FillEditorFixture() {
         }
     }
 
+ }
+
+/** One real Editor host per isolated Robolectric worker, as for developer fixtures. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w412dp-h860dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class RegisteredBezierHandleEditorTest : FillEditorFixture() {
     @Test fun bezierHandlesShowOnlyForSelectedAnchorAndDraggingHandleInAddModeDoesNotCreateNewPoint() {
         val target = Layer(
             id = "vec_v41",

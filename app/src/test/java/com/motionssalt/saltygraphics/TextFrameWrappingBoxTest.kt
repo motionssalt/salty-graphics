@@ -92,8 +92,9 @@ class TextFrameWrappingBoxTest {
 
             // At 1f zoom and 800x800 canvas in 400x400 view, fit = 400/800 * 0.94 = 0.47
             val fit = (400f / 800f) * 0.94f
-            val initialPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { textSize = initialTextData.fontSize }
-            val initialFrameW = kotlin.math.max(initialTextData.boxWidth, TextLayoutEngine.computeLayout(initialTextData, initialPaint).totalWidth)
+            // Dedicated width handles use the stored container width, never the
+            // unwrapped FREE glyph width which may extend beyond the viewport.
+            val initialFrameW = initialTextData.boxWidth
             val rightHandleX = center.x + ((initialFrameW / 2f) * fit)
             val rightHandleY = center.y
 
@@ -185,8 +186,9 @@ class TextFrameWrappingBoxTest {
 
             // At 2f zoom: fit = (400/800)*0.94 = 0.47, effZoom = 0.47 * 2 = 0.94
             val effZoom = (400f / 800f) * 0.94f * 2f
-            val initialPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { textSize = initialTextData.fontSize }
-            val initialFrameW = kotlin.math.max(initialTextData.boxWidth, TextLayoutEngine.computeLayout(initialTextData, initialPaint).totalWidth)
+            // Dedicated width handles use the stored container width, never the
+            // unwrapped FREE glyph width which may extend beyond the viewport.
+            val initialFrameW = initialTextData.boxWidth
             val handleX = center.x
             val handleY = center.y + ((initialFrameW / 2f) * effZoom)
 
@@ -203,8 +205,11 @@ class TextFrameWrappingBoxTest {
             assertNotNull(updatedLayer)
             val updatedText = updatedLayer!!.textData!!
             assertTrue("Box width must have increased from 300f under rotation and 2x zoom, was: ${updatedText.boxWidth}", updatedText.boxWidth > 300f)
+            assertEquals("Local width delta accounts for rotation and zoom", 300f + 80f / effZoom, updatedText.boxWidth, 1f)
+            assertEquals("Resizing must not scale glyphs", initialTextData.fontSize, updatedText.fontSize, 0f)
+            assertEquals(textLayer.transform, updatedLayer.transform)
             assertEquals(TextBoxMode.PARAGRAPH, updatedText.boxMode)
-            assertTrue(committedActions.contains("Resize text box"))
+            assertEquals(listOf("Resize text box"), committedActions)
         } finally {
             host.pause().stop().destroy()
         }
