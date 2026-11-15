@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 
@@ -63,6 +64,7 @@ fun SaltyTrackpad(
                 .clip(shapes.md)
                 .background(colors.surfaceVariant)
                 .border(1.dp, colors.outlineVariant, shapes.md)
+                .testTag("trackpad_surface")
                 .pointerInput(sensitivity) {
                     detectDragGestures(
                         onDragStart = { offset ->
