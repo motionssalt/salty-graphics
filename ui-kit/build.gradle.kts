@@ -31,6 +31,11 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all { it.forkEvery = 1 }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -53,6 +58,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation(libs.androidx.activity.compose)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
