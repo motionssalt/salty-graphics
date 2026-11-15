@@ -519,3 +519,28 @@ not finished. Vector editing has not been migrated. Subsequent fixes, Deep Glow 
 final release acceptance remain open. No signed APK release was published; all earlier
 releases/reference-keyflaw, signing credentials and applicationId are untouched.
 No host web frontend/preview, device testing or UI refinement was performed.
+
+
+## V0 Border/Shadow property-page migration — 2026-11-15 (verification pending)
+
+The earlier wrapper conversion still hand-coded the page in `:app`, and its commit
+callbacks copied captured `doc`, StrokeData and ShadowData. A later property could
+therefore revert an earlier edit. Color editing additionally read `effectiveArgb`
+then reset opacity to 1, collapsing two independent properties. The new declaration
+uses one typed lens per property, live-document commands, preview/commit separation,
+shared panel-native color pages and the shared numeric footer. Stroke color writes
+only color; opacity writes only opacity. Legacy text outline/shape/vector stroke
+mirrors remain synchronized with the live target. Existing ranges and choices are
+retained. V30 effects-only migration remains pending; no claim of V8 acceptance.
+
+A raw-import ban alone does not enforce the no-hand-coded-layout rule: aliases and
+library Row/Column wrappers still allow feature layouts. Added a second scoped guard
+for truly declaration-only property pages; remaining wrapper-only screens stay open
+on the V0 migration checklist. Do not mark them done based on import scans.
+
+Inherited acceptance failures were traced to missing component PNG baselines, a
+throwaway fixture expecting canonical Full while the model default is the legacy HIGH
+alias, and unbounded color-surface theme animation idling. Explicit canonical fixture,
+scroll-to interactions, reviewed controls PNGs and an explicitly advanced static
+golden clock repair the harness without suppressing any assertion. CI executes the
+full debug suite once rather than executing a subset and then repeating it in full.

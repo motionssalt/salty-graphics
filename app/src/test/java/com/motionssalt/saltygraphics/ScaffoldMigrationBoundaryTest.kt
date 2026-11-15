@@ -48,6 +48,7 @@ class ScaffoldMigrationBoundaryTest {
             "ui/editor/EditorScreen.kt",
             "ui/controls/FillPanelPage.kt",
             "ui/controls/BorderShadowPanelPage.kt",
+            "ui/controls/BorderShadowFeature.kt",
             "ui/controls/ColorPickerComponents.kt",
             "ui/controls/MiscControls.kt",
             "ui/controls/PanelControls.kt",
@@ -75,6 +76,18 @@ class ScaffoldMigrationBoundaryTest {
                     forbidden.containsMatchIn(text)
                 )
             }
+        }
+    }
+
+    @Test fun declarationOnlyFeaturesCannotHideLayoutsBehindLibraryWrappers() {
+        val root = File("src/main/java/com/motionssalt/saltygraphics")
+            .takeIf(File::exists) ?: File("app/src/main/java/com/motionssalt/saltygraphics")
+        val layouts = Regex("""\bSalty(?:Row|Column|Box|Card|SectionCard|LazyColumn|Text|Button|PanelPage|NumberControl)\s*\(""")
+        for (path in listOf("ui/editor/ProjectSettingsPage.kt", "ui/editor/ProjectSettingsFeature.kt",
+            "ui/editor/ShapeSettingsDialog.kt", "ui/editor/ShapeSettingsFeature.kt",
+            "ui/controls/BorderShadowPanelPage.kt", "ui/controls/BorderShadowFeature.kt")) {
+            assertFalse("$path must declare controls/use ScaffoldFeaturePage, not hand-code layouts with wrappers",
+                layouts.containsMatchIn(File(root, path).readText()))
         }
     }
 

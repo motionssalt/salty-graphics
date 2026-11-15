@@ -465,10 +465,10 @@ class BorderEditorMutationTest : FillEditorFixture() {
             compose.onAllNodesWithText("Border & Shadow", useUnmergedTree = true).filterToOne(hasAnyAncestor(hasTestTag("tools"))).assertIsDisplayed()
 
             // Toggle Stroke on
-            compose.onNodeWithTag("stroke_switch").performClick()
+            compose.onNode(isToggleable() and hasAnyAncestor(hasTestTag("control_stroke_enabled"))).performClick()
 
             // Toggle Shadow on
-            compose.onNodeWithTag("shadow_switch").performScrollTo().performClick()
+            compose.onNode(isToggleable() and hasAnyAncestor(hasTestTag("control_shadow_enabled"))).performScrollTo().performClick()
 
             // Close panel
             compose.onAllNodesWithContentDescription("Back").filterToOne(hasAnyAncestor(hasTestTag("tools"))).performClick()

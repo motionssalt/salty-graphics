@@ -667,67 +667,16 @@ fun EditorScreen(
                         onBack = { isFillPanelOpen = false }
                     )
                 } else if (isBorderShadowPanelOpen && currentSelectedLayer != null) {
-                    val targetLayer = currentSelectedLayer
-                    val targetId = targetLayer.id
                     BorderShadowPanelPage(
-                        stroke = targetLayer.effectiveStroke,
-                        shadow = targetLayer.effectiveShadow,
-                        onStrokePreview = { newStroke ->
-                            projectDocument = projectDocument?.updateLayer(targetId) { layer ->
-                                layer.copy(strokeData = newStroke)
-                            }
+                        document = doc,
+                        layerId = currentSelectedLayer.id,
+                        onCommit = { change ->
+                            val live = tree.currentDocument
+                            if (change.appliesTo(live)) recordCommandAndAutoSave(change.identity(live), change::apply)
                         },
-                        onStrokeCommit = { desc, newStroke ->
-                            val updated = doc.updateLayer(targetId) { layer ->
-                                val base = layer.copy(strokeData = newStroke)
-                                when (layer.type) {
-                                    LayerType.SHAPE -> {
-                                        val shape = layer.shapeData ?: ShapeData()
-                                        base.copy(shapeData = shape.copy(
-                                            hasStroke = newStroke.isEnabled,
-                                            strokeColor = newStroke.color,
-                                            strokeWidth = newStroke.width
-                                        ))
-                                    }
-                                    LayerType.TEXT -> {
-                                        val text = layer.textData ?: TextLayerData()
-                                        base.copy(textData = text.copy(
-                                            hasOutline = newStroke.isEnabled,
-                                            outlineColor = newStroke.color,
-                                            outlineWidth = newStroke.width
-                                        ))
-                                    }
-                                    LayerType.VECTOR -> {
-                                        val path = layer.vectorPathData
-                                        if (path != null) {
-                                            base.copy(vectorPathData = path.copy(
-                                                hasStroke = newStroke.isEnabled,
-                                                strokeColor = newStroke.color,
-                                                strokeWidth = newStroke.width,
-                                                strokeCap = newStroke.cap,
-                                                strokeJoin = newStroke.join,
-                                                dashLength = if (newStroke.isDashed) newStroke.dashLength else 0f,
-                                                dashGap = if (newStroke.isDashed) newStroke.dashGap else 0f
-                                            ))
-                                        } else base
-                                    }
-                                    else -> base
-                                }
-                            }
-                            projectDocument = updated
-                            recordAndAutoSave(desc, updated)
-                        },
-                        onShadowPreview = { newShadow ->
-                            projectDocument = projectDocument?.updateLayer(targetId) { layer ->
-                                layer.copy(shadowData = newShadow)
-                            }
-                        },
-                        onShadowCommit = { desc, newShadow ->
-                            val updated = doc.updateLayer(targetId) { layer ->
-                                layer.copy(shadowData = newShadow)
-                            }
-                            projectDocument = updated
-                            recordAndAutoSave(desc, updated)
+                        onPreview = { change ->
+                            val live = tree.currentDocument
+                            projectDocument = change?.apply(live) ?: live
                         },
                         onBack = { isBorderShadowPanelOpen = false }
                     )

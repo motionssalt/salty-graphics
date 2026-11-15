@@ -209,3 +209,36 @@ Code `973c342` passes the full debug JVM suite across app/engine/ui-kit and
 vector creation also uses the shared chooser but vector editing remains unchecked.
 Continue remaining V0 migrations and registry/module-boundary/component-golden work
 before proceeding with other reopened fixes. No new release or UI refinement.
+
+
+### V0 Border/Shadow declaration-only migration — 2026-11-15 (verification pending)
+`BorderShadowFeature.kt` declares all 18 existing stroke/shadow controls as typed
+property lenses. `BorderShadowPanelPage` is now a binding-only `ScaffoldFeaturePage`
+facade, not a hand-written sequence of library wrappers. Production editor callbacks
+apply events against `ActionTree.currentDocument`. Preview frames do not save or add
+history; cancel/back/disposal clears the preview; the completed gesture commits once.
+Legacy shape/text/vector stroke mirrors are maintained against the live layer without
+rewriting geometry, fill, transforms or other layers. Color alpha and opacity remain
+independent: color edits never bake effective alpha into color or reset opacity to 1.
+
+This migrates the existing page only. V30 must still move appearance into ordinary,
+reorderable effects; V8 is not done and the old tool-grid route is retained until that
+pipeline migration. Binding, randomized stale-event, archive and real editor gesture/
+render tests are added; acceptance is pending CI.
+
+#### Important: wrappers do not satisfy registration-only architecture
+Recent code replaced raw layout imports with `SaltyRow`, `SaltyColumn`, `SaltyCard`
+etc. in many screens. That is library-component reuse, **not** completed declarative
+scaffold migration. Home, Settings, New Project, Export, Transform, Text/font picker,
+Fill/gradient, Blending, Layers, History, Vector and Effects still own layout and/or
+navigation. Keep their checklist entries open until a real library surface owns the
+layout and feature files contain registrations/bindings only. The new scoped test
+`declarationOnlyFeaturesCannotHideLayoutsBehindLibraryWrappers` protects Project
+Settings, Shape geometry and Border/Shadow; expand it as actual migrations finish.
+
+The two `components_controls_{dark,light}.png` library goldens were generated in
+Actions 43686334697 and visually reviewed: real switches (on/off and disabled),
+buttons, ruler, progress bar, segmented chips, expanded inline dropdown, normal/error
+text fields and toast. They are not every-component/state coverage. The surfaces/
+color capture uses an explicitly advanced visual fixture clock for stable input/theme
+transitions; missing or changed baselines continue to fail, never auto-accept.
