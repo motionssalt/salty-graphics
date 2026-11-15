@@ -381,7 +381,7 @@ object LayerCompositor {
      */
     fun compositeLayerListToPixels(
         layersTopFirst: List<Layer>,
-        document: ProjectDocument,
+        document: ProjectDocument? = null,
         width: Int,
         height: Int,
         mediaResolver: ((String) -> Bitmap?)? = null,
@@ -418,7 +418,7 @@ object LayerCompositor {
                     }
                     if (layer.effectiveMaskType != MaskType.NONE) {
                         val maskSourceId = layer.effectiveMaskSourceLayerId
-                        val maskLayer = if (maskSourceId != null) document.findLayerById(maskSourceId) else null
+                        val maskLayer = if (maskSourceId != null) document?.findLayerById(maskSourceId) else null
                         if (maskLayer != null) {
                             val maskBmp = renderLayerContent(maskLayer, w, h, document, mediaResolver, forceVisible = true)
                             val maskPx = IntArray(w * h)
@@ -438,7 +438,7 @@ object LayerCompositor {
 
             if (layer.effectiveMaskType != MaskType.NONE) {
                 val maskSourceId = layer.effectiveMaskSourceLayerId
-                val maskLayer = if (maskSourceId != null) document.findLayerById(maskSourceId) else null
+                val maskLayer = if (maskSourceId != null) document?.findLayerById(maskSourceId) else null
                 if (maskLayer != null) {
                     val maskBmp = renderLayerContent(maskLayer, w, h, document, mediaResolver, forceVisible = true)
                     val maskPx = IntArray(w * h)
