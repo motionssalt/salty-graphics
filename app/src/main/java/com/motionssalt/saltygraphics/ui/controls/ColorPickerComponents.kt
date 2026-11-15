@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import com.motionssalt.saltygraphics.uikit.controls.*
 import com.motionssalt.saltygraphics.uikit.overlays.SaltyEyedropperLoupeOverlay
 
 object RecentColorsRegistry {

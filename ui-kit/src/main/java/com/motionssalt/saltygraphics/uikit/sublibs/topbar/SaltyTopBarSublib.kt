@@ -6,15 +6,15 @@ import com.motionssalt.saltygraphics.uikit.structure.SaltyEditorTopBar
 
 @Composable
 fun SaltyTopBarSublib(
-    projectName: String,
+    projectName: String = "",
     groupBreadcrumbs: List<Pair<String, String>> = emptyList(),
-    zoom: Float,
+    zoom: Float = 1f,
     previewQuality: PreviewQuality,
     canUndo: Boolean,
     canRedo: Boolean,
     showGrid: Boolean,
     gridSize: Int,
-    isLayersPanelOpen: Boolean,
+    isLayersPanelOpen: Boolean = false,
     isCanvasLocked: Boolean = false,
     onToggleCanvasLock: () -> Unit = {},
     onNavigateBack: () -> Unit,

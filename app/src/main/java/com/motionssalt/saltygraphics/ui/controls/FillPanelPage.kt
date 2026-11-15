@@ -3,6 +3,7 @@ package com.motionssalt.saltygraphics.ui.controls
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import com.motionssalt.saltygraphics.engine.model.FillData
+import com.motionssalt.saltygraphics.uikit.controls.SaltyFillPanelPage
 
 /** Pure binding facade over :ui-kit SaltyFillPanelPage. */
 @Composable

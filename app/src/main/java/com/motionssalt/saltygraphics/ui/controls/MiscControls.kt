@@ -2,6 +2,7 @@ package com.motionssalt.saltygraphics.ui.controls
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.motionssalt.saltygraphics.uikit.controls.*
 
 @Composable
 fun SegmentedChipsControl(
