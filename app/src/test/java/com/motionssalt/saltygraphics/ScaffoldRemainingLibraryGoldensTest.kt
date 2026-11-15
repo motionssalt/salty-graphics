@@ -36,6 +36,7 @@ import com.motionssalt.saltygraphics.uikit.structure.SaltySelectableTile
 import com.motionssalt.saltygraphics.uikit.structure.SaltySpace
 import com.motionssalt.saltygraphics.uikit.structure.SaltyWarningCard
 import com.motionssalt.saltygraphics.uikit.structure.saltyPadding
+import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -63,7 +64,7 @@ abstract class ScaffoldRemainingLibraryGoldensFixture(private val dark: Boolean)
                 Surface(Modifier.requiredSize(412.dp, 1180.dp).testTag("matrix_root")) {
                     Column(
                         modifier = Modifier.fillMaxSize().saltyPadding(SaltySpace.MD),
-                        verticalArrangement = Arrangement.spacedBy(SaltySpace.SM)
+                        verticalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.sm)
                     ) {
                         SaltyEditorTopBar(
                             previewQuality = PreviewQuality.HALF,
@@ -100,7 +101,7 @@ abstract class ScaffoldRemainingLibraryGoldensFixture(private val dark: Boolean)
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(SaltySpace.SM)
+                            horizontalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.sm)
                         ) {
                             Box(Modifier.weight(1f)) {
                                 SaltyProjectCard(
