@@ -400,18 +400,18 @@ fun SaltyTransformPanel(
     val content: @Composable () -> Unit = {
         SaltySectionCard {
             SaltyColumn(modifier = Modifier.saltyFillMaxWidth(), spacing = SaltySpace.MD) {
-                if (!wrapInPanelPage) {
-                    SaltyRow(
-                        modifier = Modifier.saltyFillMaxWidth(),
-                        justify = SaltyJustify.SPACE_BETWEEN,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SaltyText(
-                            text = "2D Transform",
-                            style = SaltyTextStyle.TITLE_MEDIUM,
-                            tone = SaltyTextTone.ACCENT,
-                            weight = SaltyTextWeight.BOLD
-                        )
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    justify = SaltyJustify.SPACE_BETWEEN,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SaltyText(
+                        text = "2D Transform",
+                        style = SaltyTextStyle.TITLE_MEDIUM,
+                        tone = SaltyTextTone.ACCENT,
+                        weight = SaltyTextWeight.BOLD
+                    )
+                    if (!wrapInPanelPage) {
                         SaltyIconButton(
                             icon = Icons.Default.Close,
                             contentDescription = "Close",

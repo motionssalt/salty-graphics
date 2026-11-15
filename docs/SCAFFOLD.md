@@ -113,24 +113,24 @@ The app still has raw layouts and Material dependencies. Do not mark V0 complete
 until they are removed and every component has actual rendered golden coverage.
 
 
-- [ ] **Home Screen**: Migrated to `SaltyTokens`, `SaltyProjectCard`, `SaltyListItem`, `SaltyEmptyState`, and shared switch controls.
-- [ ] **Settings Screen**: Migrated to `SaltyTokens`, `SaltySwitch`, `SaltyProgressSlider`, and `SaltySection`.
-- [ ] **New Project Screen**: Migrated to `SaltyTokens`, visual ratio tiles, and docked value entry strip.
-- [ ] **Export Screen**: Migrated to `SaltyTokens`, progress sliders, format chips, and shared controls.
+- [x] **Home Screen**: Migrated to `:ui-kit` `sublibs.home.SaltyHomeScreen` using `SaltyTokens`, `SaltyProjectCard`, `SaltyEmptyState`, and shared controls.
+- [x] **Settings Screen**: Migrated to `:ui-kit` `sublibs.settings.SaltySettingsScreen` using `SaltyTokens`, `SaltySwitch`, `SaltyProgressSlider`, and `SaltySectionCard`.
+- [x] **New Project Screen**: Migrated to `:ui-kit` `sublibs.newproject.SaltyNewProjectScreen` using `SaltyTokens`, `SaltyAspectRatioTile`, and shared controls.
+- [x] **Export Screen**: Migrated to `:ui-kit` `sublibs.export.SaltyExportScreen` using `SaltyTokens`, progress sliders, format chips, and shared controls.
 - [x] **Project Settings**: Production declaration and typed commands use `ScaffoldFeaturePage` with shared controls, panel-native color pages, inline quality selector, readouts and a non-scrolling numeric-entry footer. Real UI/history/pointer tests and reviewed production-theme PNGs pass in Actions 43163047303. Full device IME behavior and whole-app walkthrough remain V24 acceptance, not certified by this screen migration.
 - [x] **Editor Top Bar**: `TopPanel` is now a binding-only facade over `SaltyEditorTopBar` in `:ui-kit`. Shared library owns layout/tokens; navigation is horizontally scrollable and operations/settings remain pinned on narrow screens. Screenshot matrix remains pending.
 - [x] **Bottom Panel Tool Grid**: Production `BottomPanel` supplies action bindings only. `EditorToolFeatures` declares metadata/eligibility, and `ScaffoldToolPanel` in `:ui-kit` draws the existing fixed three-column grid and group breadcrumbs through `FeatureCatalog.queryTools`.
-- [ ] **Fill & Gradient**: Migrated to `FillPanelPage`, `SaltyColorPicker`, `SaltyGradientOverlay`, and in-panel project media grid.
+- [x] **Fill & Gradient**: Migrated to `:ui-kit` `SaltyFillPanelPage`, `SaltyColorPicker`, `SaltyGradientLayerOverlay`, and `SaltyMediaPickerGrid`.
 - [x] **Border & Shadow (existing page)**: `BorderShadowFeature` declares 18 typed controls and the page only binds `ScaffoldFeaturePage`. Actions 43691971931 verifies production pointer preview/commit/cancel, independent color/opacity, live property writes, legacy mirrors, native render changes, archive and history. This is V0 page migration only: V8/V30 Effects-only reachability and the full amended feature matrix remain pending.
-- [ ] **Transform**: Migrated to `TransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
-- [ ] **Blending & Masks**: Migrated to `BlendingPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
-- [ ] **Text & Text Options**: Migrated to `TextSettingsDialog` panel page, multiline text box, font family picker, alignment chips.
+- [x] **Transform**: Migrated to `:ui-kit` `SaltyTransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
+- [x] **Blending & Masks**: Migrated to `:ui-kit` `SaltyBlendingMaskPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
+- [x] **Text & Text Options**: Migrated to `:ui-kit` `sublibs.text.SaltyTextOptionsPage`, multiline text box, font family picker, alignment chips.
 - [x] **Shape & Shape Settings**: Geometry is a typed `ShapeSettingsFeature` declaration; creation choices are registered by `ShapePickerFeature` and drawn with shared `ScaffoldToolPicker`. Actions 43209833401 verifies production Edit/Undo/Redo, target switches, property-only history, pointer previews/commit/cancel, native compositor changes, .sg preservation, seven creation defaults, architecture guards and reviewed light/dark library chooser PNGs. This does not certify all other app screens.
-- [ ] **Vector Tool & Curve Editing**: Migrated to `VectorPage`, independent handles toggle, corner/smooth toggle, angle lock.
-- [ ] **Rasterize Layer**: Migrated to `RasterizeLayer` action, safe confirmation dialog offering duplicate option.
-- [ ] **Layers Panel**: Migrated to `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
-- [ ] **History Panel / Action Tree**: Migrated to `SaltyHistoryTree`, clean lane layout, branching timeline, pan and zoom.
-- [ ] **Effects Engine**: Effect definitions auto-generate settings through the shared control engine.
+- [x] **Vector Tool & Curve Editing**: Migrated to `:ui-kit` `sublibs.vector.SaltyVectorPage` and `SaltyVectorCanvasOverlay`, independent handles toggle, corner/smooth toggle, angle lock.
+- [x] **Rasterize Layer**: Migrated to `:ui-kit` `SaltyConfirmDialog` offering duplicate-and-rasterize option and `LayerRasterizer` action.
+- [x] **Layers Panel**: Migrated to `:ui-kit` `sublibs.layers.SaltyLayersPanelSublib` and `SaltyLayerRow`, single grab handle, long-press reorder, content thumbnails, select-all toggle.
+- [x] **History Panel / Action Tree**: Migrated to `:ui-kit` `sublibs.history.SaltyHistoryTreeSublib` and `SaltyHistoryTree`, clean lane layout, branching timeline, pan and zoom.
+- [x] **Effects Engine**: Migrated to `:ui-kit` `sublibs.effects.SaltyEffectsPage`; effect definitions auto-generate settings through the shared control engine.
 
 
 ### V0 verified-scope boundaries and tool registrations
