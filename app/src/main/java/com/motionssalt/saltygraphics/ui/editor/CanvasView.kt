@@ -164,7 +164,7 @@ fun CanvasView(
                     val down = saltyAwaitFirstDown(requireUnconsumed = false)
                     val activeDoc = currentDoc
                     val effZoom = currentFit * currentZoom
-                    if (!effZoom.isFinite() || effZoom <= 0f) return@awaitEachGesture
+                    if (!effZoom.isFinite() || effZoom <= 0f) return@saltyAwaitEachGesture
                     val screenCenter = Offset(size.width/2f+currentPan.x,size.height/2f+currentPan.y)
                     fun documentPoint(p: Offset) = SelectionPoint((p.x-screenCenter.x)/effZoom,(p.y-screenCenter.y)/effZoom)
                     val downPoint = documentPoint(down.position)
