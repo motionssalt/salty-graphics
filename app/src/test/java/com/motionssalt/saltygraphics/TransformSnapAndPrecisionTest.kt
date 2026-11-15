@@ -242,20 +242,20 @@ class TransformSnapAndPrecisionTest {
 
             // 1. Tap "Reset to Actual Size" -> scaleX/Y becomes 1.0, history node recorded
             compose.onNodeWithTag("quick_transform_reset_actual_size").performScrollTo().performClick()
-            compose.waitForIdle()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            compose.waitUntil(10000) { runBlocking { repo.getProject(initialDoc.id)?.findLayerById("l1")?.transform?.scaleX?.let { kotlin.math.abs(it - 1.0f) < 0.01f } == true } }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             assertEquals(1.0f, latestDoc.findLayerById("l1")!!.transform.scaleX, 0.01f)
 
             // 2. Tap "Left" -> translates box left edge to -500 (-500 + 100 = -400)
             compose.onNodeWithTag("quick_transform_align_left").performScrollTo().performClick()
-            compose.waitForIdle()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            compose.waitUntil(10000) { runBlocking { repo.getProject(initialDoc.id)?.findLayerById("l1")?.transform?.translationX?.let { kotlin.math.abs(it - (-400f)) < 0.5f } == true } }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             assertEquals(-400f, latestDoc.findLayerById("l1")!!.transform.translationX, 0.5f)
 
             // Undo returns to previous centered X
             compose.onNodeWithContentDescription("Undo").performClick()
-            compose.waitForIdle()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            compose.waitUntil(10000) { runBlocking { repo.getProject(initialDoc.id)?.findLayerById("l1")?.transform?.translationX?.let { kotlin.math.abs(it) < 0.5f } == true } }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             assertEquals(0f, latestDoc.findLayerById("l1")!!.transform.translationX, 0.5f)
 
             // 3. V43 Nudge mode: switch segmented chips to "Nudge"
@@ -264,8 +264,8 @@ class TransformSnapAndPrecisionTest {
 
             // Single tap right (+1px default)
             compose.onNodeWithTag("nudge_right").performScrollTo().performClick()
-            compose.waitForIdle()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            compose.waitUntil(10000) { runBlocking { repo.getProject(initialDoc.id)?.findLayerById("l1")?.transform?.translationX?.let { kotlin.math.abs(it - 1f) < 0.01f } == true } }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             assertEquals(1f, latestDoc.findLayerById("l1")!!.transform.translationX, 0.01f)
 
             // Hold right (~600ms -> repeats multiple steps, commits ONE single undoable history node)
@@ -276,15 +276,15 @@ class TransformSnapAndPrecisionTest {
             compose.onNodeWithTag("nudge_right").performTouchInput {
                 up()
             }
-            compose.waitForIdle()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            compose.waitUntil(10000) { runBlocking { (repo.getProject(initialDoc.id)?.findLayerById("l1")?.transform?.translationX ?: 0f) >= 3f } }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             val afterHoldX = latestDoc.findLayerById("l1")!!.transform.translationX
             assertTrue("Hold must move multiple steps beyond 1px (got $afterHoldX)", afterHoldX >= 3f)
 
             // One single Undo reverts the ENTIRE hold back to 1f!
             compose.onNodeWithContentDescription("Undo").performClick()
-            compose.waitForIdle()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            compose.waitUntil(10000) { runBlocking { repo.getProject(initialDoc.id)?.findLayerById("l1")?.transform?.translationX?.let { kotlin.math.abs(it - 1f) < 0.01f } == true } }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             assertEquals("Single hold must revert in one Undo step", 1f, latestDoc.findLayerById("l1")!!.transform.translationX, 0.01f)
 
             // 4. Switch to Sliders and test exact numeric entry on Move X
@@ -292,8 +292,8 @@ class TransformSnapAndPrecisionTest {
             compose.onNodeWithText("1 px", useUnmergedTree = true).performScrollTo().performClick()
             compose.onNodeWithTag("entry_Move X").performTextReplacement("250")
             compose.onNodeWithText("Done").performClick()
-            compose.waitForIdle()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            compose.waitUntil(10000) { runBlocking { repo.getProject(initialDoc.id)?.findLayerById("l1")?.transform?.translationX?.let { kotlin.math.abs(it - 250f) < 0.01f } == true } }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             assertEquals(250f, latestDoc.findLayerById("l1")!!.transform.translationX, 0.01f)
 
             // 5. Locked layer guard: select Locked Box and tap Nudge Up -> stays at (50, 50) + shows toast
@@ -304,7 +304,7 @@ class TransformSnapAndPrecisionTest {
             compose.onNodeWithTag("nudge_up").performScrollTo().performClick()
             compose.waitForIdle()
             compose.onNodeWithText("Layer is locked").assertIsDisplayed()
-            latestDoc = runBlocking { (repo.loadProject(initialDoc.id)!!).document }
+            latestDoc = runBlocking { repo.getProject(initialDoc.id)!! }
             assertEquals(50f, latestDoc.findLayerById("l2")!!.transform.translationY, 0.01f)
         } finally {
             host.pause().stop().destroy()
