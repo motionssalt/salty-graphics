@@ -16,7 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
 import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Contextual non-blocking toast component per V19 requirements.
@@ -64,12 +70,7 @@ fun SaltyToast(
     }
 }
 
-import androidx.compose.ui.platform.testTag
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.atomic.AtomicLong
+
 
 data class SaltyToastMessage(
     val id: Long,
