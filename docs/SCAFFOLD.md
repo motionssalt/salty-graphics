@@ -263,3 +263,14 @@ baselines remain failures; light PNG is still pending CI generation and review.
 Border/Shadow binding and production gesture tests passed 43690559314, and the
 expanded all-control throwaway test passed 43690762157. Whole-suite acceptance and
 V0 completion are not claimed.
+
+
+### V0 static component PNG review — Actions 43691454254
+Separate static theme workers resolve the fixture idling problem without disabling
+assertions. Both native renders contain real controls and pass the root-theme pixel
+check. The only failures are the deliberately missing light baseline (own/opposite
+checks). Reviewed `components_surfaces_light.png`: readable selected/unselected rows,
+trackpad reticle, hex field, action/transparent buttons, HSV square and hue/alpha rails,
+preset swatches and distinct light semantic tokens. Dark PNG is byte-identical to the
+previously reviewed baseline. Check in light; run final full tests and debug assembly.
+This covers these library surfaces only, not every control state or whole-app V0.
