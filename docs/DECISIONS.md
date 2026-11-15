@@ -579,3 +579,28 @@ trackpad reticle, hex field, action/transparent buttons, HSV square and hue/alph
 preset swatches and distinct light semantic tokens. Dark PNG is byte-identical to the
 previously reviewed baseline. Check in light; run final full tests and debug assembly.
 This covers these library surfaces only, not every control state or whole-app V0.
+
+
+## V0 Border/Shadow and acceptance-baseline verified checkpoint — 2026-11-15
+[Actions 43691971931](https://github.com/motionssalt/salty-graphics/actions/runs/43691971931)
+passes code `4cc3ca5`: 267 debug JVM tests (202 app, 50 engine, 15 ui-kit), zero
+failures/errors/skips, all 14 reviewed native scaffold PNGs exact, debug assembly
+successful. The prior failing color-theme fixture is resolved by one static theme
+per existing isolated Robolectric worker. Missing/changed/blank/same-theme checks
+remain active. This tests static theme output, not a device runtime theme walk-through.
+
+Verified page scope: Border/Shadow's 18 controls are typed declarations, not layout
+wrappers; writes apply only their property to the live target, retain legacy mirrors
+and fill/geometry/other-layer data, preserve separate color alpha and opacity, preview
+without history, commit once and revert on cancellation. Tests include randomized
+stale events, `.sg` preservation, real editor entry and pointer/cancel/color/Undo/Redo,
+plus actual compositor pixel changes. The throwaway registered feature now operates
+all implemented primitive types and a library extension rather than only listing them.
+
+V0 remains in progress. No other V/E item was marked done. V8 remains pending until
+Effects-only reachability and the full amended matrix; V30 and Deep Glow are not built
+by this checkpoint. Remaining wrapper-only screens, complete dependency boundaries,
+production extension/overlay registry use, hidden developer template integration and
+all-component/state goldens remain. No new release/tag, old releases/reference APK,
+stable signing secrets and applicationId untouched. Final handoff commit is docs/state
+only and does not change the verified application code. No UI refinement.

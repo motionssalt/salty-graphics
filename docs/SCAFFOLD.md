@@ -121,7 +121,7 @@ until they are removed and every component has actual rendered golden coverage.
 - [x] **Editor Top Bar**: `TopPanel` is now a binding-only facade over `SaltyEditorTopBar` in `:ui-kit`. Shared library owns layout/tokens; navigation is horizontally scrollable and operations/settings remain pinned on narrow screens. Screenshot matrix remains pending.
 - [x] **Bottom Panel Tool Grid**: Production `BottomPanel` supplies action bindings only. `EditorToolFeatures` declares metadata/eligibility, and `ScaffoldToolPanel` in `:ui-kit` draws the existing fixed three-column grid and group breadcrumbs through `FeatureCatalog.queryTools`.
 - [ ] **Fill & Gradient**: Migrated to `FillPanelPage`, `SaltyColorPicker`, `SaltyGradientOverlay`, and in-panel project media grid.
-- [ ] **Border & Shadow**: Migrated to `BorderShadowPanelPage`, stroke/shadow sections, inside/center/outside chips, blur sliders.
+- [x] **Border & Shadow (existing page)**: `BorderShadowFeature` declares 18 typed controls and the page only binds `ScaffoldFeaturePage`. Actions 43691971931 verifies production pointer preview/commit/cancel, independent color/opacity, live property writes, legacy mirrors, native render changes, archive and history. This is V0 page migration only: V8/V30 Effects-only reachability and the full amended feature matrix remain pending.
 - [ ] **Transform**: Migrated to `TransformPanel`, `SaltyTrackpad`, `SaltyRulerSlider` (Scale, Move, Rotate), center-based scale.
 - [ ] **Blending & Masks**: Migrated to `BlendingPage`, 6 category tabs, live thumbnail grid, alpha cutout modes, in-panel.
 - [ ] **Text & Text Options**: Migrated to `TextSettingsDialog` panel page, multiline text box, font family picker, alignment chips.
@@ -274,3 +274,18 @@ trackpad reticle, hex field, action/transparent buttons, HSV square and hue/alph
 preset swatches and distinct light semantic tokens. Dark PNG is byte-identical to the
 previously reviewed baseline. Check in light; run final full tests and debug assembly.
 This covers these library surfaces only, not every control state or whole-app V0.
+
+
+## Verified partial V0 checkpoint — 2026-11-15
+Code `4cc3ca5` passes [Actions 43691971931](https://github.com/motionssalt/salty-graphics/actions/runs/43691971931):
+267 debug JVM tests (app 202, engine 50, ui-kit 15), no failures/errors/skips,
+14 reviewed native PNG goldens matching exactly, and `:app:assembleDebug` succeeds.
+The existing Border/Shadow page row is now checked with evidence. The all-current-
+control registration test operates every implemented primitive plus a registered
+extension and verifies labelled single-gesture commits. No test was disabled.
+
+This is **not full V0**: wrapper-only feature layouts remain; app still depends on raw
+Material/Compose APIs for legacy areas; complete production extension/overlay registry
+integration, developer example wiring and every-component/state/theme goldens remain.
+The V8/V30 Effects-only change is deliberately not claimed. Continue V0 first. No new
+release/tag, no web/applet preview, no emulator screenshot loop or UI refinement.
