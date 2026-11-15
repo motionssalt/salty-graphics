@@ -34,7 +34,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val theme by settingsManager.theme.collectAsState()
-    val useSystemDefault by settingsManager.useSystemDefaultScale.collectAsState()
+    val useSystemDefault by settingsManager.useSystemDefault.collectAsState()
     val uiScale by settingsManager.uiScale.collectAsState()
 
     var issueText by remember { mutableStateOf("") }
