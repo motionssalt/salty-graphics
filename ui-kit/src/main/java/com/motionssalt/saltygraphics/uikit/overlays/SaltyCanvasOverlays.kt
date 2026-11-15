@@ -363,6 +363,7 @@ fun SaltyVectorCanvasOverlay(
         ) {
             path.points.forEachIndexed { i, p ->
                 val at = screen(p.x, p.y, current.transform)
+                val isSelected = (i == selectedPoint)
                 if (isSelected) {
                     if (p.hasInHandle) {
                         val h = screen(p.inHandleX, p.inHandleY, current.transform)
@@ -376,7 +377,6 @@ fun SaltyVectorCanvasOverlay(
                     }
                 }
                 val radius = 6.dp.toPx()
-                val isSelected = (i == selectedPoint)
                 drawRect(if (isSelected) colors.primary else colors.surface, at - Offset(radius, radius), Size(radius * 2f, radius * 2f))
                 drawRect(
                     if (isSelected) colors.snapGuideGrid else colors.primary,
