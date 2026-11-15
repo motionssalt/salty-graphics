@@ -460,3 +460,37 @@ wrapper's `entry_Move X` tag/Done button; the actual production history identity
 exactly "Move Layer gradient stop". Tests now operate those real controls and assert
 that exact structured identity. No production behavior, assertion or test was disabled.
 Final complete native suite/debug assembly is still required before acceptance.
+
+
+## Verified V0 registered panel-surface checkpoint — 2026-11-15
+[Actions 43748110040](https://github.com/motionssalt/salty-graphics/actions/runs/43748110040)
+verifies code `8904c44eb3cfb1b8f1b3572c176a58e18bf51d15`: **308 debug JVM tests**,
+zero failures/errors/skips, all existing strict reviewed native library goldens and
+successful `:app:assembleDebug`. No test was disabled and no golden was changed.
+
+Accepted scope in this session:
+- Inherited failing registered-vector Editor scenarios use isolated workers; both
+  real pointer/save/render/history scenarios pass.
+- Text width handles use stored container width rather than off-screen unwrapped
+  FREE text extent; rotated/zoomed exact width, unchanged glyphs and one commit pass.
+- Fill media, gradient stop bar and Transform trackpad, plus History, dispatch the
+  shared library component host. Missing ids fail instead of hiding controls.
+- Real Editor tests verify saved media pixels, gradient pixels, one command per drag,
+  exact fractional Transform entry and Undo/Redo with the canvas visible.
+- Live session callback replacement at unchanged sensitivity reaches the new target;
+  gradient pointer-up commits its last local draft without depending on recomposition.
+  Gradient cancellation and unmount roll back the preview without history.
+
+V0 **remains in progress**. In particular, `SaltyVectorPage` still builds its tool
+buttons from `SaltyVectorToolMode.entries.chunked(2)` rather than resolving the
+registered `vector_toolbar`. Finish that production adapter (without changing its
+existing layout), audit the remaining definition/property binding integration, and
+complete every-component/state/theme golden acceptance. Historical checked delegation
+rows and composite fixture PNGs must not be interpreted as proof of full V0.
+
+Other open V/E acceptance items, Deep Glow and V37 release remain unfinished; existing
+done item statuses were not re-certified by this partial batch. No new release/tag or
+APK download was published. Existing releases and `reference-keyflaw`, stable signing
+credentials, applicationId and host frontend were untouched. No UI refinement,
+web/applet preview, emulator, phone-install or manual screenshot loop was performed.
+The final evidence commit changes docs/state only, preserving verified application code.
