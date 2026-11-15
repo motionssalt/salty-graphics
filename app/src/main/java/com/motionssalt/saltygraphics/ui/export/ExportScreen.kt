@@ -1,44 +1,47 @@
 package com.motionssalt.saltygraphics.ui.export
 
-import com.motionssalt.saltygraphics.data.StorageManager
-import com.motionssalt.saltygraphics.media.MediaCache
-import com.motionssalt.saltygraphics.ui.controls.ProgressSliderControl
-import com.motionssalt.saltygraphics.engine.model.ShapeType
-import android.graphics.RectF
-import android.os.Build
-
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Paint
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.motionssalt.saltygraphics.data.ProjectRepository
-import com.motionssalt.saltygraphics.engine.model.LayerType
+import com.motionssalt.saltygraphics.data.StorageManager
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
-import com.motionssalt.saltygraphics.theme.*
-import com.motionssalt.saltygraphics.ui.settings.SettingsSectionCard
+import com.motionssalt.saltygraphics.engine.render.LayerCompositor
+import com.motionssalt.saltygraphics.media.MediaCache
+import com.motionssalt.saltygraphics.uikit.controls.SaltyProgressSlider
+import com.motionssalt.saltygraphics.uikit.structure.SaltyBox
+import com.motionssalt.saltygraphics.uikit.structure.SaltyButton
+import com.motionssalt.saltygraphics.uikit.structure.SaltyColumn
+import com.motionssalt.saltygraphics.uikit.structure.SaltyOutlinedButton
+import com.motionssalt.saltygraphics.uikit.structure.SaltyRow
+import com.motionssalt.saltygraphics.uikit.structure.SaltyScreenScaffold
+import com.motionssalt.saltygraphics.uikit.structure.SaltySectionCard
+import com.motionssalt.saltygraphics.uikit.structure.SaltySelectableTile
+import com.motionssalt.saltygraphics.uikit.structure.SaltySpace
+import com.motionssalt.saltygraphics.uikit.structure.SaltySpacer
+import com.motionssalt.saltygraphics.uikit.structure.SaltySpinner
+import com.motionssalt.saltygraphics.uikit.structure.SaltyText
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextButton
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextStyle
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextTone
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextWeight
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxSize
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxWidth
+import com.motionssalt.saltygraphics.uikit.structure.saltyNavigationBarsPadding
+import com.motionssalt.saltygraphics.uikit.structure.saltyPadding
+import com.motionssalt.saltygraphics.uikit.structure.SaltyRow as SharedRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,14 +54,12 @@ enum class ExportFormat(val displayName: String, val extension: String, val mime
     WEBP("WebP (Modern)", "webp", "image/webp")
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportScreen(
     projectId: String,
     repository: ProjectRepository,
     onNavigateBack: () -> Unit
 ) {
-    val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -74,8 +75,11 @@ fun ExportScreen(
 
     val doc = projectDocument
     if (doc == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+        SaltyBox(
+            modifier = Modifier.saltyFillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            SaltySpinner()
         }
         return
     }
@@ -84,7 +88,7 @@ fun ExportScreen(
     val finalHeight = (doc.canvasSize.height * resolutionScale).toInt()
 
     fun renderFullDocumentBitmap(): Bitmap {
-        val composite = com.motionssalt.saltygraphics.engine.render.LayerCompositor.compositeDocument(
+        val composite = LayerCompositor.compositeDocument(
             document = doc,
             width = finalWidth,
             height = finalHeight,
@@ -144,188 +148,122 @@ fun ExportScreen(
                         context.contentResolver.openOutputStream(uri)?.use { os ->
                             repository.exportProjectToStream(currentDoc.id, os)
                         }
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                 }
                 isExporting = false
-                android.widget.Toast.makeText(context, "Saved .sg project file successfully", android.widget.Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Saved .sg project file successfully", Toast.LENGTH_SHORT).show()
                 onNavigateBack()
             }
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Export Image", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colors.background,
-                    titleContentColor = colors.onSurface,
-                    navigationIconContentColor = colors.onSurface
-                )
-            )
-        },
-        containerColor = colors.background
+    SaltyScreenScaffold(
+        title = "Export Image",
+        onBack = onNavigateBack
     ) { innerPadding ->
-        Column(
+        SaltyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .saltyFillMaxSize()
+                .saltyPadding(innerPadding)
+                .saltyPadding(all = SaltySpace.LG),
+            spacing = SaltySpace.LG,
+            scrollable = true
         ) {
-            // Resolution and Dimensions Overview
-            SettingsSectionCard(title = "Full Document Output") {
-                Text(
+            SaltySectionCard(title = "Full Document Output") {
+                SaltyText(
                     text = "Resolution: $finalWidth x $finalHeight px",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.primary,
-                    fontWeight = FontWeight.Bold
+                    style = SaltyTextStyle.TITLE_MEDIUM,
+                    tone = SaltyTextTone.ACCENT,
+                    weight = SaltyTextWeight.BOLD
                 )
-                Text(
+                SaltyText(
                     text = "Export always renders from the master document model at full quality (never downsampled preview proxy).",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant
+                    style = SaltyTextStyle.BODY_MEDIUM,
+                    tone = SaltyTextTone.SECONDARY
                 )
             }
 
-            // Format Selection
-            SettingsSectionCard(title = "Export Format") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            SaltySectionCard(title = "Export Format") {
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    spacing = SaltySpace.SM
                 ) {
                     ExportFormat.entries.forEach { format ->
-                        val isSelected = selectedFormat == format
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) colors.surfaceVariant else colors.background)
-                                .border(
-                                    width = if (isSelected) 1.5.dp else 1.dp,
-                                    color = if (isSelected) colors.primary else colors.outline,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .clickable { selectedFormat = format }
-                                .padding(vertical = 12.dp, horizontal = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = format.displayName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (isSelected) colors.primary else colors.onSurface,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
+                        SaltySelectableTile(
+                            title = format.displayName,
+                            selected = selectedFormat == format,
+                            onClick = { selectedFormat = format },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
-
                 if (selectedFormat != ExportFormat.PNG) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ProgressSliderControl(
+                    SaltySpacer(SaltySpace.MD)
+                    SaltyProgressSlider(
                         label = "Quality",
                         value = exportQualityPercent,
                         onValueChange = { exportQualityPercent = it },
-                        minValue = 10f,
-                        maxValue = 100f,
-                        defaultValue = 90f,
+                        range = 10f..100f,
                         step = 1f,
+                        defaultValue = 90f,
                         unit = "%"
                     )
                 }
             }
 
-            // Resolution Scale Selection
-            SettingsSectionCard(title = "Output Scale") {
+            SaltySectionCard(title = "Output Scale") {
                 val scales = listOf(0.5f, 0.75f, 1.0f)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    spacing = SaltySpace.SM
                 ) {
                     scales.forEach { s ->
-                        val isSelected = resolutionScale == s
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) colors.surfaceVariant else colors.background)
-                                .border(
-                                    width = if (isSelected) 1.5.dp else 1.dp,
-                                    color = if (isSelected) colors.primary else colors.outline,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .clickable { resolutionScale = s }
-                                .padding(vertical = 12.dp, horizontal = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${(s * 100).toInt()}%",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (isSelected) colors.primary else colors.onSurface,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
+                        SaltySelectableTile(
+                            title = "${(s * 100).toInt()}%",
+                            selected = resolutionScale == s,
+                            onClick = { resolutionScale = s },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
 
-            // S16: Save Location card
-            SettingsSectionCard(title = "Save Location") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            SaltySectionCard(title = "Save Location") {
+                SharedRow(
+                    label = "Save to: $currentFolderName",
+                    subtitle = "Direct export into this folder without prompting each time."
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Save to: $currentFolderName",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.primary
-                        )
-                        Text(
-                            text = "Direct export into this folder without prompting each time.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.onSurfaceVariant
-                        )
-                    }
-                    TextButton(onClick = { folderPickerLauncher.launch(null) }) {
-                        Text("Change", color = colors.primary, fontWeight = FontWeight.Bold)
-                    }
+                    SaltyTextButton(
+                        text = "Change",
+                        onClick = { folderPickerLauncher.launch(null) }
+                    )
                 }
             }
 
-            // S2: Save project (.sg) on Export screen
-            SettingsSectionCard(title = "Save Project File (.sg)") {
-                Text(
+            SaltySectionCard(title = "Save Project File (.sg)") {
+                SaltyText(
                     text = "Export the entire editable project archive including all layers, vectors, typography, history, and embedded assets.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant
+                    style = SaltyTextStyle.BODY_MEDIUM,
+                    tone = SaltyTextTone.SECONDARY
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                SaltySpacer(SaltySpace.MD)
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    spacing = SaltySpace.SM
                 ) {
-                    Button(
+                    SaltyButton(
+                        text = "Save .sg",
+                        icon = Icons.Default.FileDownload,
                         onClick = {
                             val fileName = "${doc.name.replace(" ", "_")}.sg"
                             saveSgFileLauncher.launch(fileName)
                         },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
-                    ) {
-                        Icon(Icons.Default.FileDownload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Save .sg", fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(
+                        modifier = Modifier.weight(1f)
+                    )
+                    SaltyOutlinedButton(
+                        text = "Share .sg",
+                        icon = Icons.Default.Share,
                         onClick = {
                             coroutineScope.launch {
                                 isExporting = true
@@ -345,35 +283,28 @@ fun ExportScreen(
                                 isExporting = false
                             }
                         },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share .sg")
-                    }
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
-            // Export Actions (SAF or Share Sheet)
-            Column(
-                modifier = Modifier.navigationBarsPadding(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            SaltyColumn(
+                modifier = Modifier.saltyNavigationBarsPadding(),
+                spacing = SaltySpace.SM
             ) {
-                Button(
+                SaltyButton(
+                    text = "Save to Device (SAF)",
+                    icon = Icons.Default.FileDownload,
+                    fillWidth = true,
                     onClick = {
                         val fileName = "${doc.name.replace(" ", "_")}.${selectedFormat.extension}"
                         saveFileLauncher.launch(fileName)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
-                ) {
-                    Icon(Icons.Default.FileDownload, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save to Device (SAF)", fontWeight = FontWeight.Bold)
-                }
-
-                OutlinedButton(
+                    }
+                )
+                SaltyOutlinedButton(
+                    text = "Share via Share Sheet",
+                    icon = Icons.Default.Share,
+                    fillWidth = true,
                     onClick = {
                         coroutineScope.launch {
                             isExporting = true
@@ -398,19 +329,16 @@ fun ExportScreen(
                             }
                             isExporting = false
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Share via Share Sheet")
-                }
+                    }
+                )
             }
 
             if (isExporting) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = colors.primary)
+                SaltyBox(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SaltySpinner()
                 }
             }
         }

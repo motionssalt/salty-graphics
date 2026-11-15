@@ -2,6 +2,7 @@ package com.motionssalt.saltygraphics.uikit.structure
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,9 +13,12 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -107,6 +111,10 @@ fun Modifier.saltyFillMaxHeight(): Modifier = fillMaxHeight()
 fun Modifier.saltyFillMaxSize(): Modifier = fillMaxSize()
 fun Modifier.saltyNavigationBarsPadding(): Modifier = navigationBarsPadding()
 fun Modifier.saltyImePadding(): Modifier = imePadding()
+fun Modifier.saltySafeDrawingPadding(): Modifier = safeDrawingPadding()
+fun Modifier.saltyPadding(paddingValues: PaddingValues): Modifier = padding(paddingValues)
+@Composable
+fun Modifier.saltyHorizontalScroll(): Modifier = horizontalScroll(rememberScrollState())
 fun Modifier.saltyClickable(enabled: Boolean = true, onClick: () -> Unit): Modifier = clickable(enabled = enabled, onClick = onClick)
 
 @Composable
@@ -936,3 +944,59 @@ fun SaltyScreenScaffold(
         content = content
     )
 }
+
+
+@Composable
+fun SaltyRootSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxSize()
+            .safeDrawingPadding(),
+        color = SaltyTokens.colors.background,
+        content = content
+    )
+}
+
+@Composable
+fun SaltyAnimatedSection(
+    visible: Boolean,
+    content: @Composable () -> Unit
+) {
+    AnimatedVisibility(visible = visible) {
+        content()
+    }
+}
+
+
+fun <T> LazyGridScope.saltyGridItems(
+    items: List<T>,
+    key: ((T) -> Any)? = null,
+    itemContent: @Composable (T) -> Unit
+) {
+    if (key != null) {
+        gridItems(items, key = { key(it) }) { item -> itemContent(item) }
+    } else {
+        gridItems(items) { item -> itemContent(item) }
+    }
+}
+
+fun <T> LazyListScope.saltyListItems(
+    items: List<T>,
+    key: ((T) -> Any)? = null,
+    itemContent: @Composable (T) -> Unit
+) {
+    if (key != null) {
+        items(items, key = { key(it) }) { item -> itemContent(item) }
+    } else {
+        items(items) { item -> itemContent(item) }
+    }
+}
+
+
+typealias SaltyPanelColumnScope = ColumnScope
+
+@Composable
+fun saltyIsSystemInDarkTheme(): Boolean = isSystemInDarkTheme()

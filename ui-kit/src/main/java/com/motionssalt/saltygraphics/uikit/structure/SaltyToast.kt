@@ -67,13 +67,15 @@ fun SaltyToast(
 @Composable
 fun SaltyConfirmDialog(
     title: String,
-    message: String,
+    message: String = "",
     confirmText: String = "Confirm",
     dismissText: String = "Cancel",
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    confirmEnabled: Boolean = true,
     secondaryConfirmText: String? = null,
-    onSecondaryConfirm: (() -> Unit)? = null
+    onSecondaryConfirm: (() -> Unit)? = null,
+    bodyContent: (@Composable () -> Unit)? = null
 ) {
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
@@ -91,15 +93,20 @@ fun SaltyConfirmDialog(
             )
         },
         text = {
-            Text(
-                text = message,
-                style = SaltyTokens.typography.bodyMedium,
-                color = colors.textSecondary
-            )
+            if (bodyContent != null) {
+                bodyContent()
+            } else {
+                Text(
+                    text = message,
+                    style = SaltyTokens.typography.bodyMedium,
+                    color = colors.textSecondary
+                )
+            }
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
+                enabled = confirmEnabled,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colors.primary,
                     contentColor = colors.onPrimary

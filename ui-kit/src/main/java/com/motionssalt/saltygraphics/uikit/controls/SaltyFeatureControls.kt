@@ -486,7 +486,8 @@ fun SaltyAspectRatioTile(
     shortName: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    compactWidth: Boolean = false
 ) {
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
@@ -501,6 +502,7 @@ fun SaltyAspectRatioTile(
 
     Box(
         modifier = modifier
+            .then(if (compactWidth) Modifier.width(82.dp) else Modifier)
             .clip(shapes.lg)
             .background(if (isSelected) colors.primary.copy(alpha = 0.15f) else colors.surface)
             .border(

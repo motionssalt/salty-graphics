@@ -5,14 +5,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,6 +16,8 @@ import com.motionssalt.saltygraphics.data.ProjectRepository
 import com.motionssalt.saltygraphics.data.SettingsManager
 import com.motionssalt.saltygraphics.navigation.Screen
 import com.motionssalt.saltygraphics.theme.*
+import com.motionssalt.saltygraphics.uikit.structure.SaltyRootSurface
+import com.motionssalt.saltygraphics.uikit.structure.saltyIsSystemInDarkTheme
 import com.motionssalt.saltygraphics.ui.editor.EditorScreen
 import com.motionssalt.saltygraphics.ui.export.ExportScreen
 import com.motionssalt.saltygraphics.ui.home.HomeScreen
@@ -70,14 +65,11 @@ class MainActivity : ComponentActivity() {
             val uiScale by settingsManager.uiScale.collectAsState()
 
             SaltyGraphicsTheme(
-                darkTheme = theme.isDark(isSystemInDarkTheme()),
+                darkTheme = theme.isDark(saltyIsSystemInDarkTheme()),
                 dynamicColor = true,
                 uiScale = uiScale
             ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize().safeDrawingPadding(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                SaltyRootSurface {
                     val navController = rememberNavController()
 
                     NavHost(

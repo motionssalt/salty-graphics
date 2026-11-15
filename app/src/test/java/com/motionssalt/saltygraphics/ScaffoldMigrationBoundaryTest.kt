@@ -7,18 +7,39 @@ import org.junit.Test
 /** Strict boundary for migrated entry points. Legacy screens are explicitly NOT certified by this test. */
 class ScaffoldMigrationBoundaryTest {
     private val forbidden = Regex(
-        "import\\s+androidx\\.compose\\.(material3|foundation)(\\.|\\s)|" +
-        "\\b\\d+(?:\\.\\d+)?\\.(?:dp|sp)\\b|" +
-        "\\bColor\\s*\\(|\\b(?:Dialog|AlertDialog|ModalBottomSheet|Popup|DropdownMenu|Popover)\\s*\\("
+        "import\s+androidx\.compose\.(material3|foundation)(\.|\s)|" +
+        "\b\d+(?:\.\d+)?\.(?:dp|sp)\b|" +
+        "\bColor\s*\(|\b(?:Dialog|AlertDialog|ModalBottomSheet|Popup|DropdownMenu|Popover)\s*\("
     )
 
     @Test fun migratedFeatureEntryPointsCannotIntroduceRawLayoutsOrTokens() {
-        val root = File("src/main/java/com/motionssalt/saltygraphics/ui/editor")
-            .takeIf(File::exists) ?: File("app/src/main/java/com/motionssalt/saltygraphics/ui/editor")
-        for (name in listOf("BottomPanel.kt", "EditorToolFeatures.kt", "TopPanel.kt", "ProjectSettingsPage.kt", "ProjectSettingsFeature.kt", "ShapeSettingsDialog.kt", "ShapeSettingsFeature.kt", "ShapePickerDialog.kt", "ShapePickerFeature.kt", "VectorCreationPage.kt", "VectorCreationFeature.kt")) {
-            val source = File(root, name)
-            assertTrue("Migrated source must exist: $name", source.isFile)
-            assertFalse("$name bypasses :ui-kit; add missing UI to the library instead", forbidden.containsMatchIn(source.readText()))
+        val appRoot = File("src/main/java/com/motionssalt/saltygraphics")
+            .takeIf(File::exists) ?: File("app/src/main/java/com/motionssalt/saltygraphics")
+        val migratedPaths = listOf(
+            "MainActivity.kt",
+            "ui/home/HomeScreen.kt",
+            "ui/settings/SettingsScreen.kt",
+            "ui/newproject/NewProjectScreen.kt",
+            "ui/export/ExportScreen.kt",
+            "ui/editor/BottomPanel.kt",
+            "ui/editor/EditorToolFeatures.kt",
+            "ui/editor/TopPanel.kt",
+            "ui/editor/ProjectSettingsPage.kt",
+            "ui/editor/ProjectSettingsFeature.kt",
+            "ui/editor/ShapeSettingsDialog.kt",
+            "ui/editor/ShapeSettingsFeature.kt",
+            "ui/editor/ShapePickerDialog.kt",
+            "ui/editor/ShapePickerFeature.kt",
+            "ui/editor/VectorCreationPage.kt",
+            "ui/editor/VectorCreationFeature.kt",
+            "ui/editor/ProjectLoadingPanel.kt",
+            "ui/editor/ActionTreeDialog.kt",
+            "ui/editor/EditorWorkspace.kt"
+        )
+        for (rel in migratedPaths) {
+            val source = File(appRoot, rel)
+            assertTrue("Migrated source must exist: $rel", source.isFile)
+            assertFalse("$rel bypasses :ui-kit; add missing UI to the library instead", forbidden.containsMatchIn(source.readText()))
         }
     }
 
