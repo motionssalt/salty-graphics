@@ -627,3 +627,16 @@ pass in the existing test workflow before this partial migration is accepted.
 Latest inherited run 43700394896 is green but does not establish full V0 acceptance.
 V0 is reopened, later active items paused, and unsupported migration checkmarks are
 removed. No release, tag, applicationId, signing or reference-keyflaw change.
+
+
+### V0 developer template registration: one definition, guarded in production
+The inherited developer template had real page wiring and a complete catalog entry,
+but EditorScreen independently reconstructed a second copy of the definition. The
+catalog was non-strict and developer visibility used an unobservable plain Boolean.
+An id/visibility-only test therefore could not prove registry-to-page integration or
+live tool invalidation. Strictly validate the existing complete typed registration;
+the host resolves that exact definition/default page, with snapshot-observable
+visibility. Default visibility is false without a host-provided
+developer condition, and both page dispatch and rendering enforce the existing switch.
+No new sample data, UI layout, styling or ordinary-user tool is introduced. Production
+editor tests verify real saved mutations and history, not just registry membership.

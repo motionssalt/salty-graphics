@@ -22,7 +22,6 @@ import com.motionssalt.saltygraphics.media.MediaImporter
 import com.motionssalt.saltygraphics.ui.controls.BorderShadowPanelPage
 import com.motionssalt.saltygraphics.ui.controls.FillPanelPage
 import android.content.Context
-import com.motionssalt.saltygraphics.uikit.registry.ExampleTemplateFeature
 import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
 import com.motionssalt.saltygraphics.uikit.registry.ScaffoldFeaturePage
 import com.motionssalt.saltygraphics.uikit.structure.SaltyConfirmDialog
@@ -821,7 +820,7 @@ fun EditorScreen(
                                 isFillPanelOpen = true
                             }
                         },
-                        onOpenTemplateExample = { isTemplateExampleOpen = true },
+                        onOpenTemplateExample = { if (devOptionsEnabled) isTemplateExampleOpen = true },
                         onOpenBorderShadow = {
                             if (currentSelectedLayer != null) {
                                 isBorderShadowPanelOpen = true
@@ -1016,11 +1015,11 @@ fun EditorScreen(
                     )
                 }
 
-                if (isTemplateExampleOpen && currentSelectedLayer != null) {
-                    val templateDef = remember { ExampleTemplateFeature.createDefinition() }
+                if (isTemplateExampleOpen && devOptionsEnabled && currentSelectedLayer != null) {
+                    val templateDef = requireNotNull(EditorToolFeatures.catalog.getFeature("template_example"))
                     ScaffoldFeaturePage(
                         feature = templateDef,
-                        pageId = "template_main",
+                        pageId = requireNotNull(templateDef.defaultPageId),
                         document = doc,
                         layerId = currentSelectedLayer.id,
                         onPreview = { change ->

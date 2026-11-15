@@ -142,7 +142,13 @@ class ScaffoldMigrationBoundaryTest {
             EditorToolFeatures.setDeveloperModeEnabled(false)
             assertFalse(EditorToolFeatures.catalog.queryTools(doc, setOf(layer.id)).any { it.id == "template_example" })
             EditorToolFeatures.setDeveloperModeEnabled(true)
-            assertTrue(EditorToolFeatures.catalog.queryTools(doc, setOf(layer.id)).any { it.id == "template_example" })
+            val feature = EditorToolFeatures.catalog.queryTools(doc, setOf(layer.id)).single { it.id == "template_example" }
+            assertEquals("template_main", feature.defaultPageId)
+            assertEquals(4, feature.pages.single().sections.flatMap { it.controls }.size)
+            assertTrue(feature.pages.single().sections.flatMap { it.controls }.all { it.binding.path != null })
+            val editor = File(root(), "ui/editor/EditorScreen.kt").readText()
+            assertTrue(editor.contains("EditorToolFeatures.catalog.getFeature(\"template_example\")"))
+            assertFalse("Host must resolve the registered page, not rebuild it", editor.contains("ExampleTemplateFeature.createDefinition("))
         } finally {
             EditorToolFeatures.setDeveloperModeEnabled(prev)
         }

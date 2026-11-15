@@ -314,3 +314,21 @@ the built-in media/trackpad/example registrations are not accepted merely becaus
 an id exists. This does not complete V0/V7/V24 or the full component golden matrix.
 Checklist rows contradicted by the wrapper-only audit above are reopened, retaining
 their historical descriptions rather than mistaking component reuse for registration.
+
+
+### Developer template uses the same registered definition as its tile
+`EditorToolFeatures.catalog` is now strict (`requireTypedBindings = true`). It
+validates the already-registered complete `ExampleTemplateFeature` with a
+developer-mode visibility condition; the editor no longer independently constructs
+a second copy of that page. `ScaffoldFeaturePage` resolves that same
+registered definition/default page. Developer visibility is snapshot-observable,
+so changing it invalidates the actual tool grid rather than waiting for an unrelated
+recomposition. The sample is hidden by default and the editor
+also guards both dispatch and page rendering with the developer switch.
+
+The four existing controls edit real snapping, grid size/color and layer opacity
+through typed property lenses and the production live-tree preview/commit bridge.
+Tests cover ordinary-user invisibility, the actual developer tile/page, persisted
+changes, specific labels, unrelated-property preservation and Undo/Redo. They reuse
+the existing shared controls and reviewed goldens; no feature layout or visual
+styling was added. Native CI verification is required before acceptance.

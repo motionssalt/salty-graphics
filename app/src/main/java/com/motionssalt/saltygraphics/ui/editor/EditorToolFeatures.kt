@@ -3,6 +3,9 @@ package com.motionssalt.saltygraphics.ui.editor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import com.motionssalt.saltygraphics.engine.model.LayerType
 import com.motionssalt.saltygraphics.uikit.registry.*
 
@@ -11,8 +14,7 @@ object EditorToolFeatures {
     private val visual = LayerType.entries.toSet() - LayerType.ADJUSTMENT
     private val rasterizable = setOf(LayerType.TEXT, LayerType.VECTOR, LayerType.SHAPE)
 
-    @Volatile
-    private var developerModeEnabled: Boolean = false
+    private var developerModeEnabled by mutableStateOf(false)
 
     fun setDeveloperModeEnabled(enabled: Boolean) {
         developerModeEnabled = enabled
@@ -28,7 +30,7 @@ object EditorToolFeatures {
         types: Set<LayerType> = emptySet()
     ) = FeatureDefinition(id, title, icon, placement, supportedLayerTypes = types)
 
-    val catalog = FeatureCatalog().apply {
+    val catalog = FeatureCatalog(requireTypedBindings = true).apply {
         listOf(
             tool("media", "Media", Icons.Default.AddPhotoAlternate, ToolPlacement.NO_SELECTION),
             tool("text", "Text", Icons.Default.TextFields, ToolPlacement.NO_SELECTION),

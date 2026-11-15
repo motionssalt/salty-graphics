@@ -86,6 +86,28 @@ class ScaffoldToolPanelTest {
         } finally { host.pause().stop().destroy() }
     }
 
+    @Test fun developerTemplateVisibilityInvalidatesTheExistingGridWithoutAnUnrelatedEdit() {
+        val previous = EditorToolFeatures.isDeveloperModeEnabled()
+        EditorToolFeatures.setDeveloperModeEnabled(false)
+        val layer = Layer(id = "developer-target", type = LayerType.SHAPE, shapeData = ShapeData())
+        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        var clicks = 0
+        try {
+            host.get().setContent {
+                MaterialTheme { Box(Modifier.requiredSize(412.dp, 300.dp)) {
+                    BottomPanel(layer, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+                        document = ProjectDocument(layers = listOf(layer)),
+                        onOpenTemplateExample = { clicks++ })
+                } }
+            }
+            compose.onNodeWithText("Template Demo").assertDoesNotExist()
+            compose.runOnIdle { EditorToolFeatures.setDeveloperModeEnabled(true) }
+            compose.onNodeWithText("Template Demo").assertIsDisplayed().performClick()
+            compose.runOnIdle { assertEquals(1, clicks); EditorToolFeatures.setDeveloperModeEnabled(false) }
+            compose.onNodeWithText("Template Demo").assertDoesNotExist()
+        } finally { host.pause().stop().destroy(); EditorToolFeatures.setDeveloperModeEnabled(previous) }
+    }
+
     @Test fun toolEligibilityRejectsUnknownOrMixedLayerSelections() {
         val shape = Layer(id = "shape", type = LayerType.SHAPE)
         val adjustment = Layer(id = "adjustment", type = LayerType.ADJUSTMENT)

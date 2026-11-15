@@ -13,7 +13,7 @@ import com.motionssalt.saltygraphics.engine.model.ProjectDocument
  */
 object ExampleTemplateFeature {
     fun createDefinition(
-        visibleCondition: (ProjectDocument, Set<String>) -> Boolean = { _, _ -> true }
+        visibleCondition: (ProjectDocument, Set<String>) -> Boolean = { _, _ -> false }
     ): FeatureDefinition {
         return FeatureDefinition(
             id = "template_example",
