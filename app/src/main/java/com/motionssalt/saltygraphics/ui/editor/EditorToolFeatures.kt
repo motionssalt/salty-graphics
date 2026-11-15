@@ -3,8 +3,6 @@ package com.motionssalt.saltygraphics.ui.editor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import com.motionssalt.saltygraphics.engine.model.LayerType
 import com.motionssalt.saltygraphics.uikit.registry.*
@@ -14,13 +12,13 @@ object EditorToolFeatures {
     private val visual = LayerType.entries.toSet() - LayerType.ADJUSTMENT
     private val rasterizable = setOf(LayerType.TEXT, LayerType.VECTOR, LayerType.SHAPE)
 
-    private var developerModeEnabled by mutableStateOf(false)
+    private val developerModeState = mutableStateOf(false)
 
     fun setDeveloperModeEnabled(enabled: Boolean) {
-        developerModeEnabled = enabled
+        developerModeState.value = enabled
     }
 
-    fun isDeveloperModeEnabled(): Boolean = developerModeEnabled
+    fun isDeveloperModeEnabled(): Boolean = developerModeState.value
 
     private fun tool(
         id: String,
@@ -46,7 +44,7 @@ object EditorToolFeatures {
             tool("duplicate", "Duplicate", Icons.Default.ControlPointDuplicate, ToolPlacement.LAYER_SELECTED),
             tool("rasterize", "Rasterize", Icons.Default.PhotoFilter, ToolPlacement.LAYER_SELECTED, rasterizable),
             tool("delete", "Delete", Icons.Default.Delete, ToolPlacement.LAYER_SELECTED),
-            ExampleTemplateFeature.createDefinition(visibleCondition = { _, _ -> developerModeEnabled })
+            ExampleTemplateFeature.createDefinition(visibleCondition = { _, _ -> developerModeState.value })
         ).forEach(::register)
     }
 }
