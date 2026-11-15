@@ -310,7 +310,7 @@ fun EditorScreen(
     LaunchedEffect(currentSelectedLayer?.id, currentSelectedLayer?.type) {
         if (currentSelectedLayer == null) {
             isTransformPanelOpen = false; isEffectsSheetOpen = false
-            isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false
+            isBlendingOpen = false; isFillPanelOpen = false
         }
         if (currentSelectedLayer?.shapeData == null) isShapeSettingsOpen = false
         if (currentSelectedLayer?.textData == null) isTextSettingsOpen = false
@@ -361,7 +361,7 @@ fun EditorScreen(
                 onSettingsClick = {
                     isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false
                     isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false
-                    isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false
+                    isBlendingOpen = false; isFillPanelOpen = false
                     isBorderShadowPanelOpen = false; isProjectSettingsOpen = true
                 },
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },

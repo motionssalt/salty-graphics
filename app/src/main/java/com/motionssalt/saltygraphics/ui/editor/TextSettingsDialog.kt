@@ -23,7 +23,6 @@ import com.motionssalt.saltygraphics.data.FontManager
 import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.uikit.controls.DropdownOption
 import com.motionssalt.saltygraphics.uikit.controls.SaltyColorPickerPage
-import com.motionssalt.saltygraphics.uikit.controls.SaltyColorSwatch
 import com.motionssalt.saltygraphics.uikit.controls.SaltyColorSwatchRow
 import com.motionssalt.saltygraphics.uikit.controls.SaltyInlineDropdown
 import com.motionssalt.saltygraphics.uikit.controls.SaltyNumberControl
@@ -35,6 +34,7 @@ import com.motionssalt.saltygraphics.uikit.structure.SaltyBadge
 import com.motionssalt.saltygraphics.uikit.structure.SaltyButton
 import com.motionssalt.saltygraphics.uikit.structure.SaltyCard
 import com.motionssalt.saltygraphics.uikit.structure.SaltyChip
+import com.motionssalt.saltygraphics.uikit.structure.SaltyColorSwatch
 import com.motionssalt.saltygraphics.uikit.structure.SaltyColumn
 import com.motionssalt.saltygraphics.uikit.structure.SaltyDivider
 import com.motionssalt.saltygraphics.uikit.structure.SaltyIcon
