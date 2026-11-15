@@ -219,8 +219,8 @@ fun SaltyEffectControlRow(
 ) {
     SaltyColumn(modifier = Modifier.saltyFillMaxWidth()) {
         when (control.type) {
-            ControlType.SWITCH -> {
-                val current = instance.getBoolean(control.id, control.defaultBool)
+            ControlType.TOGGLE -> {
+                val current = instance.getBool(control.id, control.defaultToggle)
                 SaltyRow(
                     modifier = Modifier.saltyFillMaxWidth(),
                     justify = SaltyJustify.SPACE_BETWEEN,
@@ -238,13 +238,13 @@ fun SaltyEffectControlRow(
                 }
             }
             ControlType.SLIDER -> {
-                val current = instance.getFloat(control.id, control.defaultFloat)
+                val current = instance.getFloat(control.id, control.defaultValue)
                 SaltyNumberControl(
                     label = control.label,
                     value = current,
-                    min = control.min,
-                    max = control.max,
-                    defaultValue = control.defaultFloat,
+                    min = control.minValue,
+                    max = control.maxValue,
+                    defaultValue = control.defaultValue,
                     step = control.step,
                     unit = control.unit,
                     onPreview = {
@@ -258,13 +258,13 @@ fun SaltyEffectControlRow(
                 )
             }
             ControlType.PROGRESS_SLIDER -> {
-                val current = instance.getFloat(control.id, control.defaultFloat)
+                val current = instance.getFloat(control.id, control.defaultValue)
                 SaltyProgressNumberControl(
                     label = control.label,
                     value = current,
-                    min = control.min,
-                    max = control.max,
-                    defaultValue = control.defaultFloat,
+                    min = control.minValue,
+                    max = control.maxValue,
+                    defaultValue = control.defaultValue,
                     step = control.step,
                     unit = control.unit.ifBlank { "%" },
                     onPreview = {

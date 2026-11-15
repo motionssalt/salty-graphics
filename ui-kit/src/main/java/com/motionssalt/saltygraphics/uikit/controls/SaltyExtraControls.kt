@@ -433,19 +433,20 @@ fun SaltyTransformPanel(
                     ) {
                         SaltyText(text = "Scale", style = SaltyTextStyle.BODY_LARGE)
                         SaltyToggleIconButton(
-                            checked = currentTransform.linkScale,
-                            icon = if (currentTransform.linkScale) Icons.Default.Link else Icons.Default.LinkOff,
-                            contentDescription = if (currentTransform.linkScale) "Linked Scale" else "Unlinked Scale",
-                            onClick = {
-                                val updated = currentTransform.copy(linkScale = !currentTransform.linkScale)
+                            checked = currentTransform.isScaleLinked,
+                            onCheckedChange = { next ->
+                                val updated = currentTransform.copy(isScaleLinked = next)
                                 currentTransform = updated
                                 onTransformChange(updated)
                                 onTransformCommit(updated)
-                            }
+                            },
+                            checkedIcon = Icons.Default.Link,
+                            uncheckedIcon = Icons.Default.LinkOff,
+                            contentDescription = if (currentTransform.isScaleLinked) "Linked Scale" else "Unlinked Scale"
                         )
                     }
 
-                    if (currentTransform.linkScale) {
+                    if (currentTransform.isScaleLinked) {
                         SaltyNumberControl(
                             label = "Scale",
                             value = currentTransform.scaleX * 100f,

@@ -179,13 +179,15 @@ object SaltyBuiltInLibraryRegistry {
                     description = "Center-anchored selection box and handles"
                 ) { ctx ->
                     SaltySelectionOverlay(
-                        bounds = com.motionssalt.saltygraphics.engine.model.SelectionBounds(
+                        bounds = androidx.compose.ui.geometry.Rect(
                             0f, 0f, ctx.canvasSize.width.toFloat(), ctx.canvasSize.height.toFloat()
                         ),
-                        transform = ctx.layer.transform,
-                        canvasSize = ctx.canvasSize,
-                        zoom = ctx.zoom,
-                        pan = ctx.pan
+                        rotationDeg = ctx.layer.transform.rotationDegrees,
+                        onScaleAroundCenter = { _, _ -> },
+                        onRotate = {},
+                        onTranslate = { _, _ -> },
+                        onTransformCommit = {},
+                        isLocked = ctx.layer.isLocked
                     )
                 }
             )

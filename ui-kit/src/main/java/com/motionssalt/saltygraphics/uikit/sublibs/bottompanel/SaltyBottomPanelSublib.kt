@@ -5,7 +5,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.uikit.registry.FeatureCatalog
-import com.motionssalt.saltygraphics.uikit.registry.FeatureDefinition
 import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
 import com.motionssalt.saltygraphics.uikit.structure.SaltyBox
 import com.motionssalt.saltygraphics.uikit.structure.SaltyWorkspace
@@ -46,7 +45,7 @@ fun SaltyToolPickerSublib(
     catalog: FeatureCatalog,
     document: ProjectDocument,
     availableActions: Set<String>,
-    onChoose: (FeatureDefinition) -> Unit,
+    onChoose: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {

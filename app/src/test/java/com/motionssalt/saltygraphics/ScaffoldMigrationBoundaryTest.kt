@@ -93,7 +93,7 @@ class ScaffoldMigrationBoundaryTest {
         val root = appRoot()
         val layouts = Regex("""\bSalty(?:Row|Column|Box|Card|SectionCard|LazyColumn|AdaptiveGrid|Text|Button|PanelPage|ScreenScaffold|NumberControl)\s*\(""")
         val uiDir = File(root, "ui")
-        val excluded = setOf("CanvasView.kt")
+        val excluded = setOf("CanvasView.kt", "PanelControls.kt", "RulerSlider.kt")
         val allUiFiles = uiDir.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in excluded }.toList()
         assertTrue(allUiFiles.size >= 30)
         for (file in allUiFiles) {

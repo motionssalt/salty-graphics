@@ -34,15 +34,11 @@ fun SaltyTopBarSublib(
     onSaveSgClick: () -> Unit
 ) {
     SaltyEditorTopBar(
-        projectName = projectName,
-        groupBreadcrumbs = groupBreadcrumbs,
-        zoom = zoom,
         previewQuality = previewQuality,
         canUndo = canUndo,
         canRedo = canRedo,
         showGrid = showGrid,
         gridSize = gridSize,
-        isLayersPanelOpen = isLayersPanelOpen,
         isCanvasLocked = isCanvasLocked,
         onToggleCanvasLock = onToggleCanvasLock,
         onNavigateBack = onNavigateBack,
