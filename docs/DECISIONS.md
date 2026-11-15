@@ -663,3 +663,33 @@ framework or longer global idle timeout. The inherited incompatible-selection te
 now waits for the actual displayed grid after LaunchedEffect page invalidation and
 retains its original visibility assertions. No tests disabled or expected results
 weakened. Final full/debug verification remains required before handoff acceptance.
+
+
+## Verified registered-overlay and developer-template checkpoint — 2026-11-15
+[Actions 43703561698](https://github.com/motionssalt/salty-graphics/actions/runs/43703561698)
+verifies code `1807ee562f5d47e3f4852b9fa6b2991e5a494c38`: **286 debug JVM tests**
+(app 219, engine 50, ui-kit 17), zero failures/errors/skips, existing reviewed native
+library goldens matching, and successful `:app:assembleDebug`. No tests disabled.
+
+Accepted scope: production gradient/vector overlay facades resolve their registered
+library renderers with real host bindings. Gradient gestures have specific identities,
+one commit per drag and cancel/disposal rollback; linear endpoint independence is
+pointer-tested at three zooms/two rotations. Real editor tests cover saved history,
+Undo/Redo and vector compositor pixel changes; existing multi-path/archive gesture
+coverage follows the registry route. The developer sample resolves its actual strict
+catalog definition and is hidden from ordinary users; production developer bindings,
+runtime tool visibility invalidation and source-level bypass guards pass.
+
+The two UI failures in 43702744057 do not recur after one-editor-host-per-worker
+isolation and explicitly awaiting the displayed grid following asynchronous selection
+page invalidation. This is bounded test synchronization, not a separate proven
+production visual fix or phone certification. Missing/changed golden failures remain
+active; no new baseline was required because component appearances are unchanged.
+
+**V0 remains in progress.** Selection-overlay bindings, complete production custom-
+component adapters, outstanding declaration-only screens/panels, strict dependency
+boundaries and every-component/state/theme goldens remain. V18/V41 and other later
+feature amendments are not accepted merely because existing vector tests pass.
+No additional V/E item is marked done, and no release, tag, signing, applicationId,
+reference-keyflaw or unrelated UI-refinement change was made. Final handoff changes
+only docs/state and preserves the verified application source.
