@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -192,14 +193,13 @@ class ScaffoldComponentMatrixGoldenTest {
     }
 
     @Test fun surfacesAndColorMatrixHasReviewedLightAndDarkGoldens() {
-        // Freeze only the visual fixture clock: outlined-input theme transitions must
-        // not make a static native golden wait for the animation scheduler forever.
-        // All frames used for comparison are advanced explicitly below.
-        compose.mainClock.autoAdvance = false
+        // Static state/theme matrices remount the color fixture per theme instead
+        // of mixing a screenshot with an outlined-input runtime theme transition.
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         var dark by mutableStateOf(true)
         host.get().setContent {
             SaltyGraphicsTheme(darkTheme = dark, dynamicColor = false) {
+                key(dark) {
                 Surface(Modifier.requiredSize(412.dp, 860.dp).testTag("matrix_root")) {
                     Column(Modifier.fillMaxSize().saltyPadding(SaltySpace.MD)) {
                         SaltySectionCard(title = "List Items & Trackpad") {
@@ -216,6 +216,7 @@ class ScaffoldComponentMatrixGoldenTest {
                             )
                         }
                     }
+                }
                 }
             }
         }

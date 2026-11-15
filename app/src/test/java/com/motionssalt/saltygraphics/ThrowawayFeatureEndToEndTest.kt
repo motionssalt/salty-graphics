@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import com.motionssalt.saltygraphics.engine.action.ActionTree
@@ -133,6 +134,7 @@ class ThrowawayFeatureEndToEndTest {
             editorSettings = EditorSettings(defaultPreviewQuality = PreviewQuality.FULL)))
         var docState by mutableStateOf(tree.currentDocument)
         var openPage by mutableStateOf(false)
+        var previewFrames = 0
 
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         host.get().setContent {
@@ -158,7 +160,11 @@ class ThrowawayFeatureEndToEndTest {
                                 docState = tree.currentDocument
                             }
                         },
-                        onBack = { openPage = false }
+                        onBack = { openPage = false },
+                        onPreview = { change ->
+                            previewFrames++
+                            docState = change?.apply(tree.currentDocument) ?: tree.currentDocument
+                        }
                     )
                 }
             }
@@ -168,6 +174,41 @@ class ThrowawayFeatureEndToEndTest {
             compose.onNodeWithText("Throwaway E2E").assertIsDisplayed().performClick()
             compose.onNodeWithTag("scaffold_feature_page").assertIsDisplayed()
             compose.onNodeWithTag("readout_summary").assertTextEquals("Size=20 Quality=Full")
+
+            // Exercise every built-in control, not merely its declaration. Undo each
+            // probe so the final branching sequence below has deterministic values.
+            compose.onNode(isToggleable() and hasAnyAncestor(hasTestTag("control_sw"))).performClick()
+            compose.runOnIdle {
+                assertTrue(tree.currentDocument.editorSettings.showGrid)
+                assertTrue(tree.undoActionName!!.contains("Grid"))
+                assertTrue(tree.undo()); docState = tree.currentDocument
+            }
+            compose.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag("control_t1")))
+                .performScrollTo().performTextReplacement("Registered project")
+            compose.runOnIdle {
+                assertEquals("Registered project", tree.currentDocument.name)
+                assertTrue(tree.undoActionName!!.contains("Title"))
+                assertTrue(tree.undo()); docState = tree.currentDocument
+            }
+            for ((controlId, track) in listOf("r1" to "ruler_track", "p1" to "progress_track")) {
+                compose.onNodeWithTag("control_$controlId").performScrollTo()
+                var countBefore = 0
+                compose.runOnIdle { countBefore = tree.nodes.size }
+                compose.onNode(hasTestTag(track) and hasAnyAncestor(hasTestTag("control_$controlId")))
+                    .performTouchInput {
+                        down(Offset(width * .25f, centerY))
+                        moveTo(Offset(width * .8f, centerY), 300)
+                        up()
+                    }
+                compose.mainClock.advanceTimeBy(5000)
+                compose.runOnIdle {
+                    assertEquals("One labelled action per completed gesture", countBefore + 1, tree.nodes.size)
+                    assertTrue(previewFrames > 0)
+                    if (controlId == "r1") assertNotEquals(20, tree.currentDocument.editorSettings.gridSize)
+                    else assertNotEquals(8f, tree.currentDocument.editorSettings.snapTolerancePx)
+                    assertTrue(tree.undo()); docState = tree.currentDocument
+                }
+            }
 
             // 2) Drive segmented chips, library component, dropdown, and color picker page
             compose.onNodeWithText("Square").performScrollTo().performClick()

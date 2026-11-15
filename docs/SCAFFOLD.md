@@ -240,5 +240,13 @@ The two `components_controls_{dark,light}.png` library goldens were generated in
 Actions 43686334697 and visually reviewed: real switches (on/off and disabled),
 buttons, ruler, progress bar, segmented chips, expanded inline dropdown, normal/error
 text fields and toast. They are not every-component/state coverage. The surfaces/
-color capture uses an explicitly advanced visual fixture clock for stable input/theme
-transitions; missing or changed baselines continue to fail, never auto-accept.
+color capture remounts the static fixture per theme (the manual-clock attempt
+captured unchanged pixels and was rejected); missing or changed baselines continue to fail, never auto-accept.
+
+
+The throwaway end-to-end registration test now drives each built-in primitive,
+including real ruler/progress pointer gestures, switch, and text entry, rather than
+only declaring them. The test host uses the same preview/commit live-document wiring
+as production property pages; each completed numeric gesture creates one labelled
+history node. Color, chips, dropdown and a registered extension are also operated.
+Pending CI acceptance; this does not certify absent media/gradient/trackpad bindings.

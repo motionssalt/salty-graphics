@@ -544,3 +544,14 @@ alias, and unbounded color-surface theme animation idling. Explicit canonical fi
 scroll-to interactions, reviewed controls PNGs and an explicitly advanced static
 golden clock repair the harness without suppressing any assertion. CI executes the
 full debug suite once rather than executing a subset and then repeating it in full.
+
+
+### V0 library golden harness follow-up
+Actions 43690067670 confirms the throwaway fixture and reviewed controls goldens now
+pass. The manual-clock color fixture did not render the light transition; the
+same-theme-pixels assertion correctly rejected it. After two harness failures, use
+the simplest workaround: remount the static color fixture per theme with normal
+clock advancement, not another screenshot framework. Keep every assertion and
+strict missing/changed PNG failure. The dark surface PNG from the inherited Actions
+run was visually reviewed; light is still pending generation/review. This is a
+static component/theme matrix, not proof of production runtime theme switching.
