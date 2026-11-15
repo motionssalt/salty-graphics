@@ -231,7 +231,7 @@ fun SaltyVectorCanvasOverlay(
                         // Priority 3: Path segments (actual cubic/line sampling in screen space)
                         if (pointIndex < 0 && working.points.size >= 2) {
                             val count = if (working.isClosed) working.points.size else working.points.size - 1
-                            var bestSegDist = hitRadius * 1.15f
+                            var bestSegDist = 12.dp.toPx()
                             for (i in 0 until count) {
                                 val p0 = working.points[i]
                                 val p1 = working.points[(i + 1) % working.points.size]

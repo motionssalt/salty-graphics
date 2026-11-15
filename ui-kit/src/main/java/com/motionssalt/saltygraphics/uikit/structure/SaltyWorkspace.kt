@@ -577,7 +577,7 @@ fun SaltyLayersPanel(
                             .background(colors.surfaceVariant)
                             .horizontalScroll(rememberScrollState())
                             .padding(horizontal = SaltyTokens.spacing.sm, vertical = SaltyTokens.spacing.xs),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        horizontalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.xs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val isAllSelected = layers.isNotEmpty() && selectedLayerIds.size >= layers.size

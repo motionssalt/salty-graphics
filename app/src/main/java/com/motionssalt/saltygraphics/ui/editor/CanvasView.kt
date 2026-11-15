@@ -206,7 +206,7 @@ fun CanvasView(
                                 val minCharW = data.text.filter { it != '\n' && it != '\r' }
                                     .maxOfOrNull { ch -> paint.measureText(ch.toString()) }
                                     ?.coerceAtLeast(8f) ?: 8f
-                                textStartBoxWidth = max(minCharW, data.boxWidth)
+                                textStartBoxWidth = max(minCharW, box.width)
                                 textStartBoxHeight = max(20f, data.boxHeight)
                             } else {
                                 handle = if (local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE

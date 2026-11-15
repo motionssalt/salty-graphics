@@ -252,7 +252,7 @@ class HapticsAndToastTest {
         SaltyHaptics.systemHapticsEnabledOverride = true
         SaltyHaptics.performer = { _, constant -> fired.add(constant) }
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
-        var transform by mutableStateOf(Transform2D(translationX = 50f, translationY = 50f))
+        var transform by mutableStateOf(Transform2D(translationX = 50f, translationY = 75f))
         val targetBounds = SelectionBounds(-50f, -50f, 50f, 50f)
         host.get().setContent {
             SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {

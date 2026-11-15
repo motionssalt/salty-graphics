@@ -269,6 +269,7 @@ abstract class FillEditorFixture {
             }
             check(doc.id, repo)
         } finally {
+            com.motionssalt.saltygraphics.uikit.structure.SaltyToastManager.clear()
             host.pause().stop().destroy()
         }
     }

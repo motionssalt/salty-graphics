@@ -92,9 +92,9 @@ class TextFrameWrappingBoxTest {
 
             // At 1f zoom and 800x800 canvas in 400x400 view, fit = 400/800 * 0.94 = 0.47
             val fit = (400f / 800f) * 0.94f
-            // Right edge handle is at center.x + halfW * fit.
-            // HalfW of 500f boxWidth is 250f.
-            val rightHandleX = center.x + (250f * fit)
+            val initialPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { textSize = initialTextData.fontSize }
+            val initialFrameW = kotlin.math.max(initialTextData.boxWidth, TextLayoutEngine.computeLayout(initialTextData, initialPaint).totalWidth)
+            val rightHandleX = center.x + ((initialFrameW / 2f) * fit)
             val rightHandleY = center.y
 
             // Drag right handle outward by 50px on screen
@@ -185,11 +185,10 @@ class TextFrameWrappingBoxTest {
 
             // At 2f zoom: fit = (400/800)*0.94 = 0.47, effZoom = 0.47 * 2 = 0.94
             val effZoom = (400f / 800f) * 0.94f * 2f
-            // Local right edge handle is at (+150f, 0f).
-            // Rotated 90 degrees clockwise: (x*cos90 - y*sin90, x*sin90 + y*cos90) = (0, +150f)
-            // In screen coordinates: center.x, center.y + 150f * effZoom
+            val initialPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { textSize = initialTextData.fontSize }
+            val initialFrameW = kotlin.math.max(initialTextData.boxWidth, TextLayoutEngine.computeLayout(initialTextData, initialPaint).totalWidth)
             val handleX = center.x
-            val handleY = center.y + (150f * effZoom)
+            val handleY = center.y + ((initialFrameW / 2f) * effZoom)
 
             // Drag handle downward on screen (which is outward along local +X)
             canvas.performTouchInput {
