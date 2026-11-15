@@ -64,10 +64,10 @@ class ThrowawayFeatureEndToEndTest {
             read = { d, _ -> d.editorSettings.gridSize.toFloat() },
             write = { d, _, v -> d.updateEditorSettings { it.copy(gridSize = v.toInt()) } }
         )
-        val zoomPath = DocumentPropertyPath<Float>(
-            key = "throwaway.zoom", target = "Viewport", property = "Zoom",
-            read = { d, _ -> d.editorSettings.defaultZoom },
-            write = { d, _, v -> d.updateEditorSettings { it.copy(defaultZoom = v) } }
+        val snapTolPath = DocumentPropertyPath<Float>(
+            key = "throwaway.snapTolerance", target = "Snapping", property = "Tolerance",
+            read = { d, _ -> d.editorSettings.snapTolerancePx },
+            write = { d, _, v -> d.updateEditorSettings { it.copy(snapTolerancePx = v) } }
         )
         val qualityPath = DocumentPropertyPath<PreviewQuality>(
             key = "throwaway.quality", target = "Preview", property = "Quality",
@@ -107,11 +107,11 @@ class ThrowawayFeatureEndToEndTest {
                             controls = listOf(
                                 FeatureControlDef("sw", "Grid Visible", BoundControlType.SWITCH, PropertyBinding(showGridPath), defaultValue = false),
                                 FeatureControlDef("r1", "Grid Spacing", BoundControlType.RULER_SLIDER, PropertyBinding(gridSizePath), range = 4f..200f, step = 1f, unit = "px", defaultValue = 20f),
-                                FeatureControlDef("p1", "Default Zoom", BoundControlType.PROGRESS_SLIDER, PropertyBinding(zoomPath), range = 0.25f..4f, step = 0.25f, unit = "x", defaultValue = 1f),
+                                FeatureControlDef("p1", "Snap Tolerance", BoundControlType.PROGRESS_SLIDER, PropertyBinding(snapTolPath), range = 1f..32f, step = 1f, unit = "px", defaultValue = 8f),
                                 FeatureControlDef("c1", "Grid Type", BoundControlType.SEGMENTED_CHIPS, PropertyBinding(squarePath),
                                     segmentOptions = listOf(SegmentChipItem(false, "Auto"), SegmentChipItem(true, "Square")), defaultValue = false),
                                 FeatureControlDef("d1", "Preview Quality", BoundControlType.INLINE_DROPDOWN, PropertyBinding(qualityPath),
-                                    options = PreviewQuality.primaryLevels.map { DropdownOption(it, it.displayName) }, defaultValue = PreviewQuality.FULL),
+                                    options = listOf(PreviewQuality.QUARTER, PreviewQuality.HALF, PreviewQuality.TWO_THIRDS, PreviewQuality.FULL).map { DropdownOption(it, it.displayName) }, defaultValue = PreviewQuality.FULL),
                                 FeatureControlDef("t1", "Document Name", BoundControlType.TEXT_FIELD, PropertyBinding(namePath), defaultValue = "Untitled"),
                                 FeatureControlDef("col1", "Canvas Tint", BoundControlType.COLOR_PICKER, PropertyBinding(colorPath), defaultValue = 0xFF808080L),
                                 FeatureControlDef("lib1", "Library Stepper", BoundControlType.LIBRARY_COMPONENT, PropertyBinding(gridSizePath), componentId = "throwaway_stepper", defaultValue = 20f)
@@ -140,8 +140,8 @@ class ThrowawayFeatureEndToEndTest {
                         catalog = strictCatalog,
                         document = docState,
                         selectedLayerIds = emptySet(),
-                        implementedTools = setOf("throwaway_e2e"),
-                        onFeatureClick = { openPage = true }
+                        availableActions = setOf("throwaway_e2e"),
+                        onToolClick = { openPage = true }
                     )
                 } else {
                     ScaffoldFeaturePage(
