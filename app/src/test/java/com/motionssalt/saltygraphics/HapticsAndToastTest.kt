@@ -301,7 +301,7 @@ class HapticsAndToastTest {
             assertEquals(2, fired.size)
         } finally {
             SaltyHaptics.systemHapticsEnabledOverride = null
-            SaltyHaptics.performer = null
+            SaltyHaptics.performer = { view, constant -> view.performHapticFeedback(constant) }
             host.pause().stop().destroy()
         }
     }
