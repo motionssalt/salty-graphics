@@ -303,7 +303,7 @@
         "id": "R10",
         "title": "Text options (reference: Keyflaw's Text options)",
         "status": "done",
-        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (\u2030 em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
+        "notes": "Implemented Text Options in-panel page inside fixed bottom panel with live text preview, Font selector row leading to Font sub-page, RulerSlider for size, color picker swatch, Left/Center/Right/Justify alignment chips, Free/Paragraph/Fixed/Shrink-fit box mode chips, line spacing (%), letter spacing (‰ em) with reset button, outline stroke toggle/swatch/width slider, and shape/vector path selector with offset slider. Updated CanvasView with native text rendering, outline drawing, and path-following. Verified in FontManagerTest and TextOptionsUITest."
       },
       {
         "id": "R11",
@@ -332,7 +332,7 @@
     ],
     "decisions": [
       "Publish releases only on new v* tags; main pushes build and upload artifacts without replacing existing versioned release assets.",
-      "R6: usable portrait workspace gets 40% height clamped 260\u2013340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280\u2013360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
+      "R6: usable portrait workspace gets 40% height clamped 260–340dp and capped at 45%; landscape (width > height) or width >=840dp docks tools right, 40% width clamped 280–360dp and capped at 45%. Insets excluded before sizing. No drag handle or resize."
     ],
     "known_issues": [
       "R13 and R14 remain pending. Existing .sg repository saves do not yet preserve complete media/font/action-tree portability or expose all requested Save project actions. No new release published.",
@@ -1097,9 +1097,11 @@
       "2026-11-12: Follow V0-first order. Preserve inherited implementation notes, reopen unsupported whole-item acceptance, track amended checks explicitly under V36. Use existing test workflow and no emulator/build-screenshot iteration.",
       "Verified 973c342 with Actions 43209833401 before handoff; check off only Shape & Shape Settings migration. Keep V0 in_progress and publish no premature release for a partial scaffold checkpoint."
     ],
-    "known_issues": [],
-    "last_updated": "2026-11-14T16:00:57Z",
-    "last_session_note": "Reconciled fix_round_4 queue with V38-V43 before E1-E7 and V37. Resuming V0 scaffold & component library migration first.",
+    "known_issues": [
+      "2026-11-15 resume: inherited main bbc5720 fails component golden comparison/missing baselines, animated surface idling and throwaway-control test. V0 migration documentation predates recent wrapper migrations and needs an evidence-based audit, not blanket checkmarks. Local Android SDK unavailable; existing Actions is the Android verification environment."
+    ],
+    "last_updated": "2026-11-15T07:25:57Z",
+    "last_session_note": "Resumed from bbc5720. V0 remains first/in_progress. Latest inherited Actions 43686334697 fails three scaffold acceptance tests (two component golden tests and throwaway all-control registration). First repair and verify these failures; audit production registration and migration claims before advancing. No release authorized by acceptance yet; existing releases untouched.",
     "verification_pending": false,
     "verification": {
       "scope": "Full Fix Round 4 acceptance test suite and release build",
@@ -1145,7 +1147,7 @@
         }
       },
       "total_test_executions": 426,
-      "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light \u00d7 empty/selected/group",
+      "goldens": "6 native production tool-grid PNGs, exact pixel comparison, dark/light × empty/selected/group",
       "apks": "universal + arm64-v8a + armeabi-v7a + x86_64 built as CI artifacts; all four signatures match existing stable certificate",
       "release_published": false
     },
