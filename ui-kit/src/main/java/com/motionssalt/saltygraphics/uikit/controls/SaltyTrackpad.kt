@@ -33,6 +33,9 @@ fun SaltyTrackpad(
     val shapes = SaltyTokens.shapes
 
     var touchOffset by remember { mutableStateOf<Offset?>(null) }
+    // A registered session can replace its host callbacks without changing sensitivity.
+    val currentDelta by rememberUpdatedState(onDelta)
+    val currentDragEnd by rememberUpdatedState(onDragEnd)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -72,16 +75,16 @@ fun SaltyTrackpad(
                         },
                         onDragEnd = {
                             touchOffset = null
-                            onDragEnd()
+                            currentDragEnd()
                         },
                         onDragCancel = {
                             touchOffset = null
-                            onDragEnd()
+                            currentDragEnd()
                         }
                     ) { change, dragAmount ->
                         change.consume()
                         touchOffset = change.position
-                        onDelta(dragAmount.x * sensitivity, dragAmount.y * sensitivity)
+                        currentDelta(dragAmount.x * sensitivity, dragAmount.y * sensitivity)
                     }
                 },
             contentAlignment = Alignment.Center

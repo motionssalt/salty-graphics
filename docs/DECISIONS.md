@@ -726,3 +726,30 @@ import/selection bindings and the project image list without stale callbacks or 
 The missing-id resolver test and architecture guards pass. Rotated text width and
 both isolated real registered-vector Editor tests are green. This is partial V0, not
 release/whole-round acceptance. No application source changed in this evidence commit.
+
+
+### V0 gradient-bar and Transform-trackpad production sessions (CI pending)
+The two remaining special surfaces in `SaltyExtraControls` now resolve
+`gradient_bar` and `transform_trackpad` through `ScaffoldLibraryComponent`.
+`GradientBarBindings` requires the real selected-stop state and preview/labelled
+commit callbacks. `PositionTrackpadBindings` requires real coordinates, sensitivity,
+delta/end and exact X/Y bindings. The shared renderer owns all layout; production
+host snapping, numeric ranges, labels, selection and history remain unchanged.
+Legacy GradientData/coordinate-pair controls still work through the same registrations.
+These session-bound surfaces use their required binding object for event dispatch,
+like History and canvas overlays; value-bound extensions use host preview/commit.
+
+Pointer callbacks must follow their live host: the trackpad's pointerInput keyed only
+by sensitivity previously retained old target/callback closures. It now reads updated
+callbacks without restarting the gesture. The stop rail similarly reads live callbacks
+and owns its final gesture draft, so pointer-up does not depend on preview recomposition.
+Cancel or disposal restores the initial gradient through preview, never records a
+cancelled drag. No visual components/tokens or golden baselines were changed.
+
+Tests cover registered production Editor -> stop rail -> saved pixels/history and
+Undo/Redo; Editor -> registered trackpad -> single saved drag and exact fractional
+entry; binding replacement at unchanged sensitivity; final stop value without preview
+recomposition; cancellation and unmount rollback; source guards reject direct primitive
+bypasses. Native CI acceptance remains required. This is not full V0, V7, V15, V24,
+V41/V42 or whole-round acceptance. Other full-component/state golden and complete
+registration/binding acceptance work remains; no release or UI refinement.

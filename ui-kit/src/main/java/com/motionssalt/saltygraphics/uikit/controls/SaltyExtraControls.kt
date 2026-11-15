@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.motionssalt.saltygraphics.engine.model.*
+import com.motionssalt.saltygraphics.uikit.registry.GradientBarBindings
+import com.motionssalt.saltygraphics.uikit.registry.PositionTrackpadBindings
 import com.motionssalt.saltygraphics.uikit.registry.SaltyMediaPickerState
 import com.motionssalt.saltygraphics.uikit.registry.ScaffoldLibraryComponent
 import com.motionssalt.saltygraphics.uikit.registry.SaltyBuiltInLibraryRegistry
@@ -179,12 +181,18 @@ fun SaltyFillPanelPage(
                 label = "Gradient type"
             )
             if (g.type != GradientType.FREEFORM) {
-                SaltyGradientStopEditor(
-                    gradient = g,
-                    selectedStopIndex = stop(g),
-                    onSelectStop = { stopIndex = it },
-                    onGradientPreview = { preview(live.copy(gradient = it)) },
-                    onGradientCommit = { label, updatedGrad -> commit(label, live.copy(gradient = updatedGrad)) }
+                ScaffoldLibraryComponent(
+                    id = "gradient_bar",
+                    label = "Gradient stops",
+                    current = GradientBarBindings(
+                        gradient = g,
+                        selectedStopIndex = stop(g),
+                        onSelectStop = { stopIndex = it },
+                        onPreview = { preview(live.copy(gradient = it)) },
+                        onCommit = { label, updatedGrad -> commit(label, live.copy(gradient = updatedGrad)) }
+                    ),
+                    onPreview = {}, // Session-bound surfaces dispatch through required typed bindings.
+                    onCommit = {}
                 )
                 SaltyRow(modifier = Modifier.saltyFillMaxWidth(), spacing = SaltySpace.SM) {
                     SaltyTextButton(text = "Add stop", onClick = {
@@ -583,36 +591,42 @@ fun SaltyTransformPanel(
 
                     when (moveMode) {
                         MoveControlMode.TRACKPAD -> {
-                            SaltyPositionTrackpad(
-                                x = currentTransform.translationX,
-                                y = currentTransform.translationY,
-                                sensitivity = currentTransform.moveSensitivity,
-                                onDelta = { dx, dy ->
-                                    val raw = currentTransform.copy(
-                                        translationX = currentTransform.translationX + dx,
-                                        translationY = currentTransform.translationY + dy
-                                    )
-                                    val snapped = applyTranslationSnapping(raw)
-                                    currentTransform = snapped
-                                    onTransformChange(snapped)
-                                },
-                                onDragEnd = {
-                                    clearGuides()
-                                    onTransformCommit(currentTransform)
-                                },
-                                onCommitX = {
-                                    val updated = currentTransform.copy(translationX = it)
-                                    currentTransform = updated
-                                    onTransformChange(updated)
-                                    onTransformCommit(updated)
-                                },
-                                onCommitY = {
-                                    val updated = currentTransform.copy(translationY = it)
-                                    currentTransform = updated
-                                    onTransformChange(updated)
-                                    onTransformCommit(updated)
-                                },
-                                range = -100000f..100000f
+                            ScaffoldLibraryComponent(
+                                id = "transform_trackpad",
+                                label = "Position",
+                                current = PositionTrackpadBindings(
+                                    x = currentTransform.translationX,
+                                    y = currentTransform.translationY,
+                                    sensitivity = currentTransform.moveSensitivity,
+                                    onDelta = { dx, dy ->
+                                        val raw = currentTransform.copy(
+                                            translationX = currentTransform.translationX + dx,
+                                            translationY = currentTransform.translationY + dy
+                                        )
+                                        val snapped = applyTranslationSnapping(raw)
+                                        currentTransform = snapped
+                                        onTransformChange(snapped)
+                                    },
+                                    onDragEnd = {
+                                        clearGuides()
+                                        onTransformCommit(currentTransform)
+                                    },
+                                    onCommitX = {
+                                        val updated = currentTransform.copy(translationX = it)
+                                        currentTransform = updated
+                                        onTransformChange(updated)
+                                        onTransformCommit(updated)
+                                    },
+                                    onCommitY = {
+                                        val updated = currentTransform.copy(translationY = it)
+                                        currentTransform = updated
+                                        onTransformChange(updated)
+                                        onTransformCommit(updated)
+                                    },
+                                    range = -100000f..100000f
+                                ),
+                                onPreview = {}, // Required session bindings own snapping/exact-entry semantics.
+                                onCommit = {}
                             )
                             SaltyNumberControl(
                                 label = "Sensitivity",

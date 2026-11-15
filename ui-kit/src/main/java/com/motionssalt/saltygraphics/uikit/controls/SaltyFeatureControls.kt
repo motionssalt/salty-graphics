@@ -61,6 +61,9 @@ fun SaltyGradientStopEditor(
 ) {
     val colors = SaltyTokens.colors
     val liveGradient by rememberUpdatedState(gradient)
+    val selectStopCallback by rememberUpdatedState(onSelectStop)
+    val previewCallback by rememberUpdatedState(onGradientPreview)
+    val commitCallback by rememberUpdatedState(onGradientCommit)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -93,30 +96,56 @@ fun SaltyGradientStopEditor(
                     .testTag("gradient_stop_rail")
                     .pointerInput(Unit) {
                         var dragged = -1
-                        detectDragGestures(
-                            onDragStart = { p ->
-                                dragged = liveGradient.stops.indices.minByOrNull {
-                                    abs(liveGradient.stops[it].position - p.x / size.width.toFloat().coerceAtLeast(1f))
-                                } ?: -1
-                                if (dragged >= 0) onSelectStop(dragged)
-                            },
-                            onDragEnd = {
-                                if (dragged >= 0) onGradientCommit("Move gradient stop", liveGradient)
-                            },
-                            onDragCancel = {
-                                if (dragged >= 0) onGradientCommit("Move gradient stop", liveGradient)
-                            }
-                        ) { change, _ ->
-                            if (dragged >= 0) {
-                                val updated = liveGradient.copy(
-                                    stops = liveGradient.stops.mapIndexed { i, s ->
-                                        if (i == dragged) s.copy(position = (change.position.x / size.width.toFloat().coerceAtLeast(1f)).coerceIn(0f, 1f))
-                                        else s
+                        var initial: GradientData? = null
+                        var draft: GradientData? = null
+                        var inFlight = false
+                        try {
+                            detectDragGestures(
+                                onDragStart = { p ->
+                                    initial = liveGradient
+                                    draft = liveGradient
+                                    dragged = liveGradient.stops.indices.minByOrNull {
+                                        abs(liveGradient.stops[it].position - p.x / size.width.toFloat().coerceAtLeast(1f))
+                                    } ?: -1
+                                    inFlight = dragged >= 0
+                                    if (dragged >= 0) selectStopCallback(dragged)
+                                },
+                                onDragEnd = {
+                                    // Use the gesture's final value, not a possibly one-frame-old
+                                    // recomposed gradient. Preview frames never add history nodes.
+                                    val final = draft
+                                    inFlight = false
+                                    if (dragged >= 0 && final != null && final != initial) {
+                                        commitCallback("Move gradient stop", final)
                                     }
-                                )
-                                onGradientPreview(updated)
-                                change.consume()
+                                    dragged = -1
+                                    initial = null
+                                    draft = null
+                                },
+                                onDragCancel = {
+                                    val restore = initial
+                                    inFlight = false
+                                    dragged = -1
+                                    initial = null
+                                    draft = null
+                                    if (restore != null) previewCallback(restore)
+                                }
+                            ) { change, _ ->
+                                if (dragged >= 0) {
+                                    val base = draft ?: liveGradient
+                                    val updated = base.copy(stops = base.stops.mapIndexed { i, stop ->
+                                        if (i == dragged) stop.copy(position =
+                                            (change.position.x / size.width.toFloat().coerceAtLeast(1f)).coerceIn(0f, 1f))
+                                        else stop
+                                    })
+                                    draft = updated
+                                    previewCallback(updated)
+                                    change.consume()
+                                }
                             }
+                        } finally {
+                            // Closing the page or removing its target also discards a draft.
+                            if (inFlight) initial?.let { previewCallback(it) }
                         }
                     }
             ) {

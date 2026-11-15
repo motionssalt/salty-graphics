@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.testTag
 import com.motionssalt.saltygraphics.engine.action.ActionIdentity
 import com.motionssalt.saltygraphics.engine.action.ActionTree
 import com.motionssalt.saltygraphics.engine.model.CanvasSize
+import com.motionssalt.saltygraphics.engine.model.GradientData
 import com.motionssalt.saltygraphics.engine.model.FillData
 import com.motionssalt.saltygraphics.engine.model.Layer
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
@@ -53,6 +54,27 @@ data class SelectionOverlayBindings(
     val onPreviewTransform: (Transform2D) -> Unit = {},
     val onCommitTransform: (ActionIdentity, Transform2D) -> Unit = { _, _ -> },
     val onCancelTransform: () -> Unit = {}
+)
+
+/** Production gradient session: selection and every edit callback come from its real host. */
+data class GradientBarBindings(
+    val gradient: GradientData,
+    val selectedStopIndex: Int,
+    val onSelectStop: (Int) -> Unit,
+    val onPreview: (GradientData) -> Unit,
+    val onCommit: (String, GradientData) -> Unit
+)
+
+/** Production trackpad session preserves host snapping, exact entry, sensitivity and history. */
+data class PositionTrackpadBindings(
+    val x: Float,
+    val y: Float,
+    val sensitivity: Float,
+    val onDelta: (Float, Float) -> Unit,
+    val onDragEnd: () -> Unit,
+    val onCommitX: (Float) -> Unit,
+    val onCommitY: (Float) -> Unit,
+    val range: ClosedFloatingPointRange<Float> = -100000f..100000f
 )
 
 /** Production adapter state for the registered media_picker_grid library component. */

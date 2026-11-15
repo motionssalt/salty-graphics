@@ -44,59 +44,83 @@ object SaltyBuiltInLibraryRegistry {
     private fun registerDefaults() {
         if (!LibraryComponentRegistry.contains("transform_trackpad")) {
             LibraryComponentRegistry.register(
-                LibraryComponentEntry<Pair<Float, Float>>(
+                LibraryComponentEntry<Any>(
                     id = "transform_trackpad",
                     description = "2D position trackpad with direct coordinate entry"
                 ) { _, current, onPreview, onCommit ->
-                    var dragging by remember { mutableStateOf(false) }
-                    var draft by remember { mutableStateOf(current) }
-                    if (!dragging) {
-                        draft = current
-                    }
-                    SaltyPositionTrackpad(
-                        x = draft.first,
-                        y = draft.second,
-                        sensitivity = 1f,
-                        onDelta = { dx, dy ->
-                            dragging = true
-                            val next = (draft.first + dx) to (draft.second + dy)
-                            draft = next
-                            onPreview(next)
-                        },
-                        onDragEnd = {
-                            dragging = false
-                            onCommit(draft)
-                        },
-                        onCommitX = { nx ->
-                            val next = nx to draft.second
-                            draft = next
-                            onCommit(next)
-                        },
-                        onCommitY = { ny ->
-                            val next = draft.first to ny
-                            draft = next
-                            onCommit(next)
+                    if (current is PositionTrackpadBindings) {
+                        SaltyPositionTrackpad(
+                            x = current.x, y = current.y, sensitivity = current.sensitivity,
+                            onDelta = current.onDelta, onDragEnd = current.onDragEnd,
+                            onCommitX = current.onCommitX, onCommitY = current.onCommitY,
+                            range = current.range
+                        )
+                    } else {
+                        require(current is Pair<*, *> && current.first is Float && current.second is Float) {
+                            "transform_trackpad requires PositionTrackpadBindings or a coordinate pair"
                         }
-                    )
+                        val position = (current.first as Float) to (current.second as Float)
+                        var dragging by remember { mutableStateOf(false) }
+                        var draft by remember { mutableStateOf(position) }
+                        if (!dragging) {
+                            draft = position
+                        }
+                        SaltyPositionTrackpad(
+                            x = draft.first,
+                            y = draft.second,
+                            sensitivity = 1f,
+                            onDelta = { dx, dy ->
+                                dragging = true
+                                val next = (draft.first + dx) to (draft.second + dy)
+                                draft = next
+                                onPreview(next)
+                            },
+                            onDragEnd = {
+                                dragging = false
+                                onCommit(draft)
+                            },
+                            onCommitX = { nx ->
+                                val next = nx to draft.second
+                                draft = next
+                                onCommit(next)
+                            },
+                            onCommitY = { ny ->
+                                val next = draft.first to ny
+                                draft = next
+                                onCommit(next)
+                            }
+                        )
+                    }
                 }
             )
         }
 
         if (!LibraryComponentRegistry.contains("gradient_bar")) {
             LibraryComponentRegistry.register(
-                LibraryComponentEntry<GradientData>(
+                LibraryComponentEntry<Any>(
                     id = "gradient_bar",
                     description = "Interactive gradient stop bar editor"
                 ) { _, current, onPreview, onCommit ->
-                    var selectedStopIndex by remember { mutableIntStateOf(0) }
-                    val safeIndex = selectedStopIndex.coerceIn(0, (current.stops.size - 1).coerceAtLeast(0))
-                    SaltyGradientStopEditor(
-                        gradient = current,
-                        selectedStopIndex = safeIndex,
-                        onSelectStop = { selectedStopIndex = it },
-                        onGradientPreview = onPreview,
-                        onGradientCommit = { _, updated -> onCommit(updated) }
-                    )
+                    if (current is GradientBarBindings) {
+                        SaltyGradientStopEditor(
+                            gradient = current.gradient,
+                            selectedStopIndex = current.selectedStopIndex,
+                            onSelectStop = current.onSelectStop,
+                            onGradientPreview = current.onPreview,
+                            onGradientCommit = current.onCommit
+                        )
+                    } else {
+                        require(current is GradientData) { "gradient_bar requires GradientBarBindings or GradientData" }
+                        var selectedStopIndex by remember { mutableIntStateOf(0) }
+                        val safeIndex = selectedStopIndex.coerceIn(0, (current.stops.size - 1).coerceAtLeast(0))
+                        SaltyGradientStopEditor(
+                            gradient = current,
+                            selectedStopIndex = safeIndex,
+                            onSelectStop = { selectedStopIndex = it },
+                            onGradientPreview = onPreview,
+                            onGradientCommit = { _, updated -> onCommit(updated) }
+                        )
+                    }
                 }
             )
         }
