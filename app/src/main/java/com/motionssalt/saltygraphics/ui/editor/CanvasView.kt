@@ -5,10 +5,10 @@ import android.graphics.Bitmap
 import android.graphics.Paint as NativePaint
 import android.graphics.Path as NativePath
 import android.graphics.RectF
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
+import com.motionssalt.saltygraphics.uikit.structure.SaltyDrawCanvas
+import com.motionssalt.saltygraphics.uikit.structure.saltyAwaitEachGesture
+import com.motionssalt.saltygraphics.uikit.structure.saltyAwaitFirstDown
+import com.motionssalt.saltygraphics.uikit.structure.saltyCanvasBackground
 import com.motionssalt.saltygraphics.engine.action.ActionIdentity
 import com.motionssalt.saltygraphics.uikit.registry.OverlayRenderContext
 import com.motionssalt.saltygraphics.uikit.registry.ScaffoldCanvasOverlay
@@ -156,12 +156,12 @@ fun CanvasView(
             .semantics { stateDescription = if (selectedLayerIds.isEmpty()) "No layers selected" else "${selectedLayerIds.size} layers selected" }
             .clipToBounds()
             .onSizeChanged { viewport = it }
-            .background(colors.background)
+            .saltyCanvasBackground(colors.background)
             .pointerInput(Unit) {
                 val touchSlop = viewConfiguration.touchSlop
                 val touchRadius = sizes.touchTargetRadius.toPx() // 44dp minimum target, independent of zoom.
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
+                saltyAwaitEachGesture {
+                    val down = saltyAwaitFirstDown(requireUnconsumed = false)
                     val activeDoc = currentDoc
                     val effZoom = currentFit * currentZoom
                     if (!effZoom.isFinite() || effZoom <= 0f) return@awaitEachGesture
@@ -480,7 +480,7 @@ fun CanvasView(
                 }
             }
     ) {
-        Canvas(modifier = Modifier.saltyFillMaxSize()) {
+        SaltyDrawCanvas(modifier = Modifier.saltyFillMaxSize()) {
             @Suppress("UNUSED_VARIABLE") val cacheGeneration=mediaGeneration
             val center = Offset(size.width / 2f + panOffset.x, size.height / 2f + panOffset.y)
             val canvasW = document.canvasSize.width.toFloat()

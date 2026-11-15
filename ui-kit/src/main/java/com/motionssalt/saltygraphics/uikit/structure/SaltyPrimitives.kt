@@ -2,6 +2,13 @@ package com.motionssalt.saltygraphics.uikit.structure
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -1032,6 +1039,25 @@ typealias SaltyPanelColumnScope = ColumnScope
 
 @Composable
 fun saltyIsSystemInDarkTheme(): Boolean = isSystemInDarkTheme()
+
+@Composable
+fun Modifier.saltyCanvasBackground(color: Color): Modifier = background(color)
+
+suspend fun PointerInputScope.saltyAwaitEachGesture(
+    block: suspend AwaitPointerEventScope.() -> Unit
+) = awaitEachGesture(block)
+
+suspend fun AwaitPointerEventScope.saltyAwaitFirstDown(
+    requireUnconsumed: Boolean = true
+): PointerInputChange = awaitFirstDown(requireUnconsumed = requireUnconsumed)
+
+@Composable
+fun SaltyDrawCanvas(
+    modifier: Modifier = Modifier,
+    onDraw: DrawScope.() -> Unit
+) {
+    Canvas(modifier = modifier, onDraw = onDraw)
+}
 
 @Composable
 fun SaltyCanvasSurface(

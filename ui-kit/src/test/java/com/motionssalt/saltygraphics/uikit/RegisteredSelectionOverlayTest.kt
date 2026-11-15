@@ -51,14 +51,14 @@ class RegisteredSelectionOverlayTest {
         try {
             host.get().setContent {
                 SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {
-                    try {
-                        entry.renderer(OverlayRenderContext(doc, layer, doc.canvasSize, 1f, Offset.Zero))
-                    } catch (t: Throwable) {
-                        thrown = t
-                    }
+                    entry.renderer(OverlayRenderContext(doc, layer, doc.canvasSize, 1f, Offset.Zero))
                 }
             }
             compose.waitForIdle()
+        } catch (t: Throwable) {
+            thrown = t
+        }
+        try {
             assertNotNull("selection_box must reject missing SelectionOverlayBindings", thrown)
         } finally {
             host.pause().stop().destroy()
