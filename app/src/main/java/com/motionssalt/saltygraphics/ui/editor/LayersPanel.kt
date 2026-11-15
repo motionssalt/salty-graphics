@@ -145,7 +145,7 @@ fun LayerThumbnailView(
         )
     } else {
         SaltyIcon(
-            imageVector = when (layer.type) {
+            icon = when (layer.type) {
                 LayerType.MEDIA -> Icons.Default.Image
                 LayerType.TEXT -> Icons.Default.TextFields
                 LayerType.ADJUSTMENT -> Icons.Default.Tune

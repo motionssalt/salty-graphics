@@ -91,3 +91,21 @@ fun <T> SaltySegmentedChips(
         }
     }
 }
+
+
+@Composable
+fun SaltySegmentedChips(
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = ""
+) {
+    SaltySegmentedChips(
+        selected = selectedOption,
+        options = options.map { SegmentChipItem(value = it, label = it) },
+        onSelect = onOptionSelected,
+        modifier = modifier,
+        label = label
+    )
+}
