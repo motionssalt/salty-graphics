@@ -1,40 +1,38 @@
 package com.motionssalt.saltygraphics.ui.editor
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.motionssalt.saltygraphics.data.ProjectRepository
-import com.motionssalt.saltygraphics.media.MediaImporter
 import com.motionssalt.saltygraphics.engine.action.ActionIdentity
 import com.motionssalt.saltygraphics.engine.action.ActionTree
 import com.motionssalt.saltygraphics.engine.action.GlobalClipboard
-import com.motionssalt.saltygraphics.engine.action.PasteMode
-import com.motionssalt.saltygraphics.engine.model.*
 import com.motionssalt.saltygraphics.engine.effect.EffectRegistry
+import com.motionssalt.saltygraphics.engine.file.ProjectLoadState
+import com.motionssalt.saltygraphics.engine.model.*
+import com.motionssalt.saltygraphics.media.MediaCache
+import com.motionssalt.saltygraphics.media.MediaImporter
 import com.motionssalt.saltygraphics.ui.controls.BorderShadowPanelPage
 import com.motionssalt.saltygraphics.ui.controls.FillPanelPage
-import com.motionssalt.saltygraphics.media.MediaCache
+import com.motionssalt.saltygraphics.uikit.structure.SaltyBox
+import com.motionssalt.saltygraphics.uikit.structure.SaltyConfirmDialog
+import com.motionssalt.saltygraphics.uikit.structure.SaltyEditorScaffold
+import com.motionssalt.saltygraphics.uikit.structure.SaltyPanelPage
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxHeight
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxSize
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-import com.motionssalt.saltygraphics.engine.render.PreviewQuality
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableStateFlow
-import com.motionssalt.saltygraphics.engine.file.ProjectLoadState
-import androidx.compose.ui.platform.testTag
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(
     projectId: String,
@@ -44,7 +42,6 @@ fun EditorScreen(
     onNavigateToExport: (String) -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
-    val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -80,10 +77,8 @@ fun EditorScreen(
     // View mode state
     var zoom by remember { mutableStateOf(1.0f) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
-    var showGrid by remember { mutableStateOf(false) }
-    var gridSize by remember { mutableStateOf(20) }
     var isCanvasLocked by rememberSaveable { mutableStateOf(false) }
-    var externalSmartGuides by remember { mutableStateOf<List<com.motionssalt.saltygraphics.engine.model.SmartGuideLine>>(emptyList()) }
+    var externalSmartGuides by remember { mutableStateOf<List<SmartGuideLine>>(emptyList()) }
     var externalSnappedGridX by remember { mutableStateOf<Float?>(null) }
     var externalSnappedGridY by remember { mutableStateOf<Float?>(null) }
 
@@ -97,7 +92,6 @@ fun EditorScreen(
     var isFillPanelOpen by remember { mutableStateOf(false) }
     var isBorderShadowPanelOpen by remember { mutableStateOf(false) }
 
-    var isMaskOpen by remember { mutableStateOf(false) }
     var isProjectSettingsOpen by remember { mutableStateOf(false) }
     var isVectorMenuOpen by remember { mutableStateOf(false) }
     var isVectorSettingsOpen by remember { mutableStateOf(false) }
@@ -108,42 +102,36 @@ fun EditorScreen(
     var vectorDraft by remember { mutableStateOf<Layer?>(null) }
     var isActionTreeOpen by remember { mutableStateOf(false) }
 
-    val loadState=remember(projectId) {MutableStateFlow<ProjectLoadState>(ProjectLoadState.Loading())}
+    val loadState = remember(projectId) { MutableStateFlow<ProjectLoadState>(ProjectLoadState.Loading()) }
     val loading by loadState.collectAsState()
-    var loadAttempt by remember(projectId) {mutableIntStateOf(0)}
-    var safeMode by remember(projectId) {mutableStateOf(false)}
-    LaunchedEffect(projectId,loadAttempt) {
-        projectDocument=null;actionTree=null
-        val result=repository.openProject(projectId,safeMode) {loadState.value=it}
-        loadState.value=result
-        if(result is ProjectLoadState.Loaded) {
-            val loaded=result.result.document
-            projectDocument=loaded
-            actionTree=result.result.historySnapshot?.let {ActionTree.fromSnapshot(it,loaded)} ?: ActionTree(loaded)
+    var loadAttempt by remember(projectId) { mutableIntStateOf(0) }
+    var safeMode by remember(projectId) { mutableStateOf(false) }
+    LaunchedEffect(projectId, loadAttempt) {
+        projectDocument = null; actionTree = null
+        val result = repository.openProject(projectId, safeMode) { loadState.value = it }
+        loadState.value = result
+        if (result is ProjectLoadState.Loaded) {
+            val loaded = result.result.document
+            projectDocument = loaded
+            actionTree = result.result.historySnapshot?.let { ActionTree.fromSnapshot(it, loaded) } ?: ActionTree(loaded)
         }
     }
 
     val doc = projectDocument
-    // The engine tree is intentionally not Compose-dependent. A pointer change
-    // must invalidate the UI even when two history nodes have equal documents.
     val tree = remember(actionTree, historyVersion) { actionTree }
 
-    var isSavingBeforeExit by remember { mutableStateOf(false) }
     var exitSaveError by remember { mutableStateOf<String?>(null) }
 
     fun requestSafeExit() {
         val currentDoc = projectDocument
         val snapshot = actionTree?.toSnapshot()
         if (currentDoc != null) {
-            isSavingBeforeExit = true
             exitSaveError = null
             coroutineScope.launch {
                 try {
                     repository.saveProject(currentDoc, snapshot)
-                    isSavingBeforeExit = false
                     onNavigateBack()
                 } catch (e: Exception) {
-                    isSavingBeforeExit = false
                     exitSaveError = e.message ?: e.javaClass.simpleName
                 }
             }
@@ -264,9 +252,9 @@ fun EditorScreen(
         }
     }
     fun mediaReferences(layers: List<Layer>): Set<String> = layers.flatMap { layer ->
-        listOfNotNull(layer.mediaAssetPath,layer.fillData?.mediaAssetPath)+mediaReferences(layer.children)
+        listOfNotNull(layer.mediaAssetPath, layer.fillData?.mediaAssetPath) + mediaReferences(layer.children)
     }.toSet()
-    val referencedMedia=mediaReferences(projectDocument?.layers ?: emptyList())
+    val referencedMedia = mediaReferences(projectDocument?.layers ?: emptyList())
     val fillMediaPaths by produceState(emptyList<String>(), projectId, fillMediaRevision, referencedMedia) {
         value = withContext(Dispatchers.IO) {
             repository.getAssetsDir(projectId).listFiles()?.filter { it.isFile && it.extension.lowercase() in setOf("png", "jpg", "jpeg", "webp") }
@@ -292,13 +280,12 @@ fun EditorScreen(
         }
     }
 
-    // Handle nested group Back navigation
     BackHandler {
         if (exitSaveError != null) {
             exitSaveError = null
-        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isMaskOpen || isFillPanelOpen || isBorderShadowPanelOpen) {
+        } else if (isVectorMenuOpen || isVectorSettingsOpen || isProjectSettingsOpen || isTransformPanelOpen || isEffectsSheetOpen || isShapeSettingsOpen || isTextSettingsOpen || isBlendingOpen || isFillPanelOpen || isBorderShadowPanelOpen) {
             isVectorMenuOpen = false; isVectorSettingsOpen = false; vectorDraft = null
-            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false; isBorderShadowPanelOpen = false
+            isProjectSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isFillPanelOpen = false; isBorderShadowPanelOpen = false
         } else if (activeGroupId != null) {
             val crumbs = groupBreadcrumbs
             activeGroupId = if (crumbs.size > 1) crumbs[crumbs.size - 2].first else null
@@ -308,17 +295,18 @@ fun EditorScreen(
     }
 
     if (doc == null || tree == null) {
-        ProjectLoadingPanel(loading,
-            onRetry={safeMode=false;loadState.value=ProjectLoadState.Loading();loadAttempt++},
-            onSafeMode={safeMode=true;loadState.value=ProjectLoadState.Loading();loadAttempt++},onBack=onNavigateBack)
+        ProjectLoadingPanel(
+            loading,
+            onRetry = { safeMode = false; loadState.value = ProjectLoadState.Loading(); loadAttempt++ },
+            onSafeMode = { safeMode = true; loadState.value = ProjectLoadState.Loading(); loadAttempt++ },
+            onBack = onNavigateBack
+        )
         return
     }
 
     val panelLayers = LayerStackCommands.layers(doc, activeGroupId)
     val currentSelectedLayer = doc.findLayerById(selectedLayerIds.firstOrNull() ?: "")
 
-    // A fixed pane must always have content. Requested pages are not eligible without
-    // their target, and stale requests must not resurrect when a later layer is selected.
     LaunchedEffect(currentSelectedLayer?.id, currentSelectedLayer?.type) {
         if (currentSelectedLayer == null) {
             isTransformPanelOpen = false; isEffectsSheetOpen = false
@@ -330,7 +318,7 @@ fun EditorScreen(
         vectorDraft = null; vectorPointIndex = null
     }
 
-    Scaffold(
+    SaltyEditorScaffold(
         topBar = {
             TopPanel(
                 previewQuality = doc.editorSettings.defaultPreviewQuality,
@@ -370,7 +358,12 @@ fun EditorScreen(
                 },
                 onOpenActionTree = { isActionTreeOpen = true },
                 onExportClick = { onNavigateToExport(projectId) },
-                onSettingsClick = { isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false; isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false; isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false; isBorderShadowPanelOpen = false; isProjectSettingsOpen = true },
+                onSettingsClick = {
+                    isVectorMenuOpen = false; isVectorSettingsOpen = false; isTransformPanelOpen = false
+                    isEffectsSheetOpen = false; isShapeSettingsOpen = false; isTextSettingsOpen = false
+                    isBlendingOpen = false; isMaskOpen = false; isFillPanelOpen = false
+                    isBorderShadowPanelOpen = false; isProjectSettingsOpen = true
+                },
                 onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(10f) },
                 onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.1f) },
                 onFitToScreen = {
@@ -395,227 +388,222 @@ fun EditorScreen(
                     saveSgLauncher.launch("$name.sg")
                 }
             )
-        },
-        containerColor = colors.background
-    ) { innerPadding ->
+        }
+    ) { contentModifier ->
         EditorWorkspace(
-            modifier = Modifier.padding(innerPadding).navigationBarsPadding().displayCutoutPadding(),
+            modifier = contentModifier,
             preview = {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-
-        ) {
-            CanvasView(
-                document = (vectorDraft?.let { draft -> doc.updateLayer(draft.id) { draft } } ?: doc).copy(activeGroupId = activeGroupId),
-                selectedLayerIds = selectedLayerIds,
-                zoom = zoom,
-                panOffset = panOffset,
-                previewQuality = doc.editorSettings.defaultPreviewQuality,
-                isCanvasLocked = isCanvasLocked,
-                isTextEditing = isTextSettingsOpen && currentSelectedLayer?.type == LayerType.TEXT,
-                showGrid = doc.editorSettings.showGrid,
-                gridSize = doc.editorSettings.gridSize,
-                externalSmartGuides = externalSmartGuides,
-                externalSnappedGridX = externalSnappedGridX,
-                externalSnappedGridY = externalSnappedGridY,
-                onZoomPanChange = { newZoom, newPan ->
-                    zoom = newZoom
-                    panOffset = newPan
-                },
-                onSelectLayer = { id ->
-                    selectedLayerIds = if (id != null) setOf(id) else emptySet()
-                },
-                onUpdateLayerTransform = { id, newTransform ->
-                    projectDocument?.let { projectDocument=SelectionGeometry.apply(it,id,newTransform) }
-                },
-                onCommitLayerTransform = { id, finalTransform ->
-                    val live=projectDocument
-                    if(live!=null) recordAndAutoSave("Transform Layer",SelectionGeometry.apply(live,id,finalTransform))
-                },
-                onUpdateLayerTransforms = { transforms ->
-                    val live=projectDocument
-                    if(live!=null && transforms.values.all { SelectionGeometry.valid(it) }) {
-                        projectDocument=transforms.entries.fold(live) { d,(id,t) -> SelectionGeometry.apply(d,id,t) }
-                    }
-                },
-                onCommitLayerTransforms = { transforms ->
-                    val live=projectDocument
-                    if(live!=null && transforms.isNotEmpty() && transforms.values.all { SelectionGeometry.valid(it) }) {
-                        val updated=transforms.entries.fold(live) { d,(id,t) -> SelectionGeometry.apply(d,id,t) }
-                        // Compare to the committed history state, not the last preview frame.
-                        if(updated.layers!=actionTree?.currentDocument?.layers) recordAndAutoSave("Transform Layer",updated)
-                    }
-                },
-                onUpdateTextData = { layerId, newTextData ->
-                    projectDocument?.let { cur ->
-                        projectDocument = cur.updateLayer(layerId) {
-                            val base = it.copy(textData = newTextData)
-                            val fd = it.fillData
-                            if (fd == null || fd.type == FillType.SOLID) {
-                                base.copy(fillData = FillData(type = FillType.SOLID, solidColor = newTextData.color, solidOpacity = 1f))
-                            } else base
-                        }
-                    }
-                },
-                onCommitTextData = { layerId, finalTextData ->
-                    val live = projectDocument
-                    if (live != null) {
-                        val updated = live.updateLayer(layerId) {
-                            val base = it.copy(textData = finalTextData)
-                            val fd = it.fillData
-                            if (fd == null || fd.type == FillType.SOLID) {
-                                base.copy(fillData = FillData(type = FillType.SOLID, solidColor = finalTextData.color, solidOpacity = 1f))
-                            } else base
-                        }
-                        recordAndAutoSave("Resize Text Box", updated)
-                    }
-                }
-            )
-
-            if (isFillPanelOpen && currentSelectedLayer?.effectiveFill?.type == FillType.GRADIENT) {
-                val targetId=currentSelectedLayer.id
-                GradientCanvasOverlay(currentSelectedLayer,doc.canvasSize,zoom,panOffset,
-                    onPreview={ fill -> projectDocument=projectDocument?.updateLayer(targetId){it.copy(fillData=fill)} },
-                    onCommit={ fill -> recordCommandAndAutoSave(ActionIdentity("Change","Layer","gradient geometry")) { live ->
-                        live.updateLayer(targetId){it.withUniversalFill(fill)}
-                    } })
-            }
-
-            if (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) {
-                VectorCanvasOverlay(currentSelectedLayer, doc.canvasSize, vectorPathIndex, vectorPointIndex, vectorTool,
-                    zoom, panOffset, { vectorPointIndex = it }, { vectorDraft = it },
-                    { changed -> recordAndAutoSave("Edit vector points", doc.updateLayer(changed.id) { changed }) },
-                    { isVectorSettingsOpen = false; vectorDraft = null })
-            }
-
-            // Right-side Layers Panel Drawer
-            if (isLayersPanelOpen) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .fillMaxHeight()
-                ) {
-                    LayersPanel(
-                        layers = panelLayers,
+                SaltyBox(modifier = Modifier.saltyFillMaxSize()) {
+                    CanvasView(
+                        document = (vectorDraft?.let { draft -> doc.updateLayer(draft.id) { draft } } ?: doc).copy(activeGroupId = activeGroupId),
                         selectedLayerIds = selectedLayerIds,
-                        onSelectLayer = { selectedLayerIds = setOf(it) },
-                        onToggleSelectMulti = { id ->
-                            selectedLayerIds = if (selectedLayerIds.contains(id)) {
-                                selectedLayerIds - id
-                            } else {
-                                selectedLayerIds + id
+                        zoom = zoom,
+                        panOffset = panOffset,
+                        previewQuality = doc.editorSettings.defaultPreviewQuality,
+                        isCanvasLocked = isCanvasLocked,
+                        isTextEditing = isTextSettingsOpen && currentSelectedLayer?.type == LayerType.TEXT,
+                        showGrid = doc.editorSettings.showGrid,
+                        gridSize = doc.editorSettings.gridSize,
+                        externalSmartGuides = externalSmartGuides,
+                        externalSnappedGridX = externalSnappedGridX,
+                        externalSnappedGridY = externalSnappedGridY,
+                        onZoomPanChange = { newZoom, newPan ->
+                            zoom = newZoom
+                            panOffset = newPan
+                        },
+                        onSelectLayer = { id ->
+                            selectedLayerIds = if (id != null) setOf(id) else emptySet()
+                        },
+                        onUpdateLayerTransform = { id, newTransform ->
+                            projectDocument?.let { projectDocument = SelectionGeometry.apply(it, id, newTransform) }
+                        },
+                        onCommitLayerTransform = { id, finalTransform ->
+                            val live = projectDocument
+                            if (live != null) recordAndAutoSave("Transform Layer", SelectionGeometry.apply(live, id, finalTransform))
+                        },
+                        onUpdateLayerTransforms = { transforms ->
+                            val live = projectDocument
+                            if (live != null && transforms.values.all { SelectionGeometry.valid(it) }) {
+                                projectDocument = transforms.entries.fold(live) { d, (id, t) -> SelectionGeometry.apply(d, id, t) }
                             }
                         },
-                        onSelectAll = {
-                            selectedLayerIds = panelLayers.map { it.id }.toSet()
-                        },
-                        onSelectNone = { selectedLayerIds = emptySet() },
-                        onToggleVisibility = { id ->
-                            val updated = doc.updateLayer(id) { it.copy(isVisible = !it.isVisible) }
-                            recordAndAutoSave("Toggle Visibility", updated)
-                        },
-                        onToggleLock = { id ->
-                            val updated = doc.updateLayer(id) { it.copy(isLocked = !it.isLocked) }
-                            recordAndAutoSave("Toggle Lock", updated)
-                        },
-                        onDeleteLayers = { ids ->
-                            val currentDoc = doc
-                            if (currentDoc != null && ids.isNotEmpty()) {
-                                var updated: ProjectDocument = currentDoc
-                                for (id in ids) {
-                                    updated = updated.removeLayer(id)
-                                }
-                                selectedLayerIds = emptySet()
-                                recordAndAutoSave("Delete Layers", updated)
-                                val count = ids.size
-                                Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
+                        onCommitLayerTransforms = { transforms ->
+                            val live = projectDocument
+                            if (live != null && transforms.isNotEmpty() && transforms.values.all { SelectionGeometry.valid(it) }) {
+                                val updated = transforms.entries.fold(live) { d, (id, t) -> SelectionGeometry.apply(d, id, t) }
+                                if (updated.layers != actionTree?.currentDocument?.layers) recordAndAutoSave("Transform Layer", updated)
                             }
                         },
-                        onRenameLayer = { id, newName ->
-                            val updated = doc.updateLayer(id) { it.copy(name = newName) }
-                            recordAndAutoSave("Rename Layer", updated)
-                        },
-                        onCopyLayer = { layer ->
-                            GlobalClipboard.copy(layer)
-                        },
-                        onPasteProperties = { mode ->
-                            val currentDoc = doc
-                            if (currentDoc != null) {
-                                var updated: ProjectDocument = currentDoc
-                                for (id in selectedLayerIds) {
-                                    updated = updated.updateLayer(id) { GlobalClipboard.applyTo(it, mode) }
-                                }
-                                recordAndAutoSave("Paste Properties (${mode.displayName})", updated)
-                            }
-                        },
-                        onMoveLayer = { from, to ->
-                            val source = panelLayers.getOrNull(from)?.id
-                            val destination = panelLayers.getOrNull(to)?.id
-                            if (source != null && destination != null && source != destination) {
-                                recordCommandAndAutoSave(ActionIdentity("Reorder", "Layers")) {
-                                    LayerStackCommands.reorder(it, activeGroupId, source, destination)
+                        onUpdateTextData = { layerId, newTextData ->
+                            projectDocument?.let { cur ->
+                                projectDocument = cur.updateLayer(layerId) {
+                                    val base = it.copy(textData = newTextData)
+                                    val fd = it.fillData
+                                    if (fd == null || fd.type == FillType.SOLID) {
+                                        base.copy(fillData = FillData(type = FillType.SOLID, solidColor = newTextData.color, solidOpacity = 1f))
+                                    } else base
                                 }
                             }
                         },
-                        onEnterGroup = { groupId ->
-                            activeGroupId = groupId
-                        },
-                        onClosePanel = { isLayersPanelOpen = false },
-                        onDuplicateLayer = { id ->
-                            val targets = if (selectedLayerIds.isNotEmpty()) panelLayers.filter { it.id in selectedLayerIds } else listOfNotNull(doc.findLayerById(id))
-                            if (targets.isNotEmpty()) {
-                                var currentList = panelLayers.toMutableList()
-                                val newSelectedIds = mutableSetOf<String>()
-                                targets.forEach { target ->
-                                    val dup = target.copy(
-                                        id = java.util.UUID.randomUUID().toString(),
-                                        name = "${target.name} Copy"
-                                    )
-                                    newSelectedIds.add(dup.id)
-                                    val idx = currentList.indexOfFirst { it.id == target.id }
-                                    if (idx >= 0) currentList.add(idx, dup) else currentList.add(0, dup)
+                        onCommitTextData = { layerId, finalTextData ->
+                            val live = projectDocument
+                            if (live != null) {
+                                val updated = live.updateLayer(layerId) {
+                                    val base = it.copy(textData = finalTextData)
+                                    val fd = it.fillData
+                                    if (fd == null || fd.type == FillType.SOLID) {
+                                        base.copy(fillData = FillData(type = FillType.SOLID, solidColor = finalTextData.color, solidOpacity = 1f))
+                                    } else base
                                 }
-                                val updated = if (activeGroupId == null) {
-                                    doc.copy(layers = currentList)
-                                } else {
-                                    doc.updateLayer(activeGroupId!!) { it.copy(children = currentList) }
-                                }
-                                selectedLayerIds = newSelectedIds
-                                val label = if (targets.size == 1) "Duplicate Layer" else "Duplicate ${targets.size} layers"
-                                recordAndAutoSave(label, updated)
-                            }
-                        },
-                        onGroupSelected = {
-                            val ids = selectedLayerIds
-                            if (panelLayers.count { it.id in ids } > 1) {
-                                val id = java.util.UUID.randomUUID().toString()
-                                recordCommandAndAutoSave(ActionIdentity("Group", "Layers")) {
-                                    LayerStackCommands.group(it, activeGroupId, ids, id)
-                                }
-                                selectedLayerIds = setOf(id)
-                            }
-                        },
-                        onUngroupSelected = {
-                            val id = selectedLayerIds.singleOrNull()
-                            val group = panelLayers.find { it.id == id && it.type == LayerType.GROUP }
-                            if (group != null) {
-                                recordCommandAndAutoSave(ActionIdentity("Ungroup", "Layers")) {
-                                    LayerStackCommands.ungroup(it, activeGroupId, group.id)
-                                }
-                                selectedLayerIds = group.children.map { it.id }.toSet()
+                                recordAndAutoSave("Resize Text Box", updated)
                             }
                         }
                     )
+
+                    if (isFillPanelOpen && currentSelectedLayer?.effectiveFill?.type == FillType.GRADIENT) {
+                        val targetId = currentSelectedLayer.id
+                        GradientCanvasOverlay(
+                            currentSelectedLayer, doc.canvasSize, zoom, panOffset,
+                            onPreview = { fill -> projectDocument = projectDocument?.updateLayer(targetId) { it.copy(fillData = fill) } },
+                            onCommit = { fill ->
+                                recordCommandAndAutoSave(ActionIdentity("Change", "Layer", "gradient geometry")) { live ->
+                                    live.updateLayer(targetId) { it.withUniversalFill(fill) }
+                                }
+                            }
+                        )
+                    }
+
+                    if (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) {
+                        VectorCanvasOverlay(
+                            currentSelectedLayer, doc.canvasSize, vectorPathIndex, vectorPointIndex, vectorTool,
+                            zoom, panOffset, { vectorPointIndex = it }, { vectorDraft = it },
+                            { changed -> recordAndAutoSave("Edit vector points", doc.updateLayer(changed.id) { changed }) },
+                            { isVectorSettingsOpen = false; vectorDraft = null }
+                        )
+                    }
+
+                    if (isLayersPanelOpen) {
+                        SaltyBox(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .saltyFillMaxHeight()
+                        ) {
+                            LayersPanel(
+                                layers = panelLayers,
+                                selectedLayerIds = selectedLayerIds,
+                                onSelectLayer = { selectedLayerIds = setOf(it) },
+                                onToggleSelectMulti = { id ->
+                                    selectedLayerIds = if (selectedLayerIds.contains(id)) {
+                                        selectedLayerIds - id
+                                    } else {
+                                        selectedLayerIds + id
+                                    }
+                                },
+                                onSelectAll = {
+                                    selectedLayerIds = panelLayers.map { it.id }.toSet()
+                                },
+                                onSelectNone = { selectedLayerIds = emptySet() },
+                                onToggleVisibility = { id ->
+                                    val updated = doc.updateLayer(id) { it.copy(isVisible = !it.isVisible) }
+                                    recordAndAutoSave("Toggle Visibility", updated)
+                                },
+                                onToggleLock = { id ->
+                                    val updated = doc.updateLayer(id) { it.copy(isLocked = !it.isLocked) }
+                                    recordAndAutoSave("Toggle Lock", updated)
+                                },
+                                onDeleteLayers = { ids ->
+                                    val currentDoc = doc
+                                    if (currentDoc != null && ids.isNotEmpty()) {
+                                        var updated: ProjectDocument = currentDoc
+                                        for (id in ids) {
+                                            updated = updated.removeLayer(id)
+                                        }
+                                        selectedLayerIds = emptySet()
+                                        recordAndAutoSave("Delete Layers", updated)
+                                        val count = ids.size
+                                        Toast.makeText(context, if (count == 1) "Deleted 1 layer" else "Deleted $count layers", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onRenameLayer = { id, newName ->
+                                    val updated = doc.updateLayer(id) { it.copy(name = newName) }
+                                    recordAndAutoSave("Rename Layer", updated)
+                                },
+                                onCopyLayer = { layer ->
+                                    GlobalClipboard.copy(layer)
+                                },
+                                onPasteProperties = { mode ->
+                                    val currentDoc = doc
+                                    if (currentDoc != null) {
+                                        var updated: ProjectDocument = currentDoc
+                                        for (id in selectedLayerIds) {
+                                            updated = updated.updateLayer(id) { GlobalClipboard.applyTo(it, mode) }
+                                        }
+                                        recordAndAutoSave("Paste Properties (${mode.displayName})", updated)
+                                    }
+                                },
+                                onMoveLayer = { from, to ->
+                                    val source = panelLayers.getOrNull(from)?.id
+                                    val destination = panelLayers.getOrNull(to)?.id
+                                    if (source != null && destination != null && source != destination) {
+                                        recordCommandAndAutoSave(ActionIdentity("Reorder", "Layers")) {
+                                            LayerStackCommands.reorder(it, activeGroupId, source, destination)
+                                        }
+                                    }
+                                },
+                                onEnterGroup = { groupId ->
+                                    activeGroupId = groupId
+                                },
+                                onClosePanel = { isLayersPanelOpen = false },
+                                onDuplicateLayer = { id ->
+                                    val targets = if (selectedLayerIds.isNotEmpty()) panelLayers.filter { it.id in selectedLayerIds } else listOfNotNull(doc.findLayerById(id))
+                                    if (targets.isNotEmpty()) {
+                                        val currentList = panelLayers.toMutableList()
+                                        val newSelectedIds = mutableSetOf<String>()
+                                        targets.forEach { target ->
+                                            val dup = target.copy(
+                                                id = java.util.UUID.randomUUID().toString(),
+                                                name = "${target.name} Copy"
+                                            )
+                                            newSelectedIds.add(dup.id)
+                                            val idx = currentList.indexOfFirst { it.id == target.id }
+                                            if (idx >= 0) currentList.add(idx, dup) else currentList.add(0, dup)
+                                        }
+                                        val updated = if (activeGroupId == null) {
+                                            doc.copy(layers = currentList)
+                                        } else {
+                                            doc.updateLayer(activeGroupId!!) { it.copy(children = currentList) }
+                                        }
+                                        selectedLayerIds = newSelectedIds
+                                        val label = if (targets.size == 1) "Duplicate Layer" else "Duplicate ${targets.size} layers"
+                                        recordAndAutoSave(label, updated)
+                                    }
+                                },
+                                onGroupSelected = {
+                                    val ids = selectedLayerIds
+                                    if (panelLayers.count { it.id in ids } > 1) {
+                                        val id = java.util.UUID.randomUUID().toString()
+                                        recordCommandAndAutoSave(ActionIdentity("Group", "Layers")) {
+                                            LayerStackCommands.group(it, activeGroupId, ids, id)
+                                        }
+                                        selectedLayerIds = setOf(id)
+                                    }
+                                },
+                                onUngroupSelected = {
+                                    val id = selectedLayerIds.singleOrNull()
+                                    val group = panelLayers.find { it.id == id && it.type == LayerType.GROUP }
+                                    if (group != null) {
+                                        recordCommandAndAutoSave(ActionIdentity("Ungroup", "Layers")) {
+                                            LayerStackCommands.ungroup(it, activeGroupId, group.id)
+                                        }
+                                        selectedLayerIds = group.children.map { it.id }.toSet()
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
-            }
-
-        }
             },
-
             panel = {
-                // Derive eligibility in this composition (not just in the effect above)
-                // so no blank frame occurs on deselection or an incompatible layer tap.
                 val pageOpen = isVectorMenuOpen || isProjectSettingsOpen ||
                     (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) ||
                     (isShapeSettingsOpen && currentSelectedLayer?.shapeData != null) ||
@@ -640,10 +628,12 @@ fun EditorScreen(
                         }
                     }, onBack = { isVectorMenuOpen = false })
                 } else if (isVectorSettingsOpen && currentSelectedLayer?.type == LayerType.VECTOR) {
-                    VectorPage(currentSelectedLayer, vectorPathIndex, vectorPointIndex, vectorTool,
+                    VectorPage(
+                        currentSelectedLayer, vectorPathIndex, vectorPointIndex, vectorTool,
                         { vectorPathIndex = it }, { vectorPointIndex = it }, { vectorTool = it },
                         { description, layer -> recordAndAutoSave(description, doc.updateLayer(layer.id) { layer }) },
-                        { isVectorSettingsOpen = false })
+                        { isVectorSettingsOpen = false }
+                    )
                 } else if (isProjectSettingsOpen) {
                     ProjectSettingsPage(
                         document = doc,
@@ -659,7 +649,6 @@ fun EditorScreen(
                     )
                 } else if (isFillPanelOpen && currentSelectedLayer != null) {
                     val targetId = currentSelectedLayer.id
-                    // The revision observation invalidates cached null image cells after decoding.
                     val media = remember(fillMediaPaths, mediaCacheRevision) {
                         fillMediaPaths.map { path -> path to MediaCache.getOrRequest(context, doc.id, path) }
                     }
@@ -819,7 +808,6 @@ fun EditorScreen(
                         onDismiss = { isShapePickerOpen = false }
                     )
                 } else if (!pageOpen) {
-
                     BottomPanel(
                         document = doc,
                         selectedLayer = currentSelectedLayer,
@@ -884,7 +872,7 @@ fun EditorScreen(
                         onDuplicate = {
                             val targets = if (selectedLayerIds.isNotEmpty()) panelLayers.filter { it.id in selectedLayerIds } else listOfNotNull(currentSelectedLayer)
                             if (targets.isNotEmpty()) {
-                                var currentList = panelLayers.toMutableList()
+                                val currentList = panelLayers.toMutableList()
                                 val newSelectedIds = mutableSetOf<String>()
                                 targets.forEach { target ->
                                     val dup = target.copy(
@@ -917,19 +905,21 @@ fun EditorScreen(
                     )
                 }
 
-                // Transform Bottom Sheet
                 if (isTransformPanelOpen && currentSelectedLayer != null) {
-                    PanelPage("Transform", onBack = {
-                        externalSmartGuides = emptyList()
-                        externalSnappedGridX = null
-                        externalSnappedGridY = null
-                        isTransformPanelOpen = false
-                    }) {
+                    SaltyPanelPage(
+                        title = "Transform",
+                        onBack = {
+                            externalSmartGuides = emptyList()
+                            externalSnappedGridX = null
+                            externalSnappedGridY = null
+                            isTransformPanelOpen = false
+                        }
+                    ) {
                         val targetId = currentSelectedLayer.id
                         val bounds = selectionBounds(context, doc, currentSelectedLayer)
                         val otherLayers = doc.activeLayers
                             .filter { it.id != targetId && it.isVisible && it.type != LayerType.ADJUSTMENT }
-                            .map { (selectionBounds(context, doc, it)) to it.transform }
+                            .map { selectionBounds(context, doc, it) to it.transform }
                         val otherAngles = doc.activeLayers.filter { it.id != targetId }.map { it.transform.rotationDegrees }
                         val snapCtx = TransformSnapContext(
                             bounds = bounds,
@@ -970,9 +960,8 @@ fun EditorScreen(
                     }
                 }
 
-                // Effects Bottom Sheet
                 if (isEffectsSheetOpen && currentSelectedLayer != null) {
-                    PanelPage("Effects", onBack = { isEffectsSheetOpen = false }, scrollable = false) {
+                    SaltyPanelPage("Effects", onBack = { isEffectsSheetOpen = false }, scrollable = false) {
                         EffectSettingsSheet(
                             targetLayer = currentSelectedLayer,
                             allLayers = doc.activeLayers,
@@ -1009,58 +998,43 @@ fun EditorScreen(
         )
     }
 
-    // Rasterize Confirmation Dialog (destructive/irreversible operation allowed exception)
     val layerToRasterizeTarget = layerToRasterize
     if (layerToRasterizeTarget != null) {
-        AlertDialog(
-            onDismissRequest = { layerToRasterize = null },
-            title = { Text("Rasterize Layer") },
-            text = {
-                Text(
-                    "Rasterizing '${layerToRasterizeTarget.name}' converts vector or text geometry into a bitmap graphic at canvas resolution.\n\n" +
-                    "Do you want to duplicate the original layer before rasterizing, or replace it directly?"
+        SaltyConfirmDialog(
+            title = "Rasterize Layer",
+            message = "Rasterizing '${layerToRasterizeTarget.name}' converts vector or text geometry into a bitmap graphic at canvas resolution.\n\n" +
+                "Do you want to duplicate the original layer before rasterizing, or replace it directly?",
+            confirmText = "Rasterize",
+            dismissText = "Cancel",
+            onConfirm = {
+                val target = layerToRasterizeTarget
+                layerToRasterize = null
+                val currentDoc = projectDocument ?: return@SaltyConfirmDialog
+                val updated = LayerRasterizer.rasterizeLayer(
+                    context = context,
+                    document = currentDoc,
+                    layerId = target.id,
+                    duplicateOriginal = false
                 )
+                val label = "Rasterize ${target.type.name.lowercase()}"
+                recordAndAutoSave(label, updated)
+                fillMediaRevision++
             },
-            confirmButton = {
-                Button(onClick = {
-                    val target = layerToRasterizeTarget
-                    layerToRasterize = null
-                    val currentDoc = projectDocument ?: return@Button
-                    val updated = com.motionssalt.saltygraphics.engine.model.LayerRasterizer.rasterizeLayer(
-                        context = context,
-                        document = currentDoc,
-                        layerId = target.id,
-                        duplicateOriginal = false
-                    )
-                    val label = "Rasterize ${target.type.name.lowercase()}"
-                    recordAndAutoSave(label, updated)
-                    fillMediaRevision++
-                }) {
-                    Text("Rasterize")
-                }
-            },
-            dismissButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { layerToRasterize = null }) {
-                        Text("Cancel")
-                    }
-                    Button(onClick = {
-                        val target = layerToRasterizeTarget
-                        layerToRasterize = null
-                        val currentDoc = projectDocument ?: return@Button
-                        val updated = com.motionssalt.saltygraphics.engine.model.LayerRasterizer.rasterizeLayer(
-                            context = context,
-                            document = currentDoc,
-                            layerId = target.id,
-                            duplicateOriginal = true
-                        )
-                        val label = "Duplicate and rasterize ${target.type.name.lowercase()}"
-                        recordAndAutoSave(label, updated)
-                        fillMediaRevision++
-                    }) {
-                        Text("Duplicate & Rasterize")
-                    }
-                }
+            onDismiss = { layerToRasterize = null },
+            secondaryConfirmText = "Duplicate & Rasterize",
+            onSecondaryConfirm = {
+                val target = layerToRasterizeTarget
+                layerToRasterize = null
+                val currentDoc = projectDocument ?: return@SaltyConfirmDialog
+                val updated = LayerRasterizer.rasterizeLayer(
+                    context = context,
+                    document = currentDoc,
+                    layerId = target.id,
+                    duplicateOriginal = true
+                )
+                val label = "Duplicate and rasterize ${target.type.name.lowercase()}"
+                recordAndAutoSave(label, updated)
+                fillMediaRevision++
             }
         )
     }
@@ -1079,20 +1053,13 @@ fun EditorScreen(
     }
 
     if (exitSaveError != null) {
-        AlertDialog(
-            onDismissRequest = { exitSaveError = null },
-            title = { Text("Save Error") },
-            text = { Text("Could not save project before exit. Your changes are preserved in memory. Retry saving before leaving so you do not lose work.\n\n$exitSaveError") },
-            confirmButton = {
-                Button(onClick = { requestSafeExit() }) {
-                    Text("Retry Save")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { exitSaveError = null }) {
-                    Text("Keep Editing")
-                }
-            }
+        SaltyConfirmDialog(
+            title = "Save Error",
+            message = "Could not save project before exit. Your changes are preserved in memory. Retry saving before leaving so you do not lose work.\n\n$exitSaveError",
+            confirmText = "Retry Save",
+            dismissText = "Keep Editing",
+            onConfirm = { requestSafeExit() },
+            onDismiss = { exitSaveError = null }
         )
     }
 }

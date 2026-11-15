@@ -136,3 +136,54 @@ fun SaltyProgressSlider(
         }
     }
 }
+
+/**
+ * Shared progress slider paired with inline exact numeric entry (no popups).
+ */
+@Composable
+fun SaltyProgressNumberControl(
+    label: String,
+    value: Float,
+    min: Float,
+    max: Float,
+    onPreview: (Float) -> Unit,
+    onCommit: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    step: Float = 1f,
+    unit: String = "",
+    defaultValue: Float = 0f.coerceIn(min, max)
+) {
+    var editing by remember { mutableStateOf(false) }
+    var pending by remember { mutableFloatStateOf(value) }
+    LaunchedEffect(value) { pending = value }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        SaltyProgressSlider(
+            value = value,
+            onValueChange = {
+                pending = it
+                onPreview(it)
+            },
+            onValueCommit = { onCommit(pending) },
+            range = min..max,
+            step = step,
+            unit = unit,
+            label = label,
+            defaultValue = defaultValue,
+            onValueClick = { editing = !editing }
+        )
+        if (editing) {
+            SaltyValueEntryStrip(
+                label = label,
+                currentValue = value,
+                range = min..max,
+                unit = unit,
+                onConfirm = {
+                    editing = false
+                    onCommit(it)
+                },
+                onDismiss = { editing = false }
+            )
+        }
+    }
+}

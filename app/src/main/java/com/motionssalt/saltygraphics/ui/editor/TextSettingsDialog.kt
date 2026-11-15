@@ -1,49 +1,60 @@
 package com.motionssalt.saltygraphics.ui.editor
 
-import android.app.Activity
-import android.content.Intent
 import android.graphics.Typeface
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.motionssalt.saltygraphics.data.FontItem
 import com.motionssalt.saltygraphics.data.FontManager
-import com.motionssalt.saltygraphics.data.FontOrigin
 import com.motionssalt.saltygraphics.engine.model.*
-import com.motionssalt.saltygraphics.theme.*
-import com.motionssalt.saltygraphics.ui.controls.ColorPickerDialog
-import com.motionssalt.saltygraphics.ui.controls.RulerSlider
-import com.motionssalt.saltygraphics.ui.controls.SegmentedChipsControl
-import com.motionssalt.saltygraphics.ui.controls.ValueEditorDialog
+import com.motionssalt.saltygraphics.uikit.controls.DropdownOption
+import com.motionssalt.saltygraphics.uikit.controls.SaltyColorPickerPage
+import com.motionssalt.saltygraphics.uikit.controls.SaltyColorSwatch
+import com.motionssalt.saltygraphics.uikit.controls.SaltyColorSwatchRow
+import com.motionssalt.saltygraphics.uikit.controls.SaltyInlineDropdown
+import com.motionssalt.saltygraphics.uikit.controls.SaltyNumberControl
+import com.motionssalt.saltygraphics.uikit.controls.SaltyRecentColorsRegistry
+import com.motionssalt.saltygraphics.uikit.controls.SaltySegmentedChips
+import com.motionssalt.saltygraphics.uikit.controls.SaltySwitch
+import com.motionssalt.saltygraphics.uikit.controls.SaltyTextField
+import com.motionssalt.saltygraphics.uikit.structure.SaltyBadge
+import com.motionssalt.saltygraphics.uikit.structure.SaltyButton
+import com.motionssalt.saltygraphics.uikit.structure.SaltyCard
+import com.motionssalt.saltygraphics.uikit.structure.SaltyChip
+import com.motionssalt.saltygraphics.uikit.structure.SaltyColumn
+import com.motionssalt.saltygraphics.uikit.structure.SaltyDivider
+import com.motionssalt.saltygraphics.uikit.structure.SaltyIcon
+import com.motionssalt.saltygraphics.uikit.structure.SaltyIconButton
+import com.motionssalt.saltygraphics.uikit.structure.SaltyIconSize
+import com.motionssalt.saltygraphics.uikit.structure.SaltyJustify
+import com.motionssalt.saltygraphics.uikit.structure.SaltyLazyColumn
+import com.motionssalt.saltygraphics.uikit.structure.SaltyPanelPage
+import com.motionssalt.saltygraphics.uikit.structure.SaltyRow
+import com.motionssalt.saltygraphics.uikit.structure.SaltySpace
+import com.motionssalt.saltygraphics.uikit.structure.SaltySpacer
+import com.motionssalt.saltygraphics.uikit.structure.SaltyText
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextButton
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextStyle
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextTone
+import com.motionssalt.saltygraphics.uikit.structure.SaltyTextWeight
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxSize
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxWidth
+import com.motionssalt.saltygraphics.uikit.structure.saltyListItems
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextSettingsDialog(
     initialData: TextLayerData,
@@ -51,197 +62,205 @@ fun TextSettingsDialog(
     onSave: (TextLayerData) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
-    val colors = MaterialTheme.colorScheme
     var textData by remember(initialData) { mutableStateOf(initialData) }
     LaunchedEffect(initialData) { textData = initialData }
 
-    // Sub-pages inside bottom panel: "main" (Text Options) or "fonts" (Font Page)
+    // Sub-pages inside bottom panel: "main", "text_edit", "fonts", "text_color", "outline_color"
     var currentSubPage by remember { mutableStateOf("main") }
 
-    // Dialog states for modal pickers (R4 color picker & R5 value/text editor)
-    var isEditingContentText by remember { mutableStateOf(false) }
-    var isColorPickerOpen by remember { mutableStateOf(false) }
-    var isOutlineColorPickerOpen by remember { mutableStateOf(false) }
-
-    // Helper to update state and trigger live canvas update
     fun updateData(newData: TextLayerData) {
         textData = newData
         onSave(newData)
     }
 
-    if (currentSubPage == "text_edit") {
-        var tempText by remember { mutableStateOf(textData.text) }
-        PanelPage(title = "Edit Text", onBack = { currentSubPage = "main" }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = tempText,
-                    onValueChange = { tempText = it },
-                    singleLine = false,
-                    minLines = 4,
-                    maxLines = 10,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 220.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+    when (currentSubPage) {
+        "text_edit" -> {
+            var tempText by remember { mutableStateOf(textData.text) }
+            SaltyPanelPage(title = "Edit Text", onBack = { currentSubPage = "main" }) {
+                SaltyColumn(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    padding = SaltySpace.XS,
+                    spacing = SaltySpace.MD
                 ) {
-                    TextButton(onClick = { currentSubPage = "main" }) {
-                        Text("Cancel", color = colors.onSurfaceVariant)
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            updateData(textData.copy(text = tempText))
-                            currentSubPage = "main"
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background)
+                    SaltyTextField(
+                        value = tempText,
+                        onValueChange = { tempText = it },
+                        singleLine = false,
+                        minLines = 4,
+                        maxLines = 10
+                    )
+                    SaltyRow(
+                        modifier = Modifier.saltyFillMaxWidth(),
+                        justify = SaltyJustify.END,
+                        spacing = SaltySpace.SM,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Apply", fontWeight = FontWeight.Bold)
+                        SaltyTextButton(
+                            text = "Cancel",
+                            tone = SaltyTextTone.SECONDARY,
+                            onClick = { currentSubPage = "main" }
+                        )
+                        SaltyButton(
+                            text = "Apply",
+                            onClick = {
+                                updateData(textData.copy(text = tempText))
+                                currentSubPage = "main"
+                            }
+                        )
                     }
                 }
             }
+            return
         }
-        return
+        "fonts" -> {
+            FontSelectionPage(
+                currentFontFamily = textData.fontFamily,
+                currentStyleName = textData.fontStyleName,
+                onSelectFont = { fontItem ->
+                    updateData(
+                        textData.copy(
+                            fontFamily = fontItem.familyName,
+                            fontStyleName = fontItem.styleName,
+                            customFontAssetPath = fontItem.assetPath ?: fontItem.filePath
+                        )
+                    )
+                    // Choosing a font keeps the user on the Fonts page for live preview
+                },
+                onBack = { currentSubPage = "main" }
+            )
+            return
+        }
+        "text_color" -> {
+            SaltyColorPickerPage(
+                title = "Text Color",
+                colorArgb = textData.color,
+                onPreview = { updateData(textData.copy(color = it)) },
+                onCommit = {
+                    SaltyRecentColorsRegistry.recordColor(it)
+                    updateData(textData.copy(color = it))
+                    currentSubPage = "main"
+                },
+                onBack = { currentSubPage = "main" },
+                supportsTransparent = false,
+                applyLabel = "Apply",
+                presets = SaltyRecentColorsRegistry.recentColors
+            )
+            return
+        }
+        "outline_color" -> {
+            SaltyColorPickerPage(
+                title = "Outline Color",
+                colorArgb = textData.outlineColor,
+                onPreview = { updateData(textData.copy(outlineColor = it)) },
+                onCommit = {
+                    SaltyRecentColorsRegistry.recordColor(it)
+                    updateData(textData.copy(outlineColor = it))
+                    currentSubPage = "main"
+                },
+                onBack = { currentSubPage = "main" },
+                supportsTransparent = false,
+                applyLabel = "Apply",
+                presets = SaltyRecentColorsRegistry.recentColors
+            )
+            return
+        }
     }
 
-    if (currentSubPage == "fonts") {
-        FontSelectionPage(
-            currentFontFamily = textData.fontFamily,
-            currentStyleName = textData.fontStyleName,
-            onSelectFont = { fontItem ->
-                updateData(textData.copy(
-                    fontFamily = fontItem.familyName,
-                    fontStyleName = fontItem.styleName,
-                    customFontAssetPath = fontItem.assetPath ?: fontItem.filePath
-                ))
-                // S15: Choosing a font must NOT return to text editing; stay on font page
-            },
-            onBack = { currentSubPage = "main" }
-        )
-        return
-    }
-
-    PanelPage(
+    SaltyPanelPage(
         title = "Text Options",
         onBack = onDismiss
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        SaltyColumn(
+            modifier = Modifier.saltyFillMaxWidth(),
+            spacing = SaltySpace.MD
         ) {
-            // 1. Text input preview box (tap to edit text)
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = colors.surfaceVariant,
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { currentSubPage = "text_edit" }
-                    .padding(vertical = 12.dp, horizontal = 14.dp)
+            // 1. Text input preview card (tap to edit text)
+            SaltyCard(
+                padding = SaltySpace.MD,
+                spacing = SaltySpace.XXS,
+                onClick = { currentSubPage = "text_edit" }
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    justify = SaltyJustify.SPACE_BETWEEN,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
+                    SaltyColumn(modifier = Modifier.weight(1f), spacing = SaltySpace.XXS) {
+                        SaltyText(
                             text = "Text Content (tap to edit)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.onSurfaceVariant
+                            style = SaltyTextStyle.LABEL_SMALL,
+                            tone = SaltyTextTone.SECONDARY
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
+                        SaltyText(
                             text = textData.text.ifEmpty { "(Empty text)" },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.onSurface,
+                            style = SaltyTextStyle.TITLE_MEDIUM,
+                            weight = SaltyTextWeight.BOLD,
                             maxLines = 2
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.Edit,
+                    SaltyIcon(
+                        icon = Icons.Default.Edit,
                         contentDescription = "Edit Text",
-                        tint = colors.primary,
-                        modifier = Modifier.size(20.dp)
+                        tone = SaltyTextTone.ACCENT,
+                        size = SaltyIconSize.MD
                     )
                 }
             }
 
             // 2. Font Row
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = colors.surfaceVariant,
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(colors.outline)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { currentSubPage = "fonts" }
-                    .padding(vertical = 12.dp, horizontal = 14.dp)
+            SaltyCard(
+                padding = SaltySpace.MD,
+                spacing = SaltySpace.XXS,
+                onClick = { currentSubPage = "fonts" }
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                SaltyRow(
+                    modifier = Modifier.saltyFillMaxWidth(),
+                    justify = SaltyJustify.SPACE_BETWEEN,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text("Font Family", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                        Text(
+                    SaltyColumn(spacing = SaltySpace.XXS) {
+                        SaltyText(
+                            text = "Font Family",
+                            style = SaltyTextStyle.LABEL_SMALL,
+                            tone = SaltyTextTone.SECONDARY
+                        )
+                        SaltyText(
                             text = "${textData.fontFamily} (${textData.fontStyleName})",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.primary
+                            style = SaltyTextStyle.TITLE_MEDIUM,
+                            weight = SaltyTextWeight.BOLD,
+                            tone = SaltyTextTone.ACCENT
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
+                    SaltyIcon(
+                        icon = Icons.Default.ChevronRight,
                         contentDescription = "Select Font",
-                        tint = colors.onSurfaceVariant
+                        tone = SaltyTextTone.SECONDARY
                     )
                 }
             }
 
-            // 3. Size: Ruler slider (px)
-            RulerSlider(
+            // 3. Size
+            SaltyNumberControl(
                 label = "Size",
                 value = textData.fontSize,
-                onValueChange = { updateData(textData.copy(fontSize = it)) },
-                minValue = 8f,
-                maxValue = 400f,
+                min = 8f,
+                max = 400f,
                 defaultValue = 64f,
                 step = 1f,
-                unit = "px"
+                unit = "px",
+                onPreview = { updateData(textData.copy(fontSize = it)) },
+                onCommit = { updateData(textData.copy(fontSize = it)) }
             )
 
             // 4. Color Swatch
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Color", style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(safeColor(textData.color))
-                        .border(1.5.dp, colors.outline, CircleShape)
-                        .clickable { isColorPickerOpen = true }
-                )
-            }
+            SaltyColorSwatchRow(
+                label = "Color",
+                colorArgb = textData.color,
+                onClick = { currentSubPage = "text_color" }
+            )
 
-            // 5. Alignment Segmented Chips (Left, Center, Right, Justify)
-            // 5. Alignment Segmented Chips (Left, Center, Right, Justify)
-            SegmentedChipsControl(
+            // 5. Alignment Segmented Chips
+            SaltySegmentedChips(
                 label = "Alignment",
                 options = listOf("Left", "Center", "Right", "Justify"),
                 selectedOption = when (textData.justification) {
@@ -261,8 +280,8 @@ fun TextSettingsDialog(
                 }
             )
 
-            // 6. Box Mode Chips: Free, Paragraph, Fixed size, Shrink to fit
-            SegmentedChipsControl(
+            // 6. Box Mode Chips
+            SaltySegmentedChips(
                 label = "Box Framing",
                 options = listOf("Free", "Paragraph", "Fixed", "Shrink fit"),
                 selectedOption = when (textData.boxMode) {
@@ -282,145 +301,121 @@ fun TextSettingsDialog(
                 }
             )
 
-            // 7. Line spacing (Ruler slider in %, default 120%)
-            RulerSlider(
+            // 7. Line spacing
+            SaltyNumberControl(
                 label = "Line spacing",
                 value = textData.lineSpacing,
-                onValueChange = { updateData(textData.copy(lineSpacing = it)) },
-                minValue = 50f,
-                maxValue = 300f,
+                min = 50f,
+                max = 300f,
                 defaultValue = 120f,
                 step = 1f,
-                unit = "%"
+                unit = "%",
+                onPreview = { updateData(textData.copy(lineSpacing = it)) },
+                onCommit = { updateData(textData.copy(lineSpacing = it)) }
             )
 
-            // 8. Letter spacing (Ruler slider in ‰ em with reset button)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+            // 8. Letter spacing
+            SaltyRow(
+                modifier = Modifier.saltyFillMaxWidth(),
+                justify = SaltyJustify.SPACE_BETWEEN,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    RulerSlider(
-                        label = "Letter spacing",
-                        value = textData.letterSpacing,
-                        onValueChange = { updateData(textData.copy(letterSpacing = it)) },
-                        minValue = -100f,
-                        maxValue = 800f,
-                        defaultValue = 0f,
-                        step = 5f,
-                        unit = "‰ em"
-                    )
-                }
+                SaltyNumberControl(
+                    label = "Letter spacing",
+                    value = textData.letterSpacing,
+                    min = -100f,
+                    max = 800f,
+                    defaultValue = 0f,
+                    step = 5f,
+                    unit = "‰ em",
+                    onPreview = { updateData(textData.copy(letterSpacing = it)) },
+                    onCommit = { updateData(textData.copy(letterSpacing = it)) },
+                    modifier = Modifier.weight(1f)
+                )
                 if (textData.letterSpacing != 0f) {
-                    IconButton(
-                        onClick = { updateData(textData.copy(letterSpacing = 0f)) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.RestartAlt, contentDescription = "Reset letter spacing", tint = colors.primary)
-                    }
+                    SaltyIconButton(
+                        icon = Icons.Default.RestartAlt,
+                        contentDescription = "Reset letter spacing",
+                        tone = SaltyTextTone.ACCENT,
+                        compact = true,
+                        onClick = { updateData(textData.copy(letterSpacing = 0f)) }
+                    )
                 }
             }
 
-            // 9. Outline Section (swatch + ruler slider px)
-            HorizontalDivider(color = colors.outline.copy(alpha = 0.5f))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+            // 9. Outline Section
+            SaltyDivider()
+            SaltyRow(
+                modifier = Modifier.saltyFillMaxWidth(),
+                justify = SaltyJustify.SPACE_BETWEEN,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
+                SaltyText(text = "Outline Stroke", style = SaltyTextStyle.TITLE_SMALL)
+                SaltyRow(spacing = SaltySpace.SM, verticalAlignment = Alignment.CenterVertically) {
+                    if (textData.hasOutline) {
+                        SaltyColorSwatch(
+                            colorArgb = textData.outlineColor,
+                            circular = true,
+                            onClick = { currentSubPage = "outline_color" }
+                        )
+                    }
+                    SaltySwitch(
                         checked = textData.hasOutline,
                         onCheckedChange = { updateData(textData.copy(hasOutline = it)) }
-                    )
-                    Text("Outline Stroke", style = MaterialTheme.typography.titleSmall)
-                }
-                if (textData.hasOutline) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(safeColor(textData.outlineColor))
-                            .border(1.dp, colors.outline, CircleShape)
-                            .clickable { isOutlineColorPickerOpen = true }
                     )
                 }
             }
 
             if (textData.hasOutline) {
-                RulerSlider(
+                SaltyNumberControl(
                     label = "Outline Width",
                     value = textData.outlineWidth,
-                    onValueChange = { updateData(textData.copy(outlineWidth = it)) },
-                    minValue = 1f,
-                    maxValue = 40f,
+                    min = 1f,
+                    max = 40f,
                     defaultValue = 2f,
                     step = 1f,
-                    unit = "px"
+                    unit = "px",
+                    onPreview = { updateData(textData.copy(outlineWidth = it)) },
+                    onCommit = { updateData(textData.copy(outlineWidth = it)) }
                 )
             }
 
             // 10. Move Along Path
-            HorizontalDivider(color = colors.outline.copy(alpha = 0.5f))
-            Text(
-                "Move Along Path",
-                style = MaterialTheme.typography.titleSmall,
-                color = colors.primary
+            SaltyDivider()
+            SaltyText(
+                text = "Move Along Path",
+                style = SaltyTextStyle.TITLE_SMALL,
+                tone = SaltyTextTone.ACCENT
             )
 
             val pathOptions = listOf("None (Flat text)") + candidatePathLayers.map { it.name }
             val selectedPathIndex = candidatePathLayers.indexOfFirst { it.id == textData.followPathLayerId } + 1
-            com.motionssalt.saltygraphics.ui.controls.DropdownControl(
-                label = "Path layer", options = pathOptions, selectedOption = pathOptions[selectedPathIndex],
-                onOptionSelected = { name -> updateData(textData.copy(followPathLayerId = candidatePathLayers.getOrNull(pathOptions.indexOf(name) - 1)?.id)) }
+            SaltyInlineDropdown(
+                label = "Path layer",
+                selected = pathOptions[selectedPathIndex],
+                options = pathOptions.map { DropdownOption(it, it) },
+                onSelect = { name ->
+                    updateData(textData.copy(followPathLayerId = candidatePathLayers.getOrNull(pathOptions.indexOf(name) - 1)?.id))
+                }
             )
 
             if (textData.followPathLayerId != null) {
-                RulerSlider(
+                SaltyNumberControl(
                     label = "Path Offset",
-                    value = (textData.pathOffsetPercent * 100f),
-                    onValueChange = { updateData(textData.copy(pathOffsetPercent = (it / 100f).coerceIn(0f, 1f))) },
-                    minValue = 0f,
-                    maxValue = 100f,
+                    value = textData.pathOffsetPercent * 100f,
+                    min = 0f,
+                    max = 100f,
                     defaultValue = 0f,
                     step = 1f,
-                    unit = "%"
+                    unit = "%",
+                    onPreview = { updateData(textData.copy(pathOffsetPercent = (it / 100f).coerceIn(0f, 1f))) },
+                    onCommit = { updateData(textData.copy(pathOffsetPercent = (it / 100f).coerceIn(0f, 1f))) }
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            SaltySpacer(SaltySpace.LG)
         }
     }
-
-    // Color Pickers
-    if (isColorPickerOpen) {
-        ColorPickerDialog(
-            title = "Text Color",
-            initialColor = textData.color,
-            allowTransparent = false,
-            onApply = {
-                updateData(textData.copy(color = it))
-                isColorPickerOpen = false
-            },
-            onDismiss = { isColorPickerOpen = false }
-        )
-    }
-
-    if (isOutlineColorPickerOpen) {
-        ColorPickerDialog(
-            title = "Outline Color",
-            initialColor = textData.outlineColor,
-            allowTransparent = false,
-            onApply = {
-                updateData(textData.copy(outlineColor = it))
-                isOutlineColorPickerOpen = false
-            },
-            onDismiss = { isOutlineColorPickerOpen = false }
-        )
-    }
-
-    // End of TextSettingsDialog
 }
 
 @Composable
@@ -431,13 +426,10 @@ fun FontSelectionPage(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val colors = MaterialTheme.colorScheme
     var searchQuery by remember { mutableStateOf("") }
     var selectedStyleFilter by remember { mutableStateOf<String?>(null) }
-
     var fontList by remember { mutableStateOf(FontManager.getAllFonts(context)) }
 
-    // Multi-font picker launcher per R12
     val fontPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
@@ -461,161 +453,128 @@ fun FontSelectionPage(
         }
     }
 
-    PanelPage(title = "Fonts", onBack = onBack, scrollable = false) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+    SaltyPanelPage(title = "Fonts", onBack = onBack, scrollable = false) {
+        SaltyColumn(
+            modifier = Modifier.saltyFillMaxSize(),
+            padding = SaltySpace.XS,
+            spacing = SaltySpace.SM
         ) {
-            // Inline Search Bar & Import Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            SaltyRow(
+                modifier = Modifier.saltyFillMaxWidth(),
+                spacing = SaltySpace.SM,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
+                SaltyTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search fonts...", style = MaterialTheme.typography.bodySmall) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = colors.primary, modifier = Modifier.size(18.dp)) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear", tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                            }
+                    placeholder = "Search fonts...",
+                    leadingIcon = { SaltyIcon(Icons.Default.Search, tone = SaltyTextTone.ACCENT, size = SaltyIconSize.MD) },
+                    trailingIcon = if (searchQuery.isNotEmpty()) {
+                        {
+                            SaltyIconButton(
+                                icon = Icons.Default.Clear,
+                                contentDescription = "Clear",
+                                tone = SaltyTextTone.SECONDARY,
+                                compact = true,
+                                onClick = { searchQuery = "" }
+                            )
                         }
-                    },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colors.primary,
-                        unfocusedBorderColor = colors.outline.copy(alpha = 0.5f)
-                    )
+                    } else null,
+                    modifier = Modifier.weight(1f)
                 )
 
-                Button(
-                    onClick = {
-                        fontPickerLauncher.launch(arrayOf("*/*", "font/ttf", "font/otf"))
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.background),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    modifier = Modifier.height(50.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Import", fontWeight = FontWeight.Bold)
-                }
+                SaltyButton(
+                    text = "Import",
+                    icon = Icons.Default.Add,
+                    onClick = { fontPickerLauncher.launch(arrayOf("*/*", "font/ttf", "font/otf")) }
+                )
             }
 
-            // Style Chips (Regular, Bold, Italic, Condensed)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            SaltyRow(
+                modifier = Modifier.saltyFillMaxWidth(),
+                spacing = SaltySpace.XS,
+                scrollable = true
             ) {
                 val styles = listOf("All", "Regular", "Bold", "Italic", "Condensed")
                 styles.forEach { style ->
                     val isSelected = (style == "All" && selectedStyleFilter == null) || (selectedStyleFilter == style)
-                    FilterChip(
+                    SaltyChip(
+                        label = style,
                         selected = isSelected,
-                        onClick = { selectedStyleFilter = if (style == "All") null else style },
-                        label = { Text(style, style = MaterialTheme.typography.labelSmall) }
+                        onClick = { selectedStyleFilter = if (style == "All") null else style }
                     )
                 }
             }
 
-            // Font List
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            SaltyLazyColumn(
+                modifier = Modifier.saltyFillMaxSize().weight(1f),
+                spacing = SaltySpace.XS
             ) {
-                items(filteredFonts, key = { it.id }) { font ->
+                saltyListItems(filteredFonts, key = { it.id }) { font ->
                     val isSelected = font.familyName.equals(currentFontFamily, ignoreCase = true)
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isSelected) colors.primary.copy(alpha = 0.15f) else colors.surface,
-                        border = CardDefaults.outlinedCardBorder().copy(
-                            brush = androidx.compose.ui.graphics.SolidColor(if (isSelected) colors.primary else colors.outline.copy(alpha = 0.4f))
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelectFont(font) }
-                            .padding(vertical = 10.dp, horizontal = 12.dp)
+                    SaltyCard(
+                        isSelected = isSelected,
+                        padding = SaltySpace.SM,
+                        spacing = SaltySpace.XXS,
+                        onClick = { onSelectFont(font) }
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                        SaltyRow(
+                            modifier = Modifier.saltyFillMaxWidth(),
+                            justify = SaltyJustify.SPACE_BETWEEN,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            SaltyColumn(modifier = Modifier.weight(1f), spacing = SaltySpace.XXS) {
                                 val tf = remember(font.id) {
                                     try {
                                         FontManager.getTypeface(context, font)
                                     } catch (_: Throwable) {
-                                        android.graphics.Typeface.DEFAULT
+                                        Typeface.DEFAULT
                                     }
                                 }
                                 val ff = remember(tf) {
                                     try {
-                                        androidx.compose.ui.text.font.FontFamily(tf)
+                                        FontFamily(tf)
                                     } catch (_: Throwable) {
-                                        androidx.compose.ui.text.font.FontFamily.Default
+                                        FontFamily.Default
                                     }
                                 }
-                                Text(
+                                SaltyText(
                                     text = font.displayName,
                                     fontFamily = ff,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) colors.primary else colors.onSurface
+                                    style = SaltyTextStyle.BODY_LARGE,
+                                    weight = if (isSelected) SaltyTextWeight.BOLD else SaltyTextWeight.NORMAL,
+                                    tone = if (isSelected) SaltyTextTone.ACCENT else SaltyTextTone.PRIMARY
                                 )
-                                Text(
+                                SaltyText(
                                     text = "${font.familyName} • ${font.styleName}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = colors.onSurfaceVariant
+                                    style = SaltyTextStyle.LABEL_SMALL,
+                                    tone = SaltyTextTone.SECONDARY
                                 )
                             }
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Badge: built-in or imported
+                            SaltyRow(spacing = SaltySpace.XS, verticalAlignment = Alignment.CenterVertically) {
                                 if (font.isBuiltIn) {
-                                    Surface(
-                                        color = colors.secondary.copy(alpha = 0.2f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    ) {
-                                        Text(
-                                            "built-in",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = colors.secondary,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
+                                    SaltyBadge(text = "built-in", tone = SaltyTextTone.SECONDARY)
                                 } else if (font.isImported) {
-                                    Surface(
-                                        color = colors.tertiary.copy(alpha = 0.2f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    ) {
-                                        Text(
-                                            "imported",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = colors.tertiary,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    IconButton(
+                                    SaltyBadge(text = "imported", tone = SaltyTextTone.ACCENT)
+                                    SaltyIconButton(
+                                        icon = Icons.Default.Delete,
+                                        contentDescription = "Delete font",
+                                        tone = SaltyTextTone.ERROR,
+                                        compact = true,
                                         onClick = {
                                             FontManager.deleteImportedFont(context, font.id)
                                             fontList = FontManager.getAllFonts(context)
-                                        },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete font", tint = colors.error, modifier = Modifier.size(16.dp))
-                                    }
+                                        }
+                                    )
                                 }
 
                                 if (isSelected) {
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
+                                    SaltyIcon(
+                                        icon = Icons.Default.Check,
+                                        tone = SaltyTextTone.ACCENT,
+                                        size = SaltyIconSize.MD
+                                    )
                                 }
                             }
                         }

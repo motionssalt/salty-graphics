@@ -25,7 +25,9 @@ fun SaltyTextField(
     maxLines: Int = 1,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    isError: Boolean = false
+    isError: Boolean = false,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null
 ) {
     val colors = SaltyTokens.colors
     val shapes = SaltyTokens.shapes
@@ -36,6 +38,8 @@ fun SaltyTextField(
         modifier = modifier.fillMaxWidth(),
         label = if (label.isNotEmpty()) { { Text(label) } } else null,
         placeholder = if (placeholder.isNotEmpty()) { { Text(placeholder) } } else null,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
         singleLine = singleLine,
         minLines = minLines,
         maxLines = maxLines,

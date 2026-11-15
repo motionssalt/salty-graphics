@@ -39,8 +39,21 @@ class ScaffoldMigrationBoundaryTest {
             "ui/editor/ReorderableLayerList.kt",
             "ui/editor/LayersPanel.kt",
             "ui/editor/GradientCanvasOverlay.kt",
+            "ui/editor/TransformPanel.kt",
+            "ui/editor/VectorCanvasOverlay.kt",
+            "ui/editor/VectorPage.kt",
+            "ui/editor/TextSettingsDialog.kt",
+            "ui/editor/EffectSettingsSheet.kt",
+            "ui/editor/EditorScreen.kt",
             "ui/controls/FillPanelPage.kt",
-            "ui/controls/BorderShadowPanelPage.kt"
+            "ui/controls/BorderShadowPanelPage.kt",
+            "ui/controls/ColorPickerComponents.kt",
+            "ui/controls/MiscControls.kt",
+            "ui/controls/PanelControls.kt",
+            "ui/controls/ProgressSliderControl.kt",
+            "ui/controls/RulerSlider.kt",
+            "ui/controls/SaltySwitch.kt",
+            "ui/controls/ValueEditorDialog.kt"
         )
         for (rel in migratedPaths) {
             val source = File(appRoot, rel)

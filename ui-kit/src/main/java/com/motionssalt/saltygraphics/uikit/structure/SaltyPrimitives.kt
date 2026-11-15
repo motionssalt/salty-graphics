@@ -386,17 +386,19 @@ fun SaltyCard(
 
 @Composable
 fun SaltySectionCard(
-    title: String,
+    title: String? = null,
     modifier: Modifier = Modifier,
     content: @Composable SaltyColumnScope.() -> Unit
 ) {
     SaltyCard(modifier = modifier, padding = SaltySpace.PANEL, spacing = SaltySpace.MD) {
-        SaltyText(
-            text = title,
-            style = SaltyTextStyle.TITLE_MEDIUM,
-            tone = SaltyTextTone.ACCENT,
-            weight = SaltyTextWeight.SEMI_BOLD
-        )
+        if (title != null) {
+            SaltyText(
+                text = title,
+                style = SaltyTextStyle.TITLE_MEDIUM,
+                tone = SaltyTextTone.ACCENT,
+                weight = SaltyTextWeight.SEMI_BOLD
+            )
+        }
         content()
     }
 }
@@ -958,6 +960,26 @@ fun SaltyRootSurface(
         color = SaltyTokens.colors.background,
         content = content
     )
+}
+
+@Composable
+fun SaltyEditorScaffold(
+    topBar: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable (Modifier) -> Unit
+) {
+    Scaffold(
+        modifier = modifier,
+        topBar = topBar,
+        containerColor = SaltyTokens.colors.background
+    ) { innerPadding ->
+        content(
+            Modifier
+                .padding(innerPadding)
+                .navigationBarsPadding()
+                .displayCutoutPadding()
+        )
+    }
 }
 
 @Composable

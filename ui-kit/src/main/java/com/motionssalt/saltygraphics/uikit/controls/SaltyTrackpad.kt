@@ -3,6 +3,7 @@ package com.motionssalt.saltygraphics.uikit.controls
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
@@ -115,6 +116,95 @@ fun SaltyTrackpad(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Transform trackpad card with clickable X/Y coordinate pills and inline value entry (no popups).
+ */
+@Composable
+fun SaltyPositionTrackpad(
+    x: Float,
+    y: Float,
+    sensitivity: Float,
+    onDelta: (dx: Float, dy: Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onCommitX: (Float) -> Unit,
+    onCommitY: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    range: ClosedFloatingPointRange<Float> = -100000f..100000f
+) {
+    val colors = SaltyTokens.colors
+    val shapes = SaltyTokens.shapes
+    var editingAxis by remember { mutableStateOf<String?>(null) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.xs)
+    ) {
+        SaltyTrackpad(
+            onDelta = onDelta,
+            onDragEnd = onDragEnd,
+            sensitivity = sensitivity,
+            label = "Drag here for precision translation"
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SaltyTokens.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(shapes.sm)
+                    .background(colors.surfaceVariant)
+                    .clickable { editingAxis = "X" }
+                    .padding(horizontal = SaltyTokens.spacing.sm, vertical = SaltyTokens.spacing.xs)
+            ) {
+                Text(
+                    text = "X: ${x.toInt()} px",
+                    style = SaltyTokens.typography.labelSmall,
+                    color = colors.primary
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .clip(shapes.sm)
+                    .background(colors.surfaceVariant)
+                    .clickable { editingAxis = "Y" }
+                    .padding(horizontal = SaltyTokens.spacing.sm, vertical = SaltyTokens.spacing.xs)
+            ) {
+                Text(
+                    text = "Y: ${y.toInt()} px",
+                    style = SaltyTokens.typography.labelSmall,
+                    color = colors.primary
+                )
+            }
+        }
+        if (editingAxis == "X") {
+            SaltyValueEntryStrip(
+                label = "Move X",
+                currentValue = x,
+                range = range,
+                unit = "px",
+                onConfirm = {
+                    editingAxis = null
+                    onCommitX(it)
+                },
+                onDismiss = { editingAxis = null }
+            )
+        } else if (editingAxis == "Y") {
+            SaltyValueEntryStrip(
+                label = "Move Y",
+                currentValue = y,
+                range = range,
+                unit = "px",
+                onConfirm = {
+                    editingAxis = null
+                    onCommitY(it)
+                },
+                onDismiss = { editingAxis = null }
+            )
         }
     }
 }

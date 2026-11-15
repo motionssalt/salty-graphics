@@ -63,12 +63,9 @@ class BottomPanelArchitectureEnforcementTest {
         assertTrue("EditorScreen.kt must exist", editorScreenFile.exists())
         val text = editorScreenFile.readText()
 
-        // EditorScreen only allows:
-        // 1. Destructive/irreversible confirmation dialogs: Rasterize confirmation, Save Error confirmation.
-        // 2. ActionTree history viewer (non-editing inspection dialog)
-        // Ensure no other Dialogs exist in EditorScreen
-        val dialogMatches = Regex("\\b(AlertDialog)\\s*\\(").findAll(text).toList()
-        // Exactly 2 AlertDialogs: Save Error dialog and Rasterize confirmation dialog
-        assertTrue("EditorScreen should only contain allowed confirmation AlertDialogs (count: ${dialogMatches.size})", dialogMatches.size <= 2)
+        val rawAlertDialogs = Regex("\\b(AlertDialog)\\s*\\(").findAll(text).toList()
+        assertEquals("EditorScreen must use SaltyConfirmDialog instead of raw AlertDialog", 0, rawAlertDialogs.size)
+        val confirmDialogs = Regex("\\b(SaltyConfirmDialog)\\s*\\(").findAll(text).toList()
+        assertTrue("EditorScreen should only contain allowed confirmation dialogs (count: ${confirmDialogs.size})", confirmDialogs.size <= 2)
     }
 }
