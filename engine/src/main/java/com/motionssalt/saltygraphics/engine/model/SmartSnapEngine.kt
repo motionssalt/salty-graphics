@@ -13,6 +13,14 @@ data class SmartGuideLine(
     val spacingValue: Float = 0f
 )
 
+data class GridSnapResult(
+    val snappedTransform: Transform2D,
+    val snappedGridX: Float? = null,
+    val snappedGridY: Float? = null,
+    val didSnapX: Boolean = false,
+    val didSnapY: Boolean = false
+)
+
 data class SnapResult(
     val snappedTransform: Transform2D,
     val activeGuides: List<SmartGuideLine> = emptyList(),
