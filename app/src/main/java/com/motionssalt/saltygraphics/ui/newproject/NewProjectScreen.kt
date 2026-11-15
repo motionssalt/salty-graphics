@@ -91,7 +91,12 @@ fun NewProjectScreen(
             AspectRatioPreset.LANDSCAPE_5_4,
             AspectRatioPreset.PORTRAIT_2_3,
             AspectRatioPreset.ULTRAWIDE_21_9,
-            AspectRatioPreset.WIDESCREEN_16_10
+            AspectRatioPreset.LANDSCAPE_2_1,
+            AspectRatioPreset.PORTRAIT_1_2,
+            AspectRatioPreset.BANNER_3_1,
+            AspectRatioPreset.SKYSCRAPER_1_3,
+            AspectRatioPreset.SMARTPHONE_9_19_5,
+            AspectRatioPreset.SMARTPHONE_19_5_9
         )
     }
 
@@ -129,13 +134,14 @@ fun NewProjectScreen(
         modifier: Modifier = Modifier,
         compactWidth: Boolean = false
     ) {
-        val ratioW = if (isRotated && preset != AspectRatioPreset.SQUARE) preset.ratioHeight else preset.ratioWidth
-        val ratioH = if (isRotated && preset != AspectRatioPreset.SQUARE) preset.ratioWidth else preset.ratioHeight
-        val displayRatio = if (isRotated && preset != AspectRatioPreset.SQUARE && preset.displayRatio.contains(":")) {
-            val parts = preset.displayRatio.split(":")
-            "${parts[1]}:${parts[0]}"
+        val ratioW = if (isRotated && preset != AspectRatioPreset.CUSTOM && preset != AspectRatioPreset.SQUARE) preset.ratioHeight else preset.ratioWidth
+        val ratioH = if (isRotated && preset != AspectRatioPreset.CUSTOM && preset != AspectRatioPreset.SQUARE) preset.ratioWidth else preset.ratioHeight
+        val displayRatio = if (isRotated && preset != AspectRatioPreset.CUSTOM && preset != AspectRatioPreset.SQUARE) {
+            val wStr = if (preset.ratioHeight % 1f == 0f) preset.ratioHeight.toInt().toString() else preset.ratioHeight.toString()
+            val hStr = if (preset.ratioWidth % 1f == 0f) preset.ratioWidth.toInt().toString() else preset.ratioWidth.toString()
+            "$wStr:$hStr"
         } else {
-            preset.displayRatio
+            preset.displayName
         }
         SaltyAspectRatioTile(
             ratioWidth = ratioW,
@@ -155,7 +161,7 @@ fun NewProjectScreen(
             text = title,
             style = SaltyTextStyle.LABEL_MEDIUM,
             tone = SaltyTextTone.ACCENT,
-            weight = SaltyTextWeight.SEMIBOLD
+            weight = SaltyTextWeight.SEMI_BOLD
         )
         presets.chunked(3).forEach { row ->
             SaltyRow(
@@ -262,7 +268,7 @@ fun NewProjectScreen(
                     text = "Most Used",
                     style = SaltyTextStyle.LABEL_MEDIUM,
                     tone = SaltyTextTone.ACCENT,
-                    weight = SaltyTextWeight.SEMIBOLD
+                    weight = SaltyTextWeight.SEMI_BOLD
                 )
                 SaltySpacer(SaltySpace.XS)
                 SaltyRow(
