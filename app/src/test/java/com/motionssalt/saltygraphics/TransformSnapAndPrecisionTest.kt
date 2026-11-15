@@ -341,7 +341,7 @@ class TransformSnapAndPrecisionTest {
         )
         // Align both group and sibling to canvas center
         val aligned = CompositionTransforms.applyToDocument(
-            document = doc,
+            doc = doc,
             targetIds = setOf("grp", "sib"),
             boundsProvider = { layer ->
                 when (layer.id) {
