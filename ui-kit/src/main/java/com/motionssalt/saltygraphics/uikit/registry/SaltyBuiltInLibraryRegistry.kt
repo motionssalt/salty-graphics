@@ -1,9 +1,12 @@
 package com.motionssalt.saltygraphics.uikit.registry
 
 import android.graphics.Bitmap
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import com.motionssalt.saltygraphics.engine.model.FillData
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.motionssalt.saltygraphics.engine.action.ActionIdentity
 import com.motionssalt.saltygraphics.engine.model.GradientData
 import com.motionssalt.saltygraphics.engine.model.Layer
 import com.motionssalt.saltygraphics.uikit.controls.DropdownOption
@@ -13,9 +16,10 @@ import com.motionssalt.saltygraphics.uikit.controls.SaltyMediaPickerGrid
 import com.motionssalt.saltygraphics.uikit.controls.SaltyPositionTrackpad
 import com.motionssalt.saltygraphics.uikit.controls.SaltySegmentedChips
 import com.motionssalt.saltygraphics.uikit.overlays.SaltyGradientLayerOverlay
-import com.motionssalt.saltygraphics.uikit.overlays.SaltySelectionOverlay
+import com.motionssalt.saltygraphics.uikit.overlays.SaltySelectionBoxOverlay
 import com.motionssalt.saltygraphics.uikit.overlays.SaltyVectorCanvasOverlay
 import com.motionssalt.saltygraphics.uikit.overlays.SaltyVectorToolMode
+import com.motionssalt.saltygraphics.uikit.structure.SaltyHistoryTree
 import com.motionssalt.saltygraphics.uikit.structure.SaltyText
 import com.motionssalt.saltygraphics.uikit.structure.SaltyTextStyle
 import com.motionssalt.saltygraphics.uikit.structure.SaltyTextTone
@@ -44,48 +48,81 @@ object SaltyBuiltInLibraryRegistry {
                     id = "transform_trackpad",
                     description = "2D position trackpad with direct coordinate entry"
                 ) { _, current, onPreview, onCommit ->
+                    var dragging by remember { mutableStateOf(false) }
+                    var draft by remember { mutableStateOf(current) }
+                    if (!dragging) {
+                        draft = current
+                    }
                     SaltyPositionTrackpad(
-                        x = current.first,
-                        y = current.second,
+                        x = draft.first,
+                        y = draft.second,
                         sensitivity = 1f,
-                        onDelta = { dx, dy -> onPreview((current.first + dx) to (current.second + dy)) },
-                        onDragEnd = { onCommit(current) },
-                        onCommitX = { nx -> onCommit(nx to current.second) },
-                        onCommitY = { ny -> onCommit(current.first to ny) }
+                        onDelta = { dx, dy ->
+                            dragging = true
+                            val next = (draft.first + dx) to (draft.second + dy)
+                            draft = next
+                            onPreview(next)
+                        },
+                        onDragEnd = {
+                            dragging = false
+                            onCommit(draft)
+                        },
+                        onCommitX = { nx ->
+                            val next = nx to draft.second
+                            draft = next
+                            onCommit(next)
+                        },
+                        onCommitY = { ny ->
+                            val next = draft.first to ny
+                            draft = next
+                            onCommit(next)
+                        }
                     )
                 }
             )
         }
+
         if (!LibraryComponentRegistry.contains("gradient_bar")) {
             LibraryComponentRegistry.register(
                 LibraryComponentEntry<GradientData>(
                     id = "gradient_bar",
                     description = "Interactive gradient stop bar editor"
                 ) { _, current, onPreview, onCommit ->
+                    var selectedStopIndex by remember { mutableIntStateOf(0) }
+                    val safeIndex = selectedStopIndex.coerceIn(0, (current.stops.size - 1).coerceAtLeast(0))
                     SaltyGradientStopEditor(
                         gradient = current,
-                        selectedStopIndex = 0,
-                        onSelectStop = {},
+                        selectedStopIndex = safeIndex,
+                        onSelectStop = { selectedStopIndex = it },
                         onGradientPreview = onPreview,
                         onGradientCommit = { _, updated -> onCommit(updated) }
                     )
                 }
             )
         }
+
         if (!LibraryComponentRegistry.contains("history_tree")) {
             LibraryComponentRegistry.register(
-                LibraryComponentEntry<String>(
+                LibraryComponentEntry<Any>(
                     id = "history_tree",
-                    description = "History node summary badge"
+                    description = "Interactive lane-based action history tree"
                 ) { label, current, _, _ ->
-                    SaltyText(
-                        text = "$label: $current",
-                        style = SaltyTextStyle.BODY_SMALL,
-                        tone = SaltyTextTone.SECONDARY
-                    )
+                    when (current) {
+                        is SaltyHistoryTreeAdapterState -> SaltyHistoryTree(
+                            actionTree = current.actionTree,
+                            onJumpToNode = current.onJumpToNode,
+                            onDismiss = current.onDismiss
+                        )
+                        else -> SaltyText(
+                            text = "$label: $current",
+                            style = SaltyTextStyle.BODY_SMALL,
+                            tone = SaltyTextTone.SECONDARY
+                        )
+                    }
                 }
             )
         }
+
         if (!LibraryComponentRegistry.contains("vector_toolbar")) {
             LibraryComponentRegistry.register(
                 LibraryComponentEntry<String>(
@@ -101,20 +138,36 @@ object SaltyBuiltInLibraryRegistry {
                 }
             )
         }
+
         if (!LibraryComponentRegistry.contains("media_picker_grid")) {
             LibraryComponentRegistry.register(
-                LibraryComponentEntry<List<Pair<String, Bitmap?>>>(
+                LibraryComponentEntry<Any>(
                     id = "media_picker_grid",
                     description = "In-panel project media asset picker grid"
                 ) { _, current, _, onCommit ->
-                    SaltyMediaPickerGrid(
-                        media = current,
-                        onSelectMedia = { _ -> onCommit(current) },
-                        onImport = {}
-                    )
+                    when (current) {
+                        is SaltyMediaPickerState -> SaltyMediaPickerGrid(
+                            media = current.media,
+                            onSelectMedia = { path -> onCommit(current.copy(selectedPath = path)) },
+                            onImport = current.onImportRequest
+                        )
+                        is List<*> -> {
+                            @Suppress("UNCHECKED_CAST")
+                            val items = current as List<Pair<String, Bitmap?>>
+                            SaltyMediaPickerGrid(
+                                media = items,
+                                onSelectMedia = { path ->
+                                    val chosen = items.filter { it.first == path }
+                                    onCommit(if (chosen.isNotEmpty()) chosen + items.filter { it.first != path } else items)
+                                },
+                                onImport = {}
+                            )
+                        }
+                    }
                 }
             )
         }
+
         if (!LibraryComponentRegistry.contains("layer_selector")) {
             LibraryComponentRegistry.register(
                 LibraryComponentEntry<Pair<String, List<Layer>>>(
@@ -148,15 +201,16 @@ object SaltyBuiltInLibraryRegistry {
                         zoom = ctx.zoom,
                         pan = ctx.pan,
                         onPreview = bindings.onPreview,
-                        onCommit = { fill -> bindings.onCommit(
-                            com.motionssalt.saltygraphics.engine.action.ActionIdentity("Change", "Layer", "gradient geometry"), fill
-                        ) },
+                        onCommit = { fill ->
+                            bindings.onCommit(ActionIdentity("Change", "Layer", "gradient geometry"), fill)
+                        },
                         onGestureCommit = bindings.onCommit,
                         onCancel = bindings.onCancel
                     )
                 }
             )
         }
+
         if (!OverlayRegistry.contains("vector_editor")) {
             OverlayRegistry.register(
                 OverlayEntry(
@@ -182,23 +236,17 @@ object SaltyBuiltInLibraryRegistry {
                 }
             )
         }
+
         if (!OverlayRegistry.contains("selection_box")) {
             OverlayRegistry.register(
                 OverlayEntry(
                     id = "selection_box",
-                    description = "Center-anchored selection box and handles"
+                    description = "Center-anchored selection box, handles, smart guides, and angle pill"
                 ) { ctx ->
-                    SaltySelectionOverlay(
-                        bounds = androidx.compose.ui.geometry.Rect(
-                            0f, 0f, ctx.canvasSize.width.toFloat(), ctx.canvasSize.height.toFloat()
-                        ),
-                        rotationDeg = ctx.layer.transform.rotationDegrees,
-                        onScaleAroundCenter = { _, _ -> },
-                        onRotate = {},
-                        onTranslate = { _, _ -> },
-                        onTransformCommit = {},
-                        isLocked = ctx.layer.isLocked
-                    )
+                    val bindings = requireNotNull(ctx.selectionEditing) {
+                        "selection_box requires real SelectionOverlayBindings"
+                    }
+                    SaltySelectionBoxOverlay(context = ctx, bindings = bindings)
                 }
             )
         }

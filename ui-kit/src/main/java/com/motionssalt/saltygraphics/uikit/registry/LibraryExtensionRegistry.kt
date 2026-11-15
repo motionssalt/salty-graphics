@@ -1,18 +1,23 @@
 package com.motionssalt.saltygraphics.uikit.registry
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.ui.geometry.Offset
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import com.motionssalt.saltygraphics.engine.action.ActionIdentity
-import com.motionssalt.saltygraphics.engine.model.FillData
+import com.motionssalt.saltygraphics.engine.action.ActionTree
 import com.motionssalt.saltygraphics.engine.model.CanvasSize
+import com.motionssalt.saltygraphics.engine.model.FillData
 import com.motionssalt.saltygraphics.engine.model.Layer
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
+import com.motionssalt.saltygraphics.engine.model.SelectionBounds
+import com.motionssalt.saltygraphics.engine.model.SmartGuideLine
+import com.motionssalt.saltygraphics.engine.model.Transform2D
 import com.motionssalt.saltygraphics.uikit.overlays.SaltyVectorToolMode
 
 /** Required callbacks for a real, history-aware gradient editing session. No no-op defaults. */
@@ -33,6 +38,37 @@ data class VectorOverlayBindings(
     val onDone: () -> Unit
 )
 
+/** Selection overlay session values and real transform callbacks, never placeholder bounds or no-op defaults. */
+data class SelectionOverlayBindings(
+    val bounds: SelectionBounds,
+    val isTextEditing: Boolean = false,
+    val isShapeCornerHandleEnabled: Boolean = false,
+    val shapeCornerRadius: Float = 0f,
+    val isShapeStarHandleEnabled: Boolean = false,
+    val starInnerRadiusRatio: Float = 0.4f,
+    val smartGuides: List<SmartGuideLine> = emptyList(),
+    val rotatingAngleLabel: String? = null,
+    val rotatingPillScreenPosition: Offset? = null,
+    val handleGesturesInternally: Boolean = false,
+    val onPreviewTransform: (Transform2D) -> Unit = {},
+    val onCommitTransform: (ActionIdentity, Transform2D) -> Unit = { _, _ -> },
+    val onCancelTransform: () -> Unit = {}
+)
+
+/** Production adapter state for the registered media_picker_grid library component. */
+data class SaltyMediaPickerState(
+    val media: List<Pair<String, Bitmap?>>,
+    val selectedPath: String? = null,
+    val onImportRequest: () -> Unit = {}
+)
+
+/** Production adapter state for the registered history_tree library component. */
+data class SaltyHistoryTreeAdapterState(
+    val actionTree: ActionTree,
+    val onJumpToNode: (String) -> Unit,
+    val onDismiss: () -> Unit
+)
+
 /** Context passed to library-owned registered overlays, not feature modal windows. */
 data class OverlayRenderContext(
     val document: ProjectDocument,
@@ -41,7 +77,8 @@ data class OverlayRenderContext(
     val zoom: Float,
     val pan: Offset,
     val gradientEditing: GradientOverlayBindings? = null,
-    val vectorEditing: VectorOverlayBindings? = null
+    val vectorEditing: VectorOverlayBindings? = null,
+    val selectionEditing: SelectionOverlayBindings? = null
 )
 
 data class LibraryComponentEntry<T>(

@@ -9,13 +9,14 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import com.motionssalt.saltygraphics.engine.action.ActionIdentity
+import com.motionssalt.saltygraphics.uikit.registry.OverlayRenderContext
+import com.motionssalt.saltygraphics.uikit.registry.ScaffoldCanvasOverlay
+import com.motionssalt.saltygraphics.uikit.registry.SelectionOverlayBindings
+import com.motionssalt.saltygraphics.uikit.structure.SaltyCanvasSurface
+import com.motionssalt.saltygraphics.uikit.structure.saltyFillMaxSize
+import com.motionssalt.saltygraphics.uikit.tokens.SaltyTokens
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -32,10 +33,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import kotlinx.coroutines.CancellationException
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.PorterDuff
@@ -104,7 +102,8 @@ fun CanvasView(
     externalSnappedGridY: Float? = null,
     isTextEditing: Boolean = false
 ) {
-    val colors = MaterialTheme.colorScheme
+    val colors = SaltyTokens.colors
+    val sizes = SaltyTokens.sizes
     val context = LocalContext.current
     val hostView = LocalView.current
     val density = LocalDensity.current
@@ -150,9 +149,9 @@ fun CanvasView(
     val selectedLayer = remember(document, selectedLayerIds) { selectionProxy(context, document, selectedLayerIds) }
     val selectedBounds = remember(document, selectedLayer, isTextEditing) { selectedLayer?.let { selectionBounds(context,document,it,isTextEditing) } }
 
-    Box(
+    SaltyCanvasSurface(
         modifier = modifier
-            .fillMaxSize()
+            .saltyFillMaxSize()
             .testTag("editor_canvas")
             .semantics { stateDescription = if (selectedLayerIds.isEmpty()) "No layers selected" else "${selectedLayerIds.size} layers selected" }
             .clipToBounds()
@@ -160,7 +159,7 @@ fun CanvasView(
             .background(colors.background)
             .pointerInput(Unit) {
                 val touchSlop = viewConfiguration.touchSlop
-                val touchRadius = 22.dp.toPx() // 44dp minimum target, independent of zoom.
+                val touchRadius = sizes.touchTargetRadius.toPx() // 44dp minimum target, independent of zoom.
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val activeDoc = currentDoc
@@ -184,7 +183,7 @@ fun CanvasView(
                         val candidates=SelectionHandle.entries.filter { it != SelectionHandle.NONE && it != SelectionHandle.BODY }.map { h ->
                             val point=if(h==SelectionHandle.ROTATE) {
                                 val edge=SelectionGeometry.world(SelectionPoint(box.center.x,box.top),t)
-                                val stem=SelectionPoint(0f,-32.dp.toPx()/effZoom).rotated(t.rotationDegrees)
+                                val stem=SelectionPoint(0f,-sizes.rotateStemLength.toPx()/effZoom).rotated(t.rotationDegrees)
                                 edge+stem
                             } else SelectionGeometry.world(SelectionPoint(
                                 if(h.x<0) box.left else if(h.x>0) box.right else box.center.x,
@@ -469,7 +468,7 @@ fun CanvasView(
                                 preview(transform);change.consume()
                                 if(handle==SelectionHandle.ROTATE) {
                                     rotatingAnglePill="${transform.rotationDegrees.roundToInt()}°"
-                                    rotatingPillPosition=change.position-Offset(0f,48.dp.toPx())
+                                    rotatingPillPosition=change.position-Offset(0f,sizes.anglePillOffset.toPx())
                                 }
                             }
                             last=change.position
@@ -481,7 +480,7 @@ fun CanvasView(
                 }
             }
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(modifier = Modifier.saltyFillMaxSize()) {
             @Suppress("UNUSED_VARIABLE") val cacheGeneration=mediaGeneration
             val center = Offset(size.width / 2f + panOffset.x, size.height / 2f + panOffset.y)
             val canvasW = document.canvasSize.width.toFloat()
@@ -494,12 +493,12 @@ fun CanvasView(
 
             // Checkerboard background
             clipRect(topLeft.x, topLeft.y, topLeft.x + scaledW, topLeft.y + scaledH) {
-                val cell = 12.dp.toPx()
+                val cell = sizes.checkerCell.toPx()
                 val cols = (scaledW / cell).toInt().coerceAtMost(2000) + 1
                 val rows = (scaledH / cell).toInt().coerceAtMost(2000) + 1
                 for (row in 0..rows) for (col in 0..cols) {
                     drawRect(
-                        if ((row + col) % 2 == 0) Color.LightGray else Color.Gray,
+                        if ((row + col) % 2 == 0) colors.checkerLight else colors.checkerDark,
                         Offset(topLeft.x + col * cell, topLeft.y + row * cell),
                         Size(cell, cell)
                     )
@@ -510,7 +509,7 @@ fun CanvasView(
             // Gridlines (T26: Square toggle and canvas-matched aspect ratio; V15: Snapping transient feedback)
             if (showGrid && gridSize > 0) {
                 val gridColor = safeColor(document.editorSettings.gridColor)
-                val snapHighlightColor = Color(0xFFFF9100)
+                val snapHighlightColor = colors.snapGuideGridHighlight
                 if (document.editorSettings.isSquareGrid) {
                     // Square grid mode: equal-sized cells
                     val cellPx = gridSize * effectiveZoom
@@ -969,124 +968,37 @@ fun CanvasView(
                 style = Stroke(width = 1.5f)
             )
 
-            // Draw selection last so it remains legible over every layer/background.
-            // Adjustment layers have no canvas selection box or handles (T12)
-            if(selectedLayer!=null && selectedLayer.type != LayerType.ADJUSTMENT && selectedBounds!=null) {
-                val t=selectedLayer.transform;val b=selectedBounds
-                val centerLocal=SelectionGeometry.world(b.center,t)
-                val halfW=b.width*t.scaleX*effectiveZoom/2f
-                val halfH=b.height*t.scaleY*effectiveZoom/2f
-                withTransform({
-                    translate(center.x+centerLocal.x*effectiveZoom,center.y+centerLocal.y*effectiveZoom)
-                    rotate(t.rotationDegrees,pivot=Offset.Zero)
-                }) {
-                    val origin=Offset(-halfW,-halfH);val dimensions=Size(halfW*2,halfH*2)
-                    drawRect(Color.Black,origin,dimensions,style=Stroke(3.dp.toPx()))
-                    drawRect(Color.White,origin,dimensions,style=Stroke(1.dp.toPx()))
-                    if(!selectedLayer.isLocked) {
-                        fun handle(p: Offset, side: Float) {
-                            val top=p-Offset(side/2,side/2)
-                            drawRect(Color.White,top,Size(side,side))
-                            drawRect(Color.Black,top,Size(side,side),style=Stroke(1.dp.toPx()))
-                        }
-                        listOf(Offset(-halfW,-halfH),Offset(halfW,-halfH),Offset(halfW,halfH),Offset(-halfW,halfH))
-                            .forEach { handle(it,9.dp.toPx()) }
-                        listOf(Offset(0f,-halfH),Offset(0f,halfH))
-                            .forEach { handle(it,6.dp.toPx()) }
-                        if (selectedLayer.type == LayerType.TEXT && isTextEditing) {
-                            // Dedicated text-editing box with automatic wrapping: cyan accent frame handles
-                            fun textPillHandle(p: Offset, isVertical: Boolean) {
-                                val pillW = if (isVertical) 6.dp.toPx() else 16.dp.toPx()
-                                val pillH = if (isVertical) 16.dp.toPx() else 6.dp.toPx()
-                                val top = p - Offset(pillW / 2f, pillH / 2f)
-                                drawRoundRect(Color.Black, top, Size(pillW, pillH), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()))
-                                drawRoundRect(Color(0xFF00E5FF), top + Offset(1.dp.toPx(), 1.dp.toPx()), Size(pillW - 2.dp.toPx(), pillH - 2.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()))
-                            }
-                            textPillHandle(Offset(-halfW, 0f), isVertical = true)
-                            textPillHandle(Offset(halfW, 0f), isVertical = true)
-                            textPillHandle(Offset(0f, -halfH), isVertical = false)
-                            textPillHandle(Offset(0f, halfH), isVertical = false)
-                        } else {
-                            listOf(Offset(-halfW,0f),Offset(halfW,0f))
-                                .forEach { handle(it,6.dp.toPx()) }
-                        }
-                        val rotate=Offset(0f,-halfH-32.dp.toPx())
-                        drawLine(Color.Black,Offset(0f,-halfH),rotate,3.dp.toPx())
-                        drawLine(Color.White,Offset(0f,-halfH),rotate,1.dp.toPx())
-                        drawCircle(Color.Black,6.dp.toPx(),rotate)
-                        drawCircle(Color.White,4.dp.toPx(),rotate)
-
-                        // T20: Vector-aware / Shape-specific live geometry handles
-                        val shape = selectedLayer.shapeData
-                        if (selectedLayer.type == LayerType.SHAPE && shape != null) {
-                            if (shape.type == ShapeType.ROUNDED_RECTANGLE) {
-                                // Corner radius handle inside top-left corner
-                                val rOffset = min(shape.cornerRadius * t.scaleX * effectiveZoom, min(halfW, halfH) * 0.8f)
-                                val crCenter = Offset(-halfW + rOffset, -halfH + rOffset)
-                                drawCircle(Color.Black, 6.dp.toPx(), crCenter)
-                                drawCircle(Color(0xFF00E5FF), 4.5.dp.toPx(), crCenter)
-                            } else if (shape.type == ShapeType.STAR) {
-                                // Star inner radius handle
-                                val innerR = halfH * shape.starInnerRadiusRatio
-                                val innerOffset = Offset(0f, -innerR)
-                                drawCircle(Color.Black, 6.dp.toPx(), innerOffset)
-                                drawCircle(Color(0xFFFFB300), 4.5.dp.toPx(), innerOffset)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Visible Red Smart Guides (T21: Figma/Illustrator style snap indicators)
-            if (displaySmartGuides.isNotEmpty()) {
-                displaySmartGuides.forEach { guide ->
-                    val redColor = Color(0xFFFF1744) // Bright crisp alignment red
-                    if (guide.orientation == GuideOrientation.VERTICAL) {
-                        val sx = center.x + guide.position * effectiveZoom
-                        val sy1 = center.y + guide.start * effectiveZoom
-                        val sy2 = center.y + guide.end * effectiveZoom
-                        drawLine(
-                            color = redColor,
-                            start = Offset(sx, sy1),
-                            end = Offset(sx, sy2),
-                            strokeWidth = 1.5.dp.toPx()
-                        )
-                    } else {
-                        val sy = center.y + guide.position * effectiveZoom
-                        val sx1 = center.x + guide.start * effectiveZoom
-                        val sx2 = center.x + guide.end * effectiveZoom
-                        drawLine(
-                            color = redColor,
-                            start = Offset(sx1, sy),
-                            end = Offset(sx2, sy),
-                            strokeWidth = 1.5.dp.toPx()
-                        )
-                    }
-                }
-            }
         }
 
-        // Live Rotation Angle Readout Pill
-        if (rotatingAnglePill != null && rotatingPillPosition != null) {
-            Surface(
-                color = colors.primary,
-                shape = RoundedCornerShape(12.dp),
-                tonalElevation = 6.dp,
-                modifier = Modifier
-                    .offset {
-                        androidx.compose.ui.unit.IntOffset(
-                            (rotatingPillPosition!!.x - 30.dp.toPx()).roundToInt(),
-                            rotatingPillPosition!!.y.roundToInt()
-                        )
-                    }
-            ) {
-                Text(
-                    text = rotatingAnglePill!!,
-                    color = colors.background,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.sp),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        if (selectedLayer != null && selectedBounds != null) {
+            val shape = selectedLayer.shapeData
+            ScaffoldCanvasOverlay(
+                id = "selection_box",
+                context = OverlayRenderContext(
+                    document = document,
+                    layer = selectedLayer,
+                    canvasSize = document.canvasSize,
+                    zoom = zoom,
+                    pan = panOffset,
+                    selectionEditing = SelectionOverlayBindings(
+                        bounds = selectedBounds,
+                        isTextEditing = isTextEditing,
+                        isShapeCornerHandleEnabled = selectedLayer.type == LayerType.SHAPE && shape?.type == ShapeType.ROUNDED_RECTANGLE,
+                        shapeCornerRadius = shape?.cornerRadius ?: 0f,
+                        isShapeStarHandleEnabled = selectedLayer.type == LayerType.SHAPE && shape?.type == ShapeType.STAR,
+                        starInnerRadiusRatio = shape?.starInnerRadiusRatio ?: 0.4f,
+                        smartGuides = displaySmartGuides,
+                        rotatingAngleLabel = rotatingAnglePill,
+                        rotatingPillScreenPosition = rotatingPillPosition,
+                        handleGesturesInternally = false,
+                        onPreviewTransform = { t -> onUpdateLayerTransform(selectedLayer.id, t) },
+                        onCommitTransform = { _, t ->
+                            (onCommitLayerTransform ?: onUpdateLayerTransform)(selectedLayer.id, t)
+                        },
+                        onCancelTransform = {}
+                    )
                 )
-            }
+            )
         }
     }
 }

@@ -76,6 +76,27 @@ object SaltyElevation {
     val lg: Dp = 8.dp
 }
 
+object SaltySizes {
+    val checkerCell: Dp = 12.dp
+    val touchTargetRadius: Dp = 22.dp
+    val rotateStemLength: Dp = 32.dp
+    val anglePillOffset: Dp = 48.dp
+    val selectionStrokeOuter: Dp = 3.dp
+    val selectionStrokeInner: Dp = 1.dp
+    val selectionCornerHandle: Dp = 9.dp
+    val selectionEdgeHandle: Dp = 6.dp
+    val textPillLong: Dp = 16.dp
+    val textPillShort: Dp = 6.dp
+    val textPillCornerOuter: Dp = 3.dp
+    val textPillCornerInner: Dp = 2.dp
+    val textPillInset: Dp = 1.dp
+    val shapeHandleOuterRadius: Dp = 6.dp
+    val shapeHandleInnerRadius: Dp = 4.5.dp
+    val rotateKnobOuterRadius: Dp = 6.dp
+    val rotateKnobInnerRadius: Dp = 4.dp
+    val smartGuideStroke: Dp = 1.5.dp
+}
+
 object SaltyMotion {
     const val fastMs: Int = 120
     const val mediumMs: Int = 220
@@ -162,6 +183,13 @@ data class SaltyColorRoles(
     val snapGuideGrid: Color = Color(0xFF00E5FF),
     val selectionOutline: Color = Color(0xFF2979FF),
     val selectionHandle: Color = Color(0xFFFFFFFF),
+    val selectionOutlineContrast: Color = Color(0xFF000000),
+    val selectionTextFrame: Color = Color(0xFF00E5FF),
+    val selectionStarHandle: Color = Color(0xFFFFB300),
+    val snapGuideGridHighlight: Color = Color(0xFFFF9100),
+    val smartGuideCrisp: Color = Color(0xFFFF1744),
+    val checkerLight: Color = Color(0xFFCCCCCC),
+    val checkerDark: Color = Color(0xFF888888),
     val textPrimary: Color,
     val textSecondary: Color,
     val textDisabled: Color
@@ -244,6 +272,7 @@ object SaltyTokens {
     val shapes: SaltyShapes = SaltyShapes
     val elevation: SaltyElevation = SaltyElevation
     val motion: SaltyMotion = SaltyMotion
+    val sizes: SaltySizes = SaltySizes
     val typography: SaltyTypography = SaltyTypography
 
     val colors: SaltyColorRoles

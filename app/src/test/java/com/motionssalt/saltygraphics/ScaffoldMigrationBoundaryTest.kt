@@ -75,7 +75,7 @@ class ScaffoldMigrationBoundaryTest {
             assertFalse("$rel bypasses :ui-kit; add missing UI to the library instead", forbidden.containsMatchIn(source.readText()))
         }
         val uiDir = File(appRoot, "ui")
-        val excluded = setOf("CanvasView.kt")
+        val excluded = emptySet<String>()
         val allUiFiles = uiDir.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in excluded }.toList()
         assertTrue("Expected migrated UI files", allUiFiles.size >= 30)
         for (file in allUiFiles) {
@@ -93,7 +93,7 @@ class ScaffoldMigrationBoundaryTest {
         val root = appRoot()
         val layouts = Regex("""\bSalty(?:Row|Column|Box|Card|SectionCard|LazyColumn|AdaptiveGrid|Text|Button|PanelPage|ScreenScaffold|NumberControl)\s*\(""")
         val uiDir = File(root, "ui")
-        val excluded = setOf("CanvasView.kt", "PanelControls.kt", "RulerSlider.kt")
+        val excluded = setOf("PanelControls.kt", "RulerSlider.kt")
         val allUiFiles = uiDir.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in excluded }.toList()
         assertTrue(allUiFiles.size >= 30)
         for (file in allUiFiles) {
@@ -146,7 +146,16 @@ class ScaffoldMigrationBoundaryTest {
             assertEquals("template_main", feature.defaultPageId)
             assertEquals(4, feature.pages.single().sections.flatMap { it.controls }.size)
             assertTrue(feature.pages.single().sections.flatMap { it.controls }.all { it.binding.path != null })
-            val editor = File(appRoot(), "ui/editor/EditorScreen.kt").readText()
+            val canvasView = File(appRoot(), "ui/editor/CanvasView.kt").readText()
+        assertTrue("CanvasView must dispatch registered selection_box overlay", canvasView.contains("ScaffoldCanvasOverlay(") && canvasView.contains("\"selection_box\""))
+        assertFalse("CanvasView must not import material3", canvasView.contains("androidx.compose.material3"))
+        val mainFiles = File(appRoot().absolutePath).walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+        for (f in mainFiles) {
+            val content = f.readText()
+            assertFalse("app/src/main file ${f.name} must not import material3", content.contains("import androidx.compose.material3"))
+            assertFalse("app/src/main file ${f.name} must not import foundation.layout", content.contains("import androidx.compose.foundation.layout"))
+        }
+        val editor = File(appRoot(), "ui/editor/EditorScreen.kt").readText()
             assertTrue(editor.contains("EditorToolFeatures.catalog.getFeature(\"template_example\")"))
             assertFalse("Host must resolve the registered page, not rebuild it", editor.contains("ExampleTemplateFeature.createDefinition("))
         } finally {
@@ -163,6 +172,15 @@ class ScaffoldMigrationBoundaryTest {
         assertTrue(vector.contains("ScaffoldCanvasOverlay("))
         assertTrue(vector.contains("vectorEditing = VectorOverlayBindings("))
         assertFalse("Feature must not bypass vector registration", vector.contains("SaltyVectorCanvasOverlay("))
+        val canvasView = File(appRoot(), "ui/editor/CanvasView.kt").readText()
+        assertTrue("CanvasView must dispatch registered selection_box overlay", canvasView.contains("ScaffoldCanvasOverlay(") && canvasView.contains("\"selection_box\""))
+        assertFalse("CanvasView must not import material3", canvasView.contains("androidx.compose.material3"))
+        val mainFiles = File(appRoot().absolutePath).walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+        for (f in mainFiles) {
+            val content = f.readText()
+            assertFalse("app/src/main file ${f.name} must not import material3", content.contains("import androidx.compose.material3"))
+            assertFalse("app/src/main file ${f.name} must not import foundation.layout", content.contains("import androidx.compose.foundation.layout"))
+        }
         val editor = File(appRoot(), "ui/editor/EditorScreen.kt").readText()
         assertTrue(editor.contains("onCommit = { identity, fill ->"))
         assertTrue(editor.contains("onCancel = { projectDocument = actionTree?.currentDocument }"))

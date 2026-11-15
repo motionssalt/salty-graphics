@@ -1032,3 +1032,13 @@ typealias SaltyPanelColumnScope = ColumnScope
 
 @Composable
 fun saltyIsSystemInDarkTheme(): Boolean = isSystemInDarkTheme()
+
+@Composable
+fun SaltyCanvasSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(modifier = modifier) {
+        content()
+    }
+}
