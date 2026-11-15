@@ -250,3 +250,16 @@ only declaring them. The test host uses the same preview/commit live-document wi
 as production property pages; each completed numeric gesture creates one labelled
 history node. Color, chips, dropdown and a registered extension are also operated.
 Pending CI acceptance; this does not certify absent media/gradient/trackpad bindings.
+
+
+### V0 final static-theme fixture isolation (pending CI)
+The keyed color-fixture theme flip still hit Robolectric input/theme idling in
+Actions 43690762157. Follow the existing `forkEvery=1` strategy: separate static dark
+and light fixture subclasses, each in its own worker. No runtime theme mutation,
+manual-clock workaround or additional screenshot framework. Both render real native
+controls; each checks the actual root pixel against its theme, compares exact pixels
+to its reviewed baseline and must differ from the opposite reviewed theme. Missing
+baselines remain failures; light PNG is still pending CI generation and review.
+Border/Shadow binding and production gesture tests passed 43690559314, and the
+expanded all-control throwaway test passed 43690762157. Whole-suite acceptance and
+V0 completion are not claimed.

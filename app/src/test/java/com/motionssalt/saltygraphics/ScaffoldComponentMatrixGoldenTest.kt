@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -192,38 +191,4 @@ class ScaffoldComponentMatrixGoldenTest {
         }
     }
 
-    @Test fun surfacesAndColorMatrixHasReviewedLightAndDarkGoldens() {
-        // Static state/theme matrices remount the color fixture per theme instead
-        // of mixing a screenshot with an outlined-input runtime theme transition.
-        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
-        var dark by mutableStateOf(true)
-        host.get().setContent {
-            SaltyGraphicsTheme(darkTheme = dark, dynamicColor = false) {
-                key(dark) {
-                Surface(Modifier.requiredSize(412.dp, 860.dp).testTag("matrix_root")) {
-                    Column(Modifier.fillMaxSize().saltyPadding(SaltySpace.MD)) {
-                        SaltySectionCard(title = "List Items & Trackpad") {
-                            SaltyListItem(title = "Selected Shape", subtitle = "Rectangle • 100%", isSelected = true)
-                            SaltyListItem(title = "Background Layer", subtitle = "Media • 80%", isSelected = false)
-                            SaltyTrackpad(onDelta = { _, _ -> }, sensitivity = 1.0f, label = "Precision Trackpad")
-                        }
-                        SaltySpacer(SaltySpace.SM)
-                        SaltySectionCard(title = "Color Picker") {
-                            SaltyColorPicker(
-                                colorArgb = 0xCCFF7A00L,
-                                onColorChange = {},
-                                presets = listOf(0xFFFF0000L, 0xFF00FF00L, 0xFF0000FFL, 0xFFFFFFFFL)
-                            )
-                        }
-                    }
-                }
-                }
-            }
-        }
-        try {
-            renderAndCheckGolden("components_surfaces", host) { dark = it }
-        } finally {
-            host.pause().stop().destroy()
-        }
-    }
 }

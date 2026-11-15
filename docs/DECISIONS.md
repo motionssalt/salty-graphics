@@ -555,3 +555,16 @@ clock advancement, not another screenshot framework. Keep every assertion and
 strict missing/changed PNG failure. The dark surface PNG from the inherited Actions
 run was visually reviewed; light is still pending generation/review. This is a
 static component/theme matrix, not proof of production runtime theme switching.
+
+
+### V0 final static-theme fixture isolation (pending CI)
+The keyed color-fixture theme flip still hit Robolectric input/theme idling in
+Actions 43690762157. Follow the existing `forkEvery=1` strategy: separate static dark
+and light fixture subclasses, each in its own worker. No runtime theme mutation,
+manual-clock workaround or additional screenshot framework. Both render real native
+controls; each checks the actual root pixel against its theme, compares exact pixels
+to its reviewed baseline and must differ from the opposite reviewed theme. Missing
+baselines remain failures; light PNG is still pending CI generation and review.
+Border/Shadow binding and production gesture tests passed 43690559314, and the
+expanded all-control throwaway test passed 43690762157. Whole-suite acceptance and
+V0 completion are not claimed.
