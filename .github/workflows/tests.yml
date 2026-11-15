@@ -46,12 +46,7 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Run Scaffold Acceptance Tests
-        run: |
-          ./gradlew :ui-kit:testDebugUnitTest --stacktrace
-          ./gradlew :app:testDebugUnitTest --tests 'com.motionssalt.saltygraphics.ScaffoldToolPanelTest' --tests 'com.motionssalt.saltygraphics.ProjectSettingsScaffoldTest' --tests 'com.motionssalt.saltygraphics.ProjectSettingsVisibilityTest' --tests 'com.motionssalt.saltygraphics.ProjectSettingsGoldenTest' --tests 'com.motionssalt.saltygraphics.ProjectSettingsTest' --tests 'com.motionssalt.saltygraphics.ScaffoldMigrationBoundaryTest' --tests 'com.motionssalt.saltygraphics.ScaffoldControlGestureTest' --stacktrace
-
-      - name: Run Engine and JVM Compose Tests
+      - name: Run Engine and JVM Compose Tests (including scaffold acceptance)
         run: ./gradlew testDebugUnitTest --stacktrace
 
       - name: Upload Test Reports

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import com.motionssalt.saltygraphics.engine.action.ActionTree
+import com.motionssalt.saltygraphics.engine.model.EditorSettings
 import com.motionssalt.saltygraphics.engine.model.ProjectDocument
 import com.motionssalt.saltygraphics.engine.render.PreviewQuality
 import com.motionssalt.saltygraphics.theme.SaltyGraphicsTheme
@@ -128,7 +129,8 @@ class ThrowawayFeatureEndToEndTest {
         val strictCatalog = FeatureCatalog(requireTypedBindings = true)
         strictCatalog.register(definition)
 
-        val tree = ActionTree(ProjectDocument(id = "doc-e2e", name = "Initial"))
+        val tree = ActionTree(ProjectDocument(id = "doc-e2e", name = "Initial",
+            editorSettings = EditorSettings(defaultPreviewQuality = PreviewQuality.FULL)))
         var docState by mutableStateOf(tree.currentDocument)
         var openPage by mutableStateOf(false)
 
@@ -168,10 +170,10 @@ class ThrowawayFeatureEndToEndTest {
             compose.onNodeWithTag("readout_summary").assertTextEquals("Size=20 Quality=Full")
 
             // 2) Drive segmented chips, library component, dropdown, and color picker page
-            compose.onNodeWithText("Square").performClick()
-            compose.onNodeWithText("Bump+10 (20)").performClick()
-            compose.onNodeWithText("Full").performClick()
-            compose.onNodeWithText("1/2").performClick()
+            compose.onNodeWithText("Square").performScrollTo().performClick()
+            compose.onNodeWithText("Bump+10 (20)").performScrollTo().performClick()
+            compose.onNodeWithText("Full").performScrollTo().performClick()
+            compose.onNodeWithText("1/2").performScrollTo().performClick()
 
             compose.runOnIdle {
                 assertTrue(docState.editorSettings.isSquareGrid)
@@ -181,7 +183,7 @@ class ThrowawayFeatureEndToEndTest {
             compose.onNodeWithTag("readout_summary").assertTextEquals("Size=30 Quality=1/2")
 
             // Verify color picker panel page works inline inside scaffold without popups
-            compose.onNodeWithText("#FF808080").performClick()
+            compose.onNodeWithText("#FF808080").performScrollTo().performClick()
             compose.onNodeWithTag("scaffold_color_page").assertIsDisplayed()
             compose.onNodeWithTag("transparent_color").performClick()
             compose.onNodeWithContentDescription("Back").performClick()

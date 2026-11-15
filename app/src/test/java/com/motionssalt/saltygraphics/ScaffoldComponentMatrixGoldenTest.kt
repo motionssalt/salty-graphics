@@ -57,7 +57,8 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 /**
- * Light + Dark native rendered golden screenshots for all :ui-kit library components and states.
+ * Native rendered golden coverage for the named library surfaces below.
+ * This is not yet the complete every-component/state matrix required for V0.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w412dp-h920dp-mdpi")
@@ -191,6 +192,10 @@ class ScaffoldComponentMatrixGoldenTest {
     }
 
     @Test fun surfacesAndColorMatrixHasReviewedLightAndDarkGoldens() {
+        // Freeze only the visual fixture clock: outlined-input theme transitions must
+        // not make a static native golden wait for the animation scheduler forever.
+        // All frames used for comparison are advanced explicitly below.
+        compose.mainClock.autoAdvance = false
         val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         var dark by mutableStateOf(true)
         host.get().setContent {
