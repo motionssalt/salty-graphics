@@ -409,3 +409,16 @@ state/theme is covered. In particular, the production Fill gradient bar and Tran
 trackpad still directly call primitives while their registered adapters exist beside
 them. V0 remains in progress until real registered integration and its full criteria
 are verified. Do not accept id-only tests as production integration.
+
+
+### Verified special-surface checkpoint — Actions 43745422172
+Code `2a52a8c9156738ce4caeabfd60fc188b48a62ca1` passes
+[Actions 43745422172](https://github.com/motionssalt/salty-graphics/actions/runs/43745422172):
+304 debug JVM tests, zero failures/errors/skips, all existing reviewed native library
+goldens and successful debug assembly. Gesture-only 43745018260 also passes (301 tests).
+Registered media Fill is verified through saved asset selection, actual asset pixels,
+Undo/Redo, no extra layer/window and a visible canvas. The host test verifies replacing
+import/selection bindings and the project image list without stale callbacks or reorder.
+The missing-id resolver test and architecture guards pass. Rotated text width and
+both isolated real registered-vector Editor tests are green. This is partial V0, not
+release/whole-round acceptance. No application source changed in this evidence commit.
