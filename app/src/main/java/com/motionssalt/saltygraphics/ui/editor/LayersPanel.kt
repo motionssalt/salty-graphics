@@ -31,7 +31,8 @@ fun LayersPanel(
     onClosePanel: () -> Unit,
     onDuplicateLayer: ((String) -> Unit)? = null,
     onGroupSelected: (() -> Unit)? = null,
-    onUngroupSelected: (() -> Unit)? = null
+    onUngroupSelected: (() -> Unit)? = null,
+    onRasterizeSelected: ((Set<String>) -> Unit)? = null
 ) {
     SaltyLayersSublib(
         layers = layers,
@@ -52,6 +53,7 @@ fun LayersPanel(
         onDuplicateLayer = onDuplicateLayer,
         onGroupSelected = onGroupSelected,
         onUngroupSelected = onUngroupSelected,
+        onRasterizeSelected = onRasterizeSelected,
         thumbnailContent = { layer, isSelected ->
             LayerThumbnailView(
                 layer = layer,

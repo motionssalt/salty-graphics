@@ -168,20 +168,23 @@ object LayerCompositor {
         if (layer.type == LayerType.GROUP) {
             val canvasCenterX = width / 2f
             val canvasCenterY = height / 2f
+            val childPixels = compositeLayerListToPixels(
+                layersTopFirst = layer.children,
+                document = document,
+                width = width,
+                height = height,
+                mediaResolver = mediaResolver,
+                forceVisible = forceVisible
+            )
+            val childCompositeBmp = Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
+            childCompositeBmp.setPixels(childPixels, 0, maxOf(1, width), 0, 0, maxOf(1, width), maxOf(1, height))
             canvas.save()
             canvas.translate(layer.transform.translationX, layer.transform.translationY)
             canvas.rotate(layer.transform.rotationDegrees, canvasCenterX, canvasCenterY)
             canvas.scale(layer.transform.scaleX, layer.transform.scaleY, canvasCenterX, canvasCenterY)
-            for (child in layer.children.asReversed()) {
-                if (!child.isVisible && !forceVisible) continue
-                val childBmp = renderLayerContent(child, width, height, document, mediaResolver, forceVisible)
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    alpha = (child.opacity * 255).roundToInt().coerceIn(0, 255)
-                    applyLayerBlendMode(this, child.blendMode)
-                }
-                canvas.drawBitmap(childBmp, 0f, 0f, paint)
-            }
+            canvas.drawBitmap(childCompositeBmp, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
             canvas.restore()
+            childCompositeBmp.recycle()
             return bitmap
         }
 
@@ -376,45 +379,36 @@ object LayerCompositor {
      * Composites an entire document into a single Bitmap, executing the complete
      * render path (backdrop -> layer render -> mask -> blendMode -> adjustment).
      */
-    fun compositeDocument(
+    fun compositeLayerListToPixels(
+        layersTopFirst: List<Layer>,
         document: ProjectDocument,
-        width: Int = document.canvasSize.width,
-        height: Int = document.canvasSize.height,
-        mediaResolver: ((String) -> Bitmap?)? = null
-    ): Bitmap {
-        val finalBitmap = Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(finalBitmap)
+        width: Int,
+        height: Int,
+        mediaResolver: ((String) -> Bitmap?)? = null,
+        forceVisible: Boolean = false
+    ): IntArray {
+        val w = maxOf(1, width)
+        val h = maxOf(1, height)
+        val backdropPixels = IntArray(w * h)
+        val layerPixels = IntArray(w * h)
+        val tempOutputPixels = IntArray(w * h)
 
-        // 1. Layers composite onto an isolated transparent backdrop (so cutout/blend modes only affect layers in stack, not the canvas background)
-        val backdropPixels = IntArray(width * height)
-        val layerPixels = IntArray(width * height)
-        val tempOutputPixels = IntArray(width * height)
-
-        // Render layers bottom to top: activeLayers has index 0 as topmost (top of panel), so draw asReversed()
-        val layersToComposite = document.activeLayers.asReversed()
-
-        for (layer in layersToComposite) {
-            if (!layer.isVisible) continue
+        for (layer in layersTopFirst.asReversed()) {
+            if (!layer.isVisible && !forceVisible) continue
 
             if (layer.type == LayerType.ADJUSTMENT) {
-                // Adjustment layer: affects the composite of everything beneath it
-                // If it has a mask, apply mask over the adjustment area
                 if (layer.effects.isEmpty() && layer.blendMode == EngineBlendMode.NORMAL && layer.opacity >= 0.999f && layer.effectiveMaskType == MaskType.NONE) {
-                    continue // Zero-effect normal adjustment layer draws nothing
+                    continue
                 }
-
-                // If adjustment has effects, apply them to current backdrop
                 if (layer.blendMode != EngineBlendMode.NORMAL || layer.opacity < 1f || layer.effects.isNotEmpty()) {
                     val adjustedBackdrop = IntArray(backdropPixels.size) { backdropPixels[it] }
-
-                    // Apply any effects
                     for (effect in layer.effects) {
                         val amount = effect.getFloat("amount", 0.5f)
                         for (p in adjustedBackdrop.indices) {
                             val px = adjustedBackdrop[p]
                             val a = (px ushr 24) and 0xFF
-                            val r = ((px ushr 16) and 0xFF)
-                            val g = ((px ushr 8) and 0xFF)
+                            val r = (px ushr 16) and 0xFF
+                            val g = (px ushr 8) and 0xFF
                             val b = px and 0xFF
                             val newR = (r * (1f + amount * 0.2f)).toInt().coerceIn(0, 255)
                             val newG = (g * (1f + amount * 0.2f)).toInt().coerceIn(0, 255)
@@ -422,47 +416,41 @@ object LayerCompositor {
                             adjustedBackdrop[p] = (a shl 24) or (newR shl 16) or (newG shl 8) or newB
                         }
                     }
-
-                    // Apply adjustment layer mask if present
                     if (layer.effectiveMaskType != MaskType.NONE) {
                         val maskSourceId = layer.effectiveMaskSourceLayerId
                         val maskLayer = if (maskSourceId != null) document.findLayerById(maskSourceId) else null
                         if (maskLayer != null) {
-                            val maskBmp = renderLayerContent(maskLayer, width, height, document, mediaResolver, forceVisible = true)
-                            val maskPx = IntArray(width * height)
-                            maskBmp.getPixels(maskPx, 0, width, 0, 0, width, height)
-                            applyMask(adjustedBackdrop, maskPx, layer.effectiveMaskType, layer.effectiveMaskInverted, width, height)
+                            val maskBmp = renderLayerContent(maskLayer, w, h, document, mediaResolver, forceVisible = true)
+                            val maskPx = IntArray(w * h)
+                            maskBmp.getPixels(maskPx, 0, w, 0, 0, w, h)
+                            applyMask(adjustedBackdrop, maskPx, layer.effectiveMaskType, layer.effectiveMaskInverted, w, h)
+                            maskBmp.recycle()
                         }
                     }
-
-                    // Blend adjusted copy onto backdrop
-                    blendBuffers(backdropPixels, adjustedBackdrop, backdropPixels, layer.blendMode, layer.opacity, width, height)
+                    blendBuffers(backdropPixels, adjustedBackdrop, backdropPixels, layer.blendMode, layer.opacity, w, h)
                 }
                 continue
             }
 
-            // Standard layer: render content to isolated buffer
-            val layerBmp = renderLayerContent(layer, width, height, document, mediaResolver)
-            layerBmp.getPixels(layerPixels, 0, width, 0, 0, width, height)
+            val layerBmp = renderLayerContent(layer, w, h, document, mediaResolver, forceVisible)
+            layerBmp.getPixels(layerPixels, 0, w, 0, 0, w, h)
+            layerBmp.recycle()
 
-            // Apply non-destructive mask if configured
             if (layer.effectiveMaskType != MaskType.NONE) {
                 val maskSourceId = layer.effectiveMaskSourceLayerId
                 val maskLayer = if (maskSourceId != null) document.findLayerById(maskSourceId) else null
                 if (maskLayer != null) {
-                    val maskBmp = renderLayerContent(maskLayer, width, height, document, mediaResolver, forceVisible = true)
-                    val maskPx = IntArray(width * height)
-                    maskBmp.getPixels(maskPx, 0, width, 0, 0, width, height)
-                    applyMask(layerPixels, maskPx, layer.effectiveMaskType, layer.effectiveMaskInverted, width, height)
+                    val maskBmp = renderLayerContent(maskLayer, w, h, document, mediaResolver, forceVisible = true)
+                    val maskPx = IntArray(w * h)
+                    maskBmp.getPixels(maskPx, 0, w, 0, 0, w, h)
+                    applyMask(layerPixels, maskPx, layer.effectiveMaskType, layer.effectiveMaskInverted, w, h)
+                    maskBmp.recycle()
                 }
             }
 
-            // Alpha Cutout modes (both via BlendMode and legacy MaskMode):
             val isCutoutInward = layer.blendMode == EngineBlendMode.ALPHA_CUTOUT_INWARD || layer.maskMode == MaskMode.IN_MASK
             val isCutoutOutward = layer.blendMode == EngineBlendMode.ALPHA_CUTOUT_OUTWARD || layer.maskMode == MaskMode.OUT_MASK
-
             if (isCutoutInward) {
-                // Inward mode: cuts out pixels inside source shape across affected composite
                 for (i in backdropPixels.indices) {
                     val maskA = ((layerPixels[i] ushr 24) and 0xFF) / 255f
                     val bPx = backdropPixels[i]
@@ -473,7 +461,6 @@ object LayerCompositor {
                 }
                 continue
             } else if (isCutoutOutward) {
-                // Outward mode: cuts out pixels outside source shape across affected composite
                 for (i in backdropPixels.indices) {
                     val maskA = ((layerPixels[i] ushr 24) and 0xFF) / 255f
                     val bPx = backdropPixels[i]
@@ -485,20 +472,40 @@ object LayerCompositor {
                 continue
             }
 
-            // Blend layer over backdrop using layer.blendMode and layer.opacity
-            blendBuffers(backdropPixels, layerPixels, tempOutputPixels, layer.blendMode, layer.opacity, width, height)
+            blendBuffers(backdropPixels, layerPixels, tempOutputPixels, layer.blendMode, layer.opacity, w, h)
             System.arraycopy(tempOutputPixels, 0, backdropPixels, 0, backdropPixels.size)
         }
+        return backdropPixels
+    }
 
-        // Draw canvas background, then composite the layered artwork onto it
+    fun compositeDocument(
+        document: ProjectDocument,
+        width: Int = document.canvasSize.width,
+        height: Int = document.canvasSize.height,
+        mediaResolver: ((String) -> Bitmap?)? = null
+    ): Bitmap {
+        val w = maxOf(1, width)
+        val h = maxOf(1, height)
+        val finalBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(finalBitmap)
+
+        val backdropPixels = compositeLayerListToPixels(
+            layersTopFirst = document.activeLayers,
+            document = document,
+            width = w,
+            height = h,
+            mediaResolver = mediaResolver
+        )
+
         val bgColor = document.editorSettings.backgroundColor
         if (bgColor != 0L) {
             canvas.drawColor(bgColor.toInt())
         }
-        val layerCompositeBmp = Bitmap.createBitmap(maxOf(1, width), maxOf(1, height), Bitmap.Config.ARGB_8888)
-        layerCompositeBmp.setPixels(backdropPixels, 0, width, 0, 0, width, height)
+        val layerCompositeBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        layerCompositeBmp.setPixels(backdropPixels, 0, w, 0, 0, w, h)
         canvas.drawBitmap(layerCompositeBmp, 0f, 0f, null)
         layerCompositeBmp.recycle()
+
         return finalBitmap
     }
 

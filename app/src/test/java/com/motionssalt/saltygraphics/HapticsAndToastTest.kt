@@ -256,50 +256,52 @@ class HapticsAndToastTest {
         val targetBounds = SelectionBounds(-50f, -50f, 50f, 50f)
         host.get().setContent {
             SaltyGraphicsTheme(darkTheme = true, dynamicColor = false) {
-                com.motionssalt.saltygraphics.ui.editor.TransformPanel(
-                    transform = transform,
-                    onTransformChange = { transform = it },
-                    onTransformCommit = { transform = it },
-                    snapContext = com.motionssalt.saltygraphics.ui.editor.TransformSnapContext(
-                        bounds = targetBounds,
-                        otherLayers = emptyList(),
-                        otherAngles = emptyList(),
-                        canvasWidth = 1000f,
-                        canvasHeight = 1000f,
-                        effectiveZoom = 1f,
-                        snapEnabled = true,
-                        snapToGrid = false,
-                        showGrid = false,
-                        gridSize = 20,
-                        isSquareGrid = true,
-                        tolerancePx = 8f,
-                        onGuidesChange = { _, _, _ -> }
-                    ),
-                    onClose = {},
-                    wrapInPanelPage = false
-                )
+                Box(Modifier.requiredSize(400.dp, 360.dp)) {
+                    com.motionssalt.saltygraphics.ui.editor.TransformPanel(
+                        transform = transform,
+                        onTransformChange = { transform = it },
+                        onTransformCommit = { transform = it },
+                        snapContext = com.motionssalt.saltygraphics.ui.editor.TransformSnapContext(
+                            bounds = targetBounds,
+                            otherLayers = emptyList(),
+                            otherAngles = emptyList(),
+                            canvasWidth = 1000f,
+                            canvasHeight = 1000f,
+                            effectiveZoom = 1f,
+                            snapEnabled = true,
+                            snapToGrid = false,
+                            showGrid = false,
+                            gridSize = 20,
+                            isSquareGrid = true,
+                            tolerancePx = 8f,
+                            onGuidesChange = { _, _, _ -> }
+                        ),
+                        onClose = {},
+                        wrapInPanelPage = true
+                    )
+                }
             }
         }
         try {
             compose.waitForIdle()
-            // Switch to Sliders and enter an ordinary non-snapped value (200f) -> zero snap haptics
             compose.onNodeWithText("Sliders").performScrollTo().performClick()
+            compose.waitForIdle()
             compose.onNodeWithText("50 px", useUnmergedTree = true).performScrollTo().performClick()
             compose.onNodeWithTag("entry_Move X").performTextReplacement("200")
             compose.onNodeWithText("Done").performClick()
             compose.waitForIdle()
             assertEquals("Ordinary non-snapped transform must emit zero haptics", 0, fired.size)
 
-            // Drag trackpad into canvas center (0, 0) -> fires guide lock once, stays quiet while held
             fired.clear()
             compose.onNodeWithText("Trackpad").performScrollTo().performClick()
             compose.waitForIdle()
-            // Trigger direct snap engagement check via SaltyHaptics API
             val view = host.get().window.decorView
             SaltyHaptics.onGuideLocked(view)
             SaltyHaptics.onSnapEngaged(view)
             assertEquals(2, fired.size)
         } finally {
+            SaltyHaptics.systemHapticsEnabledOverride = null
+            SaltyHaptics.performer = null
             host.pause().stop().destroy()
         }
     }

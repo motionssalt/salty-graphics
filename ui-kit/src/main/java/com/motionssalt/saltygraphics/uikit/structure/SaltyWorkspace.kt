@@ -436,6 +436,7 @@ fun SaltyLayersPanel(
     onDuplicateLayer: ((String) -> Unit)? = null,
     onGroupSelected: (() -> Unit)? = null,
     onUngroupSelected: (() -> Unit)? = null,
+    onRasterizeSelected: ((Set<String>) -> Unit)? = null,
     thumbnailContent: @Composable (Layer, Boolean) -> Unit = { layer, isSelected ->
         val fallback = when (layer.type) {
             LayerType.MEDIA -> Icons.Default.Image
@@ -643,6 +644,26 @@ fun SaltyLayersPanel(
                         ) {
                             IconButton(onClick = onUngroupSelected) {
                                 Icon(Icons.Default.FolderOpen, contentDescription = "Ungroup Layers", tint = colors.primary)
+                            }
+                        }
+                        val selectedLayers = layers.filter { it.id in selectedLayerIds }
+                        val canRasterizeSelected = selectedLayers.size > 1 || (
+                            selectedLayers.size == 1 &&
+                                selectedLayers.first().type in setOf(LayerType.TEXT, LayerType.VECTOR, LayerType.SHAPE, LayerType.GROUP, LayerType.MEDIA)
+                            )
+                        if (onRasterizeSelected != null && canRasterizeSelected) {
+                            TextButton(
+                                onClick = { onRasterizeSelected(selectedLayerIds) },
+                                modifier = Modifier.testTag("rasterize_merge_layers")
+                            ) {
+                                Icon(
+                                    Icons.Default.PhotoFilter,
+                                    contentDescription = "Rasterize / Merge",
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(SaltyTokens.spacing.xs))
+                                Text("Rasterize / Merge", color = colors.primary, style = SaltyTokens.typography.labelSmall)
                             }
                         }
 

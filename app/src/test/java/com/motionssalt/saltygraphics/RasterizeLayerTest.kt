@@ -147,4 +147,107 @@ class RasterizeLayerTest {
         assertTrue(pixels.height in 75..85)
     }
 
+
+    @Test
+    fun rasterizeSelectionFlattensMultipleLayersAtTopMostPositionRespectingOpacity() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val bottom = Layer(
+            id = "b",
+            name = "Bottom",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(type = ShapeType.RECTANGLE, width = 100f, height = 100f, fillColor = 0xFFFF0000L, hasFill = true),
+            transform = Transform2D(translationX = -20f, translationY = 0f)
+        )
+        val top = Layer(
+            id = "t",
+            name = "Top",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(type = ShapeType.RECTANGLE, width = 100f, height = 100f, fillColor = 0xFF00FF00L, hasFill = true),
+            transform = Transform2D(translationX = 20f, translationY = 0f),
+            opacity = 0.5f
+        )
+        val above = Layer(
+            id = "above",
+            name = "Above",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(width = 40f, height = 40f, fillColor = 0xFF0000FFL, hasFill = true)
+        )
+        val below = Layer(
+            id = "below",
+            name = "Below",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(width = 40f, height = 40f, fillColor = 0xFFFFFFFFL, hasFill = true)
+        )
+        val doc = ProjectDocument(
+            id = "test_multi_merge",
+            canvasSize = CanvasSize(width = 300, height = 300),
+            layers = listOf(above, top, bottom, below)
+        )
+        val mergedDoc = LayerRasterizer.rasterizeSelection(
+            context = context,
+            document = doc,
+            layerIds = setOf("t", "b"),
+            duplicateOriginal = false
+        )
+        assertEquals(3, mergedDoc.layers.size)
+        assertEquals("above", mergedDoc.layers[0].id)
+        val merged = mergedDoc.layers[1]
+        assertEquals(LayerType.MEDIA, merged.type)
+        assertEquals("below", mergedDoc.layers[2].id)
+        val asset = File(File(context.filesDir, "projects/${doc.id}_assets"), merged.mediaAssetPath!!)
+        val bmp = android.graphics.BitmapFactory.decodeFile(asset.absolutePath)
+        assertNotNull(bmp)
+        assertTrue("Merged bounds should span both -20..+20 shapes (140px), got ${bmp.width}", bmp.width in 135..145)
+        // Left side is pure bottom red, middle overlap blends top 50% green over red, right side is 50% green
+        val leftPx = bmp.getPixel(10, 50)
+        assertTrue(android.graphics.Color.red(leftPx) > 200 && android.graphics.Color.green(leftPx) < 20)
+        val rightPx = bmp.getPixel(bmp.width - 10, 50)
+        assertTrue("50% opacity green preserved in alpha=${android.graphics.Color.alpha(rightPx)}", android.graphics.Color.alpha(rightPx) in 115..140)
+        bmp.recycle()
+    }
+
+    @Test
+    fun rasterizeSelectionFlattensGroupRespectingVisibilityAndTransforms() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val visibleChild = Layer(
+            id = "c_vis",
+            name = "Visible",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(type = ShapeType.RECTANGLE, width = 80f, height = 80f, fillColor = 0xFF0000FFL, hasFill = true)
+        )
+        val hiddenChild = Layer(
+            id = "c_hid",
+            name = "Hidden",
+            type = LayerType.SHAPE,
+            shapeData = ShapeData(type = ShapeType.RECTANGLE, width = 200f, height = 200f, fillColor = 0xFFFF0000L, hasFill = true),
+            isVisible = false
+        )
+        val group = Layer(
+            id = "grp_1",
+            name = "My Group",
+            type = LayerType.GROUP,
+            children = listOf(hiddenChild, visibleChild),
+            transform = Transform2D(translationX = 40f, translationY = -20f)
+        )
+        val doc = ProjectDocument(
+            id = "test_group_raster",
+            canvasSize = CanvasSize(width = 300, height = 300),
+            layers = listOf(group)
+        )
+        val updated = LayerRasterizer.rasterizeSelection(context, doc, setOf("grp_1"), duplicateOriginal = true)
+        assertEquals(2, updated.layers.size)
+        val rasterized = updated.layers[0]
+        assertEquals(LayerType.MEDIA, rasterized.type)
+        assertEquals("My Group (Rasterized)", rasterized.name)
+        assertFalse(updated.layers[1].isVisible)
+        assertEquals(40f, rasterized.transform.translationX, 2f)
+        assertEquals(-20f, rasterized.transform.translationY, 2f)
+        val asset = File(File(context.filesDir, "projects/${doc.id}_assets"), rasterized.mediaAssetPath!!)
+        val bmp = android.graphics.BitmapFactory.decodeFile(asset.absolutePath)
+        assertNotNull(bmp)
+        // Hidden 200x200 child must NOT inflate bounds beyond visible 80x80 child!
+        assertTrue("Group raster should match 80px visible child, not 200px hidden child; was ${bmp.width}", bmp.width in 76..84)
+        assertEquals(0xFF0000FF.toInt(), bmp.getPixel(bmp.width / 2, bmp.height / 2))
+        bmp.recycle()
+    }
 }

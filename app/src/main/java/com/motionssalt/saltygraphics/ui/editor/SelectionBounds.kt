@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import com.motionssalt.saltygraphics.data.FontManager
 import com.motionssalt.saltygraphics.engine.model.*
+import com.motionssalt.saltygraphics.engine.render.TextLayoutEngine
 import kotlin.math.*
 
 /** The same paint metrics and path geometry used by the actual canvas, not character-count guesses. */
@@ -69,7 +70,15 @@ internal fun selectionProxy(context: Context, document: ProjectDocument, ids: Se
 
 internal fun selectionBounds(context: Context, document: ProjectDocument, layer: Layer, textEditing: Boolean = false): SelectionBounds =
     if (textEditing && layer.type == LayerType.TEXT && layer.textData != null) {
-        com.motionssalt.saltygraphics.uikit.overlays.TextEditingFrame.bounds(requireNotNull(layer.textData))
+        val data = requireNotNull(layer.textData)
+        val layout = TextLayoutEngine.computeLayout(data, selectionTextPaint(context, data))
+        val frameW = if (data.boxMode == TextBoxMode.FREE) {
+            max(data.boxWidth, layout.totalWidth).coerceAtLeast(1f)
+        } else {
+            data.boxWidth.coerceAtLeast(1f)
+        }
+        val frameH = max(data.boxHeight, layout.totalHeight).coerceAtLeast(1f)
+        SelectionBounds(-frameW / 2f, -frameH / 2f, frameW / 2f, frameH / 2f)
     } else if(layer.id=="__selection__") {
         val s=layer.shapeData!!; SelectionBounds(-s.width/2,-s.height/2,s.width/2,s.height/2)
     } else layerSelectionBounds(context,document,layer)

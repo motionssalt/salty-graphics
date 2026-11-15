@@ -52,50 +52,67 @@ object TextLayoutEngine {
         val lineHeight = (fm.descent - fm.ascent) * (textData.lineSpacing / 100f)
         val baselineOffset = -fm.ascent
 
+        val minCharW = rawText
+            .filter { it != '\n' && it != '\r' }
+            .maxOfOrNull { ch -> paint.measureText(ch.toString()) }
+            ?.coerceAtLeast(1f) ?: 1f
+
         val maxBoxW = when (textData.boxMode) {
             TextBoxMode.FREE -> Float.MAX_VALUE
-            else -> max(50f, textData.boxWidth)
+            else -> max(minCharW, textData.boxWidth)
         }
 
-        // 1. Split raw text by explicit line breaks (\r\n or \n), preserving blank lines
         val rawParagraphs = rawText.split("\r\n", "\n")
         val lines = mutableListOf<TextLine>()
 
         for (pIdx in rawParagraphs.indices) {
             val paragraph = rawParagraphs[pIdx]
-            val isLastParagraph = (pIdx == rawParagraphs.size - 1)
 
             if (paragraph.isEmpty()) {
-                // Preserved empty line
                 lines.add(TextLine(text = "", width = 0f, isParagraphEnd = true))
                 continue
             }
 
-            // If FREE mode or text fits in maxBoxW, keep paragraph intact
             val fullWidth = paint.measureText(paragraph)
             if (fullWidth <= maxBoxW) {
                 lines.add(TextLine(text = paragraph, width = fullWidth, isParagraphEnd = true))
                 continue
             }
 
-            // Otherwise, wrap words onto multiple lines
             val words = paragraph.split(" ")
             var currentLine = StringBuilder()
             var currentLineWidth = 0f
 
-            for (wIdx in words.indices) {
-                val word = words[wIdx]
+            for (word in words) {
                 val wordWithSpace = if (currentLine.isEmpty()) word else " $word"
                 val wordWidth = paint.measureText(wordWithSpace)
 
                 if (currentLine.isNotEmpty() && (currentLineWidth + wordWidth > maxBoxW)) {
-                    // Line wrapped
                     lines.add(TextLine(text = currentLine.toString(), width = currentLineWidth, isParagraphEnd = false))
-                    currentLine = StringBuilder(word)
-                    currentLineWidth = paint.measureText(word)
-                } else {
+                    currentLine = StringBuilder()
+                    currentLineWidth = 0f
+                } else if (currentLine.isNotEmpty()) {
                     currentLine.append(wordWithSpace)
-                    currentLineWidth += wordWidth
+                    currentLineWidth = paint.measureText(currentLine.toString())
+                    continue
+                }
+
+                if (paint.measureText(word) <= maxBoxW || word.isEmpty()) {
+                    currentLine.append(word)
+                    currentLineWidth = paint.measureText(currentLine.toString())
+                } else {
+                    for (ch in word) {
+                        val candidate = currentLine.toString() + ch
+                        val candidateW = paint.measureText(candidate)
+                        if (currentLine.isNotEmpty() && candidateW > maxBoxW) {
+                            lines.add(TextLine(text = currentLine.toString(), width = currentLineWidth, isParagraphEnd = false))
+                            currentLine = StringBuilder().append(ch)
+                            currentLineWidth = paint.measureText(currentLine.toString())
+                        } else {
+                            currentLine.append(ch)
+                            currentLineWidth = candidateW
+                        }
+                    }
                 }
             }
 

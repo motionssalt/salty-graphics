@@ -180,24 +180,49 @@ fun CanvasView(
                     if(target != null && bounds != null && !target.isLocked) {
                         val t=target.transform; val box=bounds
                         val local=VectorEditing.toLocal(downPoint.x,downPoint.y,t)
-                        val candidates=SelectionHandle.entries.filter { it != SelectionHandle.NONE && it != SelectionHandle.BODY }.map { h ->
-                            val point=if(h==SelectionHandle.ROTATE) {
-                                val edge=SelectionGeometry.world(SelectionPoint(box.center.x,box.top),t)
-                                val stem=SelectionPoint(0f,-sizes.rotateStemLength.toPx()/effZoom).rotated(t.rotationDegrees)
-                                edge+stem
-                            } else SelectionGeometry.world(SelectionPoint(
-                                if(h.x<0) box.left else if(h.x>0) box.right else box.center.x,
-                                if(h.y<0) box.top else if(h.y>0) box.bottom else box.center.y),t)
-                            h to hypot(point.x-downPoint.x,point.y-downPoint.y)*effZoom
-                        }
-                        val closest = candidates.filter { it.second<=touchRadius }.minByOrNull { it.second }?.first
-                        if (isSelectedTextLayer && textEditingActive && closest != null && closest != SelectionHandle.ROTATE && closest != SelectionHandle.BODY) {
-                            handle = closest
-                            isTextFrameDrag = true
-                            textStartBoxWidth = max(50f, target.textData!!.boxWidth)
-                            textStartBoxHeight = max(30f, target.textData!!.boxHeight)
+                        if (isSelectedTextLayer && textEditingActive) {
+                            // V42: While editing text, only left and right width handles are active (plus body drag).
+                            val widthCandidates = listOf(SelectionHandle.EDGE_LEFT, SelectionHandle.EDGE_RIGHT).map { h ->
+                                val point = SelectionGeometry.world(SelectionPoint(if (h.x < 0) box.left else box.right, box.center.y), t)
+                                h to hypot(point.x - downPoint.x, point.y - downPoint.y) * effZoom
+                            }
+                            val within = widthCandidates.filter { it.second <= touchRadius }
+                            val picked = when {
+                                within.isEmpty() -> null
+                                within.size == 1 -> within.first().first
+                                else -> {
+                                    val d0 = within[0].second
+                                    val d1 = within[1].second
+                                    if (abs(d0 - d1) < 1f) {
+                                        if (local.first >= box.center.x) SelectionHandle.EDGE_RIGHT else SelectionHandle.EDGE_LEFT
+                                    } else within.minByOrNull { it.second }?.first
+                                }
+                            }
+                            if (picked != null) {
+                                handle = picked
+                                isTextFrameDrag = true
+                                val data = target.textData!!
+                                val paint = selectionTextPaint(context, data)
+                                val minCharW = data.text.filter { it != '\n' && it != '\r' }
+                                    .maxOfOrNull { ch -> paint.measureText(ch.toString()) }
+                                    ?.coerceAtLeast(8f) ?: 8f
+                                textStartBoxWidth = max(minCharW, data.boxWidth)
+                                textStartBoxHeight = max(20f, data.boxHeight)
+                            } else {
+                                handle = if (local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
+                            }
                         } else {
-                            handle = closest
+                            val candidates=SelectionHandle.entries.filter { it != SelectionHandle.NONE && it != SelectionHandle.BODY }.map { h ->
+                                val point=if(h==SelectionHandle.ROTATE) {
+                                    val edge=SelectionGeometry.world(SelectionPoint(box.center.x,box.top),t)
+                                    val stem=SelectionPoint(0f,-sizes.rotateStemLength.toPx()/effZoom).rotated(t.rotationDegrees)
+                                    edge+stem
+                                } else SelectionGeometry.world(SelectionPoint(
+                                    if(h.x<0) box.left else if(h.x>0) box.right else box.center.x,
+                                    if(h.y<0) box.top else if(h.y>0) box.bottom else box.center.y),t)
+                                h to hypot(point.x-downPoint.x,point.y-downPoint.y)*effZoom
+                            }
+                            handle = candidates.filter { it.second<=touchRadius }.minByOrNull { it.second }?.first
                                 ?: if(local.first in box.left..box.right && local.second in box.top..box.bottom) SelectionHandle.BODY else SelectionHandle.NONE
                         }
                     }
@@ -327,35 +352,18 @@ fun CanvasView(
                                 val localCurrent = VectorEditing.toLocal(currentPoint.x, currentPoint.y, t)
                                 val localDown = VectorEditing.toLocal(downPoint.x, downPoint.y, t)
                                 val dx = localCurrent.first - localDown.first
-                                val dy = localCurrent.second - localDown.second
-                                var newBoxW = textStartBoxWidth
-                                var newBoxH = textStartBoxHeight
-                                when (handle) {
-                                    SelectionHandle.EDGE_RIGHT -> newBoxW = max(50f, textStartBoxWidth + (dx * 2f))
-                                    SelectionHandle.EDGE_LEFT -> newBoxW = max(50f, textStartBoxWidth - (dx * 2f))
-                                    SelectionHandle.EDGE_BOTTOM -> newBoxH = max(30f, textStartBoxHeight + (dy * 2f))
-                                    SelectionHandle.EDGE_TOP -> newBoxH = max(30f, textStartBoxHeight - (dy * 2f))
-                                    SelectionHandle.CORNER_BOTTOM_RIGHT -> {
-                                        newBoxW = max(50f, textStartBoxWidth + (dx * 2f))
-                                        newBoxH = max(30f, textStartBoxHeight + (dy * 2f))
-                                    }
-                                    SelectionHandle.CORNER_BOTTOM_LEFT -> {
-                                        newBoxW = max(50f, textStartBoxWidth - (dx * 2f))
-                                        newBoxH = max(30f, textStartBoxHeight + (dy * 2f))
-                                    }
-                                    SelectionHandle.CORNER_TOP_RIGHT -> {
-                                        newBoxW = max(50f, textStartBoxWidth + (dx * 2f))
-                                        newBoxH = max(30f, textStartBoxHeight - (dy * 2f))
-                                    }
-                                    SelectionHandle.CORNER_TOP_LEFT -> {
-                                        newBoxW = max(50f, textStartBoxWidth - (dx * 2f))
-                                        newBoxH = max(30f, textStartBoxHeight - (dy * 2f))
-                                    }
-                                    else -> Unit
-                                }
                                 val layerText = (activeDoc.findLayerById(targetId) ?: currentDoc.findLayerById(targetId))?.textData
                                 if (layerText != null) {
-                                    val updatedText = layerText.copy(boxWidth = newBoxW, boxHeight = newBoxH, boxMode = TextBoxMode.PARAGRAPH)
+                                    val paint = selectionTextPaint(context, layerText)
+                                    val minCharW = layerText.text.filter { it != '\n' && it != '\r' }
+                                        .maxOfOrNull { ch -> paint.measureText(ch.toString()) }
+                                        ?.coerceAtLeast(8f) ?: 8f
+                                    val newBoxW = when (handle) {
+                                        SelectionHandle.EDGE_RIGHT -> max(minCharW, textStartBoxWidth + (dx * 2f))
+                                        SelectionHandle.EDGE_LEFT -> max(minCharW, textStartBoxWidth - (dx * 2f))
+                                        else -> textStartBoxWidth
+                                    }
+                                    val updatedText = layerText.copy(boxWidth = newBoxW, boxHeight = textStartBoxHeight, boxMode = TextBoxMode.PARAGRAPH)
                                     latestTextData = updatedText
                                     updateTextData?.invoke(targetId, updatedText)
                                 }

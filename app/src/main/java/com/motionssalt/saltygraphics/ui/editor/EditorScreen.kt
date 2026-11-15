@@ -51,7 +51,7 @@ fun EditorScreen(
 
     var selectedLayerIds by remember { mutableStateOf(setOf<String>()) }
     var activeGroupId by remember { mutableStateOf(initialGroupId) }
-    var layerToRasterize by remember { mutableStateOf<Layer?>(null) }
+    var layersToRasterize by remember { mutableStateOf<List<Layer>>(emptyList()) }
 
     fun findGroupPath(layers: List<Layer>, targetId: String): List<Pair<String, String>>? {
         for (layer in layers) {
@@ -607,6 +607,12 @@ fun EditorScreen(
                                         }
                                         selectedLayerIds = group.children.map { it.id }.toSet()
                                     }
+                                },
+                                onRasterizeSelected = { ids ->
+                                    val targets = panelLayers.filter { it.id in ids }
+                                    if (targets.isNotEmpty()) {
+                                        layersToRasterize = targets
+                                    }
                                 }
                             )
             },
@@ -776,7 +782,7 @@ fun EditorScreen(
                             activeGroupId = if (idx < 0) null else groupBreadcrumbs.getOrNull(idx)?.first
                         },
                         onRasterize = {
-                            layerToRasterize = currentSelectedLayer
+                            currentSelectedLayer?.let { layersToRasterize = listOf(it) }
                         },
                         onAddMedia = {
                             mediaPickerLauncher.launch("image/*")
@@ -1039,41 +1045,68 @@ fun EditorScreen(
         )
     }
 
-    val layerToRasterizeTarget = layerToRasterize
-    if (layerToRasterizeTarget != null) {
+    val rasterizeTargets = layersToRasterize
+    if (rasterizeTargets.isNotEmpty()) {
+        val isMulti = rasterizeTargets.size > 1
+        val singleTarget = rasterizeTargets.singleOrNull()
+        val isGroup = singleTarget?.type == LayerType.GROUP
+        val dlgTitle = when {
+            isMulti -> "Rasterize / Merge Layers"
+            isGroup -> "Rasterize Group"
+            else -> "Rasterize Layer"
+        }
+        val dlgMessage = when {
+            isMulti -> "Flattening ${rasterizeTargets.size} selected layers merges them into a single bitmap layer.\n\n" +
+                "Do you want to keep duplicates of the originals before rasterizing, or replace them directly?"
+            isGroup -> "Rasterizing group '${singleTarget?.name}' flattens its visible children into a single bitmap layer.\n\n" +
+                "Do you want to keep a duplicate of the original group, or replace it directly?"
+            else -> "Rasterizing '${singleTarget?.name}' converts vector or text geometry into a bitmap graphic at canvas resolution.\n\n" +
+                "Do you want to duplicate the original layer before rasterizing, or replace it directly?"
+        }
         SaltyConfirmDialog(
-            title = "Rasterize Layer",
-            message = "Rasterizing '${layerToRasterizeTarget.name}' converts vector or text geometry into a bitmap graphic at canvas resolution.\n\n" +
-                "Do you want to duplicate the original layer before rasterizing, or replace it directly?",
+            title = dlgTitle,
+            message = dlgMessage,
             confirmText = "Rasterize",
             dismissText = "Cancel",
             onConfirm = {
-                val target = layerToRasterizeTarget
-                layerToRasterize = null
+                val targets = rasterizeTargets
+                layersToRasterize = emptyList()
                 val currentDoc = projectDocument ?: return@SaltyConfirmDialog
-                val updated = LayerRasterizer.rasterizeLayer(
+                val targetIds = targets.map { it.id }.toSet()
+                val updated = LayerRasterizer.rasterizeSelection(
                     context = context,
                     document = currentDoc,
-                    layerId = target.id,
+                    layerIds = targetIds,
                     duplicateOriginal = false
                 )
-                val label = "Rasterize ${target.type.name.lowercase()}"
+                selectedLayerIds = updated.selectedLayerIds
+                val label = when {
+                    targets.size > 1 -> "Rasterize Layers"
+                    targets.first().type == LayerType.GROUP -> "Rasterize Group"
+                    else -> "Rasterize ${targets.first().type.name.lowercase()}"
+                }
                 recordAndAutoSave(label, updated)
                 fillMediaRevision++
             },
-            onDismiss = { layerToRasterize = null },
+            onDismiss = { layersToRasterize = emptyList() },
             secondaryConfirmText = "Duplicate & Rasterize",
             onSecondaryConfirm = {
-                val target = layerToRasterizeTarget
-                layerToRasterize = null
+                val targets = rasterizeTargets
+                layersToRasterize = emptyList()
                 val currentDoc = projectDocument ?: return@SaltyConfirmDialog
-                val updated = LayerRasterizer.rasterizeLayer(
+                val targetIds = targets.map { it.id }.toSet()
+                val updated = LayerRasterizer.rasterizeSelection(
                     context = context,
                     document = currentDoc,
-                    layerId = target.id,
+                    layerIds = targetIds,
                     duplicateOriginal = true
                 )
-                val label = "Duplicate and rasterize ${target.type.name.lowercase()}"
+                selectedLayerIds = updated.selectedLayerIds
+                val label = when {
+                    targets.size > 1 -> "Duplicate and rasterize layers"
+                    targets.first().type == LayerType.GROUP -> "Duplicate and rasterize group"
+                    else -> "Duplicate and rasterize ${targets.first().type.name.lowercase()}"
+                }
                 recordAndAutoSave(label, updated)
                 fillMediaRevision++
             }

@@ -203,30 +203,10 @@ fun SaltySelectionBoxOverlay(
                     style = Stroke(sizes.selectionStrokeInner.toPx())
                 )
                 if (!layer.isLocked) {
-                    fun handleRect(p: Offset, side: Float) {
-                        val top = p - Offset(side / 2, side / 2)
-                        drawRect(colors.selectionHandle, top, Size(side, side))
-                        drawRect(
-                            colors.selectionOutlineContrast,
-                            top,
-                            Size(side, side),
-                            style = Stroke(sizes.selectionStrokeInner.toPx())
-                        )
-                    }
-                    listOf(
-                        Offset(-halfW, -halfH),
-                        Offset(halfW, -halfH),
-                        Offset(halfW, halfH),
-                        Offset(-halfW, halfH)
-                    ).forEach { handleRect(it, sizes.selectionCornerHandle.toPx()) }
-
-                    listOf(Offset(0f, -halfH), Offset(0f, halfH))
-                        .forEach { handleRect(it, sizes.selectionEdgeHandle.toPx()) }
-
                     if (layer.type == LayerType.TEXT && bindings.isTextEditing) {
-                        fun textPillHandle(p: Offset, isVertical: Boolean) {
-                            val pillW = if (isVertical) sizes.textPillShort.toPx() else sizes.textPillLong.toPx()
-                            val pillH = if (isVertical) sizes.textPillLong.toPx() else sizes.textPillShort.toPx()
+                        fun textPillHandle(p: Offset) {
+                            val pillW = sizes.textPillShort.toPx()
+                            val pillH = sizes.textPillLong.toPx()
                             val top = p - Offset(pillW / 2f, pillH / 2f)
                             drawRoundRect(
                                 colors.selectionOutlineContrast,
@@ -242,20 +222,39 @@ fun SaltySelectionBoxOverlay(
                                 CornerRadius(sizes.textPillCornerInner.toPx())
                             )
                         }
-                        textPillHandle(Offset(-halfW, 0f), isVertical = true)
-                        textPillHandle(Offset(halfW, 0f), isVertical = true)
-                        textPillHandle(Offset(0f, -halfH), isVertical = false)
-                        textPillHandle(Offset(0f, halfH), isVertical = false)
+                        textPillHandle(Offset(-halfW, 0f))
+                        textPillHandle(Offset(halfW, 0f))
                     } else {
-                        listOf(Offset(-halfW, 0f), Offset(halfW, 0f))
-                            .forEach { handleRect(it, sizes.selectionEdgeHandle.toPx()) }
-                    }
+                        fun handleRect(p: Offset, side: Float) {
+                            val top = p - Offset(side / 2, side / 2)
+                            drawRect(colors.selectionHandle, top, Size(side, side))
+                            drawRect(
+                                colors.selectionOutlineContrast,
+                                top,
+                                Size(side, side),
+                                style = Stroke(sizes.selectionStrokeInner.toPx())
+                            )
+                        }
+                        listOf(
+                            Offset(-halfW, -halfH),
+                            Offset(halfW, -halfH),
+                            Offset(halfW, halfH),
+                            Offset(-halfW, halfH)
+                        ).forEach { handleRect(it, sizes.selectionCornerHandle.toPx()) }
 
-                    val rotate = Offset(0f, -halfH - sizes.rotateStemLength.toPx())
-                    drawLine(colors.selectionOutlineContrast, Offset(0f, -halfH), rotate, sizes.selectionStrokeOuter.toPx())
-                    drawLine(colors.selectionHandle, Offset(0f, -halfH), rotate, sizes.selectionStrokeInner.toPx())
-                    drawCircle(colors.selectionOutlineContrast, sizes.rotateKnobOuterRadius.toPx(), rotate)
-                    drawCircle(colors.selectionHandle, sizes.rotateKnobInnerRadius.toPx(), rotate)
+                        listOf(
+                            Offset(0f, -halfH),
+                            Offset(0f, halfH),
+                            Offset(-halfW, 0f),
+                            Offset(halfW, 0f)
+                        ).forEach { handleRect(it, sizes.selectionEdgeHandle.toPx()) }
+
+                        val rotate = Offset(0f, -halfH - sizes.rotateStemLength.toPx())
+                        drawLine(colors.selectionOutlineContrast, Offset(0f, -halfH), rotate, sizes.selectionStrokeOuter.toPx())
+                        drawLine(colors.selectionHandle, Offset(0f, -halfH), rotate, sizes.selectionStrokeInner.toPx())
+                        drawCircle(colors.selectionOutlineContrast, sizes.rotateKnobOuterRadius.toPx(), rotate)
+                        drawCircle(colors.selectionHandle, sizes.rotateKnobInnerRadius.toPx(), rotate)
+                    }
 
                     if (bindings.isShapeCornerHandleEnabled) {
                         val rOffset = min(bindings.shapeCornerRadius * t.scaleX * effectiveZoom, min(halfW, halfH) * 0.8f)

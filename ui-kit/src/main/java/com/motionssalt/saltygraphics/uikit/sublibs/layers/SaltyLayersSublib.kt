@@ -53,6 +53,7 @@ fun SaltyLayersSublib(
     onDuplicateLayer: ((String) -> Unit)? = null,
     onGroupSelected: (() -> Unit)? = null,
     onUngroupSelected: (() -> Unit)? = null,
+    onRasterizeSelected: ((Set<String>) -> Unit)? = null,
     thumbnailContent: @Composable (Layer, Boolean) -> Unit
 ) {
     SaltyLayersPanel(
@@ -74,6 +75,7 @@ fun SaltyLayersSublib(
         onDuplicateLayer = onDuplicateLayer,
         onGroupSelected = onGroupSelected,
         onUngroupSelected = onUngroupSelected,
+        onRasterizeSelected = onRasterizeSelected,
         thumbnailContent = thumbnailContent
     )
 }

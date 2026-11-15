@@ -133,6 +133,7 @@ fun SaltyVectorCanvasOverlay(
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     var draft by remember(layer.id) { mutableStateOf<Layer?>(null) }
     val latestLayer by rememberUpdatedState(layer)
+    val latestSelectedPoint by rememberUpdatedState(selectedPoint)
     val latestSelect by rememberUpdatedState(onSelectPoint)
     val latestPreview by rememberUpdatedState(onPreview)
     val latestCommit by rememberUpdatedState(onCommit)
@@ -185,30 +186,35 @@ fun SaltyVectorCanvasOverlay(
                         var handle = 0 // -1: inHandle, 1: outHandle, 0: anchor, 2: segment curve
                         var bestDist = hitRadius
 
-                        if (tool == SaltyVectorToolMode.SELECT) {
-                            working.points.forEachIndexed { i, p ->
-                                if (p.hasInHandle) {
-                                    val inScreen = screen(p.inHandleX, p.inHandleY, original.transform)
-                                    val d = (inScreen - down.position).getDistance()
-                                    if (d < bestDist) {
-                                        bestDist = d
-                                        pointIndex = i
-                                        handle = -1
-                                    }
+                        // Priority 1: Visible handles ONLY of the currently selected anchor point (across SELECT and ADD)
+                        val activeSel = latestSelectedPoint
+                        if ((tool == SaltyVectorToolMode.SELECT || tool == SaltyVectorToolMode.ADD) &&
+                            activeSel != null && activeSel in working.points.indices
+                        ) {
+                            val selPt = working.points[activeSel]
+                            if (selPt.hasInHandle) {
+                                val inScreen = screen(selPt.inHandleX, selPt.inHandleY, original.transform)
+                                val d = (inScreen - down.position).getDistance()
+                                if (d < bestDist) {
+                                    bestDist = d
+                                    pointIndex = activeSel
+                                    handle = -1
                                 }
-                                if (p.hasOutHandle) {
-                                    val outScreen = screen(p.outHandleX, p.outHandleY, original.transform)
-                                    val d = (outScreen - down.position).getDistance()
-                                    if (d < bestDist) {
-                                        bestDist = d
-                                        pointIndex = i
-                                        handle = 1
-                                    }
+                            }
+                            if (selPt.hasOutHandle) {
+                                val outScreen = screen(selPt.outHandleX, selPt.outHandleY, original.transform)
+                                val d = (outScreen - down.position).getDistance()
+                                if (d < bestDist) {
+                                    bestDist = d
+                                    pointIndex = activeSel
+                                    handle = 1
                                 }
                             }
                         }
 
+                        // Priority 2: Anchor points
                         if (pointIndex < 0) {
+                            bestDist = hitRadius
                             working.points.forEachIndexed { i, p ->
                                 val anchorScreen = screen(p.x, p.y, original.transform)
                                 val d = (anchorScreen - down.position).getDistance()
@@ -222,25 +228,31 @@ fun SaltyVectorCanvasOverlay(
 
                         val (x, y) = local(down.position)
 
+                        // Priority 3: Path segments (actual cubic/line sampling in screen space)
                         if (pointIndex < 0 && working.points.size >= 2) {
                             val count = if (working.isClosed) working.points.size else working.points.size - 1
+                            var bestSegDist = hitRadius * 1.15f
                             for (i in 0 until count) {
                                 val p0 = working.points[i]
                                 val p1 = working.points[(i + 1) % working.points.size]
-                                val p0s = screen(p0.x, p0.y, original.transform)
-                                val p1s = screen(p1.x, p1.y, original.transform)
-                                val midS = (p0s + p1s) / 2f
-                                if ((midS - down.position).getDistance() < hitRadius * 1.2f) {
-                                    pointIndex = i
-                                    handle = 2
-                                    break
+                                for (sample in 1..19) {
+                                    val (sx, sy) = VectorEditing.pointAt(p0, p1, sample / 20f)
+                                    val ptScreen = screen(sx, sy, original.transform)
+                                    val d = (ptScreen - down.position).getDistance()
+                                    if (d < bestSegDist) {
+                                        bestSegDist = d
+                                        pointIndex = i
+                                        handle = 2
+                                    }
                                 }
                             }
                         }
 
                         when (tool) {
                             SaltyVectorToolMode.ADD -> {
-                                if (pointIndex < 0) {
+                                // Only add/split on segment (handle == 2) or empty space (pointIndex < 0);
+                                // never create a spurious anchor when tapping a visible handle or existing anchor.
+                                if (pointIndex < 0 || handle == 2) {
                                     val (added, selected) = VectorEditing.addPoint(
                                         working, x, y,
                                         hitRadius / scale / maxOf(abs(original.transform.scaleX), 0.0001f)
@@ -251,13 +263,13 @@ fun SaltyVectorCanvasOverlay(
                                 }
                             }
                             SaltyVectorToolMode.REMOVE -> {
-                                if (pointIndex >= 0) {
+                                if (pointIndex >= 0 && handle != 2) {
                                     working = working.copy(points = working.points.filterIndexed { i, _ -> i != pointIndex })
                                     pointIndex = -1
                                 }
                             }
                             SaltyVectorToolMode.SMOOTH -> {
-                                if (pointIndex >= 0) {
+                                if (pointIndex >= 0 && handle != 2) {
                                     working = working.copy(
                                         points = working.points.mapIndexed { i, p ->
                                             if (i == pointIndex) VectorEditing.toggleSmooth(p) else p
@@ -351,15 +363,17 @@ fun SaltyVectorCanvasOverlay(
         ) {
             path.points.forEachIndexed { i, p ->
                 val at = screen(p.x, p.y, current.transform)
-                if (p.hasInHandle) {
-                    val h = screen(p.inHandleX, p.inHandleY, current.transform)
-                    drawLine(colors.secondary, at, h, 1.dp.toPx())
-                    drawCircle(colors.secondary, 5.dp.toPx(), h)
-                }
-                if (p.hasOutHandle) {
-                    val h = screen(p.outHandleX, p.outHandleY, current.transform)
-                    drawLine(colors.secondary, at, h, 1.dp.toPx())
-                    drawCircle(colors.secondary, 5.dp.toPx(), h)
+                if (isSelected) {
+                    if (p.hasInHandle) {
+                        val h = screen(p.inHandleX, p.inHandleY, current.transform)
+                        drawLine(colors.secondary, at, h, 1.dp.toPx())
+                        drawCircle(colors.secondary, 5.dp.toPx(), h)
+                    }
+                    if (p.hasOutHandle) {
+                        val h = screen(p.outHandleX, p.outHandleY, current.transform)
+                        drawLine(colors.secondary, at, h, 1.dp.toPx())
+                        drawCircle(colors.secondary, 5.dp.toPx(), h)
+                    }
                 }
                 val radius = 6.dp.toPx()
                 val isSelected = (i == selectedPoint)

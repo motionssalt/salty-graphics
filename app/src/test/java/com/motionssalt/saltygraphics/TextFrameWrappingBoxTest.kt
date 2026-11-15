@@ -257,4 +257,92 @@ class TextFrameWrappingBoxTest {
             host.pause().stop().destroy()
         }
     }
+
+    @Test
+    fun narrowingTextFrameAllowsSingleCharColumnWithoutGlyphScaleAndWidensBackCleanly() {
+        val host = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        try {
+            val initialTextData = TextLayerData(
+                text = "WORD ONE TWO",
+                fontSize = 24f,
+                boxWidth = 300f,
+                boxHeight = 120f,
+                boxMode = TextBoxMode.PARAGRAPH
+            )
+            val textLayer = Layer(
+                id = "text_narrow_layer",
+                name = "Narrow Text",
+                type = LayerType.TEXT,
+                textData = initialTextData,
+                transform = Transform2D(translationX = 0f, translationY = 0f)
+            )
+            var currentDoc by mutableStateOf(
+                ProjectDocument(
+                    id = "text_narrow_doc",
+                    canvasSize = CanvasSize(800, 800),
+                    layers = listOf(textLayer)
+                )
+            )
+            host.get().setContent {
+                MaterialTheme {
+                    Box(Modifier.requiredSize(400.dp, 400.dp)) {
+                        CanvasView(
+                            document = currentDoc,
+                            selectedLayerIds = setOf(textLayer.id),
+                            zoom = 1f,
+                            panOffset = Offset.Zero,
+                            showGrid = false,
+                            gridSize = 20,
+                            onZoomPanChange = { _, _ -> },
+                            onSelectLayer = { },
+                            onUpdateLayerTransform = { _, _ -> },
+                            isTextEditing = true,
+                            onUpdateTextData = { id, updated ->
+                                currentDoc = currentDoc.updateLayer(id) { it.copy(textData = updated) }
+                            },
+                            onCommitTextData = { _, _ -> }
+                        )
+                    }
+                }
+            }
+            compose.waitForIdle()
+            val canvas = compose.onNodeWithTag("editor_canvas")
+            val canvasBounds = canvas.fetchSemanticsNode().size
+            val center = Offset(canvasBounds.width / 2f, canvasBounds.height / 2f)
+            val fit = (400f / 800f) * 0.94f
+
+            // Drag right handle far left to narrow down below 50px toward single-char column
+            val rightHandleX = center.x + (150f * fit)
+            canvas.performTouchInput {
+                down(Offset(rightHandleX, center.y))
+                moveBy(Offset(-140f * fit, 0f), 120)
+                up()
+            }
+            compose.waitForIdle()
+
+            val narrowed = currentDoc.findLayerById(textLayer.id)!!
+            val narrowedText = narrowed.textData!!
+            assertTrue("Must narrow below legacy 50px floor toward single character, was ${narrowedText.boxWidth}", narrowedText.boxWidth < 50f)
+            assertEquals("Font size must remain unscaled", 24f, narrowedText.fontSize, 0.01f)
+            assertEquals("Layer scaleX must remain 1f", 1f, narrowed.transform.scaleX, 0.001f)
+
+            val paint = android.graphics.Paint().apply { textSize = narrowedText.fontSize }
+            val narrowLayout = TextLayoutEngine.computeLayout(narrowedText, paint)
+            assertTrue("Single-char column wrap must break 'WORD' onto multiple lines, lines=${narrowLayout.lines}", narrowLayout.lines.size >= 4)
+
+            // Drag right handle back out to widen -> unwraps cleanly back onto fewer lines
+            val newRightX = center.x + (narrowedText.boxWidth / 2f) * fit
+            canvas.performTouchInput {
+                down(Offset(newRightX, center.y))
+                moveBy(Offset(150f * fit, 0f), 120)
+                up()
+            }
+            compose.waitForIdle()
+            val widenedText = currentDoc.findLayerById(textLayer.id)!!.textData!!
+            val widenedLayout = TextLayoutEngine.computeLayout(widenedText, paint)
+            assertTrue("Widening must unwrap back to fewer lines (was ${narrowLayout.lines.size}, now ${widenedLayout.lines.size})", widenedLayout.lines.size < narrowLayout.lines.size)
+        } finally {
+            host.pause().stop().destroy()
+        }
+    }
 }
